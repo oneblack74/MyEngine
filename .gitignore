@@ -30,3 +30,28 @@
 *.exe
 *.out
 *.app
+
+# Build
+build/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.ninja
+.ninja_deps
+.ninja_log
+
+# Compiled
+*.exe
+*.lib
+*.a
+*.o
+*.obj
+
+# IDE
+.vscode/
+.idea/
+*.user
+*.suo
