@@ -1,9 +1,13 @@
-#include "Core/Application.h"
+#include "Core/Window.h"
 
 int main()
 {
-    MyEngine::Application app;
-    app.Run();
+    Window window({});
+
+    while (!window.ShouldClose())
+    {
+        window.OnUpdate();
+    }
 
     return 0;
 }
