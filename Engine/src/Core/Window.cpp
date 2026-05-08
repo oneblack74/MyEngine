@@ -2,53 +2,86 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 
-Window::Window(const WindowProps &props)
+namespace Engine
 {
-    Init(props);
-}
-
-Window::~Window()
-{
-    Shutdown();
-}
-
-void Window::Init(const WindowProps &props)
-{
-    m_Data.Title = props.Title;
-    m_Data.Width = props.Width;
-    m_Data.Height = props.Height;
-
-    if (!glfwInit())
+    Window::Window(const WindowProps &props)
     {
-        std::cerr << "Failed to initialize GLFW!" << std::endl;
-        return;
+        Init(props);
     }
 
-    m_Window = glfwCreateWindow(m_Data.Width, m_Data.Height,
-                                m_Data.Title.c_str(), nullptr, nullptr);
-
-    if (!m_Window)
+    Window::~Window()
     {
-        std::cerr << "Failed to create window!" << std::endl;
-        return;
+        Shutdown();
     }
 
-    glfwMakeContextCurrent((GLFWwindow *)m_Window);
-}
+    void Window::Init(const WindowProps &props)
+    {
+        m_Data.Title = props.Title;
+        m_Data.Width = props.Width;
+        m_Data.Height = props.Height;
 
-void Window::Shutdown()
-{
-    glfwDestroyWindow((GLFWwindow *)m_Window);
-    glfwTerminate();
-}
+        if (!glfwInit())
+        {
+            std::cerr << "Failed to initialize GLFW!" << std::endl;
+            return;
+        }
 
-void Window::OnUpdate()
-{
-    glfwPollEvents();
-    glfwSwapBuffers((GLFWwindow *)m_Window);
-}
+        m_Window = glfwCreateWindow(m_Data.Width, m_Data.Height,
+                                    m_Data.Title.c_str(), nullptr, nullptr);
 
-bool Window::ShouldClose() const
-{
-    return glfwWindowShouldClose((GLFWwindow *)m_Window);
+        if (!m_Window)
+        {
+            std::cerr << "Failed to create window!" << std::endl;
+            return;
+        }
+
+        glfwMakeContextCurrent(m_Window);
+        glfwSetWindowUserPointer(m_Window, &m_Data);
+
+        glfwSetWindowCloseCallback(m_Window, [](GLFWwindow *window)
+                                   {
+            WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
+            WindowCloseEvent event;
+            data.EventCallback(event); });
+
+        glfwSetWindowSizeCallback(m_Window, [](GLFWwindow *window, int width, int height)
+                                  {
+            WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
+            WindowResizeEvent event(width, height);
+            data.EventCallback(event); });
+
+        glfwSetKeyCallback(m_Window, [](GLFWwindow *window, int key, int scancode, int action, int mods)
+                           {
+            WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
+            if (action == GLFW_PRESS)
+            {
+                KeyPressedEvent event(key);
+                data.EventCallback(event);
+            }
+            else if (action == GLFW_RELEASE)
+            {
+                KeyReleasedEvent event(key);
+                if (data.EventCallback)
+                {
+                    data.EventCallback(event);
+                }
+            } });
+    }
+
+    void Window::Shutdown()
+    {
+        glfwDestroyWindow(m_Window);
+        glfwTerminate();
+    }
+
+    void Window::OnUpdate()
+    {
+        glfwPollEvents();
+        glfwSwapBuffers(m_Window);
+    }
+
+    bool Window::ShouldClose() const
+    {
+        return glfwWindowShouldClose(m_Window);
+    }
 }
