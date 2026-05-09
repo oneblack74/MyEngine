@@ -6,6 +6,7 @@ add_library(Engine STATIC
     src/Renderer/Buffer.cpp
     src/Renderer/VertexArray.cpp
     src/Renderer/Shader.cpp
+    src/Renderer/OrthographicCamera.cpp
 )
 
 target_include_directories(Engine
@@ -13,5 +14,10 @@ target_include_directories(Engine
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-target_link_libraries(Engine PUBLIC glfw spdlog::spdlog)
-target_link_libraries(Engine PUBLIC glfw spdlog::spdlog glad_gl_core_46)
+target_link_libraries(Engine PUBLIC 
+    glfw 
+    spdlog::spdlog 
+    glad_gl_core_46
+    glm::glm
+)
+

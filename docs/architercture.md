@@ -28,8 +28,9 @@ MyEngine/
 |  |  |
 |  |  └── Renderer/
 |  |     ├── Buffer.h
+|  |     ├── OrthographicCamera.h
 |  |     ├── RenderCommand.h
-|  |     └── Renderer.h
+|  |     ├── Renderer.h
 |  |     ├── Shader.h
 |  |     └── VertexArray.h
 |  |
@@ -42,6 +43,7 @@ MyEngine/
 |  |  |
 |  |  └── Renderer/
 |  |     ├── Buffer.cpp
+|  |     ├── OrthographicCamera.cpp
 |  |     ├── Shader.cpp
 |  |     └── VertexArray.cpp
 |  |

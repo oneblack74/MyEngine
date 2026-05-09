@@ -33,6 +33,9 @@
 
 # Build
 build/
+*.exe
+*.o
+*.obj
 
 # CMake
 CMakeCache.txt

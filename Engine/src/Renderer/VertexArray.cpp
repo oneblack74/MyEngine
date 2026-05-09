@@ -28,9 +28,20 @@ namespace Engine
         glBindVertexArray(m_RendererID);
         vb->Bind();
 
-        // Position XYZ — layout location 0
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+        const auto &layout = vb->GetLayout();
+        uint32_t index = 0;
+        for (const auto &element : layout.GetElements())
+        {
+            glEnableVertexAttribArray(index);
+            glVertexAttribPointer(
+                index,
+                element.GetComponentCount(),
+                GL_FLOAT,
+                GL_FALSE,
+                layout.GetStride(),
+                (void *)(intptr_t)element.Offset);
+            index++;
+        }
 
         m_VertexBuffer = vb;
     }

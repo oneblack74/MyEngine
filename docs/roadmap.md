@@ -22,13 +22,13 @@
 
 ## Phase 1 — Renderer de base
 
-- ⬜ Premier triangle (VAO / VBO / Shader OpenGL)
-- ⬜ Abstraction `Buffer` (VertexBuffer, IndexBuffer)
-- ⬜ Abstraction `VertexArray`
-- ⬜ Abstraction `Shader`
-- ⬜ `RenderCommand` (SetClearColor, Clear, DrawIndexed)
-- ⬜ `Renderer` (Submit, BeginScene, EndScene)
-- ⬜ Caméra orthographique (`OrthographicCamera`)
+- ✅ Premier triangle (VAO / VBO / Shader OpenGL)
+- ✅ Abstraction `Buffer` (VertexBuffer, IndexBuffer)
+- ✅ Abstraction `VertexArray`
+- ✅ Abstraction `Shader`
+- ✅ `RenderCommand` (SetClearColor, Clear, DrawIndexed)
+- ✅ `Renderer` (Submit, BeginScene, EndScene)
+- ✅ Caméra orthographique (`OrthographicCamera`)
 - ⬜ Dessiner un quad coloré
 - ⬜ Chargement et affichage d'une texture (stb_image)
 - ⬜ `Renderer2D` — batch rendering (quads + textures)

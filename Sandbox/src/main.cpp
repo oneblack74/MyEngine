@@ -5,6 +5,7 @@
 #include "Renderer/Buffer.h"
 #include "Renderer/VertexArray.h"
 #include "Renderer/Shader.h"
+#include "Renderer/OrthographicCamera.h"
 #include <iostream>
 
 class GameLayer : public Engine::Layer
@@ -26,6 +27,7 @@ public:
         m_VertexArray = std::make_shared<Engine::VertexArray>();
 
         auto vb = std::make_shared<Engine::VertexBuffer>(vertices, sizeof(vertices));
+        vb->SetLayout({{Engine::ShaderDataType::Float3, "a_Position"}});
         m_VertexArray->AddVertexBuffer(vb);
 
         auto ib = std::make_shared<Engine::IndexBuffer>(indices, 3);
@@ -34,9 +36,10 @@ public:
         std::string vertexSrc = R"(
             #version 330 core
             layout(location = 0) in vec3 a_Position;
+            uniform mat4 u_ViewProjection;
             void main()
             {
-                gl_Position = vec4(a_Position, 1.0);
+                gl_Position = u_ViewProjection * vec4(a_Position, 1.0);
             }
         )";
 
@@ -50,6 +53,9 @@ public:
         )";
 
         m_Shader = std::make_shared<Engine::Shader>(vertexSrc, fragmentSrc);
+
+        m_Camera = std::make_shared<Engine::OrthographicCamera>(-1.6f, 1.6f, -0.9f, 0.9f);
+        m_Camera->SetPosition({0.3f, 0.3f, 0.0f});
     }
 
     void OnUpdate() override
@@ -58,6 +64,7 @@ public:
         Engine::Renderer::Clear();
 
         m_Shader->Bind();
+        m_Shader->SetMat4("u_ViewProjection", m_Camera->GetViewProjectionMatrix());
         m_VertexArray->Bind();
         glDrawElements(GL_TRIANGLES, m_VertexArray->GetIndexBuffer()->GetCount(), GL_UNSIGNED_INT, nullptr);
     }
@@ -70,6 +77,7 @@ public:
 private:
     std::shared_ptr<Engine::VertexArray> m_VertexArray;
     std::shared_ptr<Engine::Shader> m_Shader;
+    std::shared_ptr<Engine::OrthographicCamera> m_Camera;
 };
 
 int main()
