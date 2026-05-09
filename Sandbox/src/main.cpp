@@ -1,5 +1,6 @@
 #include "Core/Application.h"
 #include "Core/Layer.h"
+#include "Core/Log.h"
 #include <iostream>
 
 class GameLayer : public Engine::Layer
@@ -25,6 +26,9 @@ public:
 
 int main()
 {
+    Engine::Log::Init();
+    Engine::LOG_INFO("Engine starting...");
+
     MyEngine::Application app;
     app.PushLayer(new GameLayer());
     app.Run();
