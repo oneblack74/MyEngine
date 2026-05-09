@@ -11,7 +11,7 @@ namespace Engine
 
         EventType GetType() const override { return EventType::WindowClose; }
         int GetCategoryFlags() const override { return (int)EventCategory::Window; }
-        std::string GetName() const override { return "WindowCloseEvent"; }
+        std::string ToString() const override { return "WindowCloseEvent"; }
     };
 
     class WindowResizeEvent : public Event
@@ -25,7 +25,7 @@ namespace Engine
 
         EventType GetType() const override { return EventType::WindowResize; }
         int GetCategoryFlags() const override { return (int)EventCategory::Window; }
-        std::string GetName() const override { return "WindowResizeEvent"; }
+        std::string ToString() const override { return "WindowResizeEvent"; }
 
     private:
         int m_Width, m_Height;

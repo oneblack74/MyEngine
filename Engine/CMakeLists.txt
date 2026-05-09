@@ -1,6 +1,7 @@
 add_library(Engine STATIC
     src/Core/Application.cpp
     src/Core/Window.cpp
+    src/Core/LayerStack.cpp
 )
 
 target_include_directories(Engine

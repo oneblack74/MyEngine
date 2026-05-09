@@ -13,7 +13,7 @@ namespace Engine
 
         EventType GetType() const override { return EventType::KeyPressed; }
         int GetCategoryFlags() const override { return (int)EventCategory::Keyboard; }
-        std::string GetName() const override { return "KeyPressedEvent"; }
+        std::string ToString() const override { return "KeyPressedEvent"; }
 
     private:
         int m_KeyCode;
@@ -28,7 +28,7 @@ namespace Engine
 
         EventType GetType() const override { return EventType::KeyReleased; }
         int GetCategoryFlags() const override { return (int)EventCategory::Keyboard; }
-        std::string GetName() const override { return "KeyReleasedEvent"; }
+        std::string ToString() const override { return "KeyReleasedEvent"; }
 
     private:
         int m_KeyCode;

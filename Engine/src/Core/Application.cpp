@@ -4,17 +4,47 @@
 namespace MyEngine
 {
     Application::Application()
+        : m_Window(Engine::WindowProps())
     {
-        std::cout << "Engine initialized\n";
+        m_Window.SetEventCallback([this](Engine::Event &e)
+                                  { OnEvent(e); });
     }
 
-    Application::~Application()
+    Application::~Application() {}
+
+    void Application::OnEvent(Engine::Event &event)
     {
-        std::cout << "Engine shutdown\n";
+        std::cout << event.ToString() << std::endl;
+
+        if (event.GetType() == Engine::EventType::WindowClose)
+            m_Running = false;
+
+        // Propager aux layers en partant du haut
+        for (auto it = m_LayerStack.end(); it != m_LayerStack.begin();)
+        {
+            --it;
+            (*it)->OnEvent(event);
+        }
+    }
+
+    void Application::PushLayer(Engine::Layer *layer)
+    {
+        m_LayerStack.PushLayer(layer);
+    }
+
+    void Application::PushOverlay(Engine::Layer *overlay)
+    {
+        m_LayerStack.PushOverlay(overlay);
     }
 
     void Application::Run()
     {
-        std::cout << "Engine running\n";
+        while (m_Running)
+        {
+            m_Window.OnUpdate();
+
+            for (Engine::Layer *layer : m_LayerStack)
+                layer->OnUpdate();
+        }
     }
 }
