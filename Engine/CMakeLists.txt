@@ -11,3 +11,4 @@ target_include_directories(Engine
 )
 
 target_link_libraries(Engine PUBLIC glfw spdlog::spdlog)
+target_link_libraries(Engine PUBLIC glfw spdlog::spdlog glad_gl_core_46)

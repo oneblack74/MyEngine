@@ -23,6 +23,18 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(spdlog)
 
+FetchContent_Declare(
+    glad
+    GIT_REPOSITORY https://github.com/Dav1dde/glad.git
+    GIT_TAG        glad2
+)
+FetchContent_MakeAvailable(glad)
+
+add_subdirectory("${glad_SOURCE_DIR}/cmake" glad_cmake)
+glad_add_library(glad_gl_core_46 REPRODUCIBLE API gl:core=4.6)
+
+
+
 add_subdirectory(Engine)
 add_subdirectory(Editor)
 add_subdirectory(Sandbox)

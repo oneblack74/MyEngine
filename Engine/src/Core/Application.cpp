@@ -41,10 +41,10 @@ namespace MyEngine
     {
         while (m_Running)
         {
-            m_Window.OnUpdate();
-
             for (Engine::Layer *layer : m_LayerStack)
                 layer->OnUpdate();
+
+            m_Window.OnUpdate();
         }
     }
 }

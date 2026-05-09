@@ -1,4 +1,5 @@
 #include "Core/Window.h"
+#include "glad/gl.h"
 #include <GLFW/glfw3.h>
 #include <iostream>
 
@@ -36,6 +37,12 @@ namespace Engine
         }
 
         glfwMakeContextCurrent(m_Window);
+        if (!gladLoadGL((GLADloadfunc)glfwGetProcAddress))
+        {
+            std::cerr << "Failed to initialize Glad!" << std::endl;
+            return;
+        }
+
         glfwSetWindowUserPointer(m_Window, &m_Data);
 
         glfwSetWindowCloseCallback(m_Window, [](GLFWwindow *window)

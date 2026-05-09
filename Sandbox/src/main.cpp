@@ -1,6 +1,7 @@
 #include "Core/Application.h"
 #include "Core/Layer.h"
 #include "Core/Log.h"
+#include "Renderer/Renderer.h"
 #include <iostream>
 
 class GameLayer : public Engine::Layer
@@ -11,11 +12,13 @@ public:
     void OnAttach() override
     {
         std::cout << "GameLayer attached!" << std::endl;
+        Engine::Renderer::SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     }
 
     void OnUpdate() override
     {
         // appelé chaque frame
+        Engine::Renderer::Clear();
     }
 
     void OnEvent(Engine::Event &event) override
