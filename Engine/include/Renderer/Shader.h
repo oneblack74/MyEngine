@@ -15,6 +15,7 @@ namespace Engine
         void Unbind() const;
 
         void SetMat4(const std::string &name, const glm::mat4 &matrix);
+        void SetInt(const std::string &name, int value);
 
     private:
         uint32_t m_RendererID;

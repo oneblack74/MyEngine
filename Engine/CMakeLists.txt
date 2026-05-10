@@ -7,11 +7,14 @@ add_library(Engine STATIC
     src/Renderer/VertexArray.cpp
     src/Renderer/Shader.cpp
     src/Renderer/OrthographicCamera.cpp
+    vendor/stb/stb_image.cpp
+    src/Renderer/Texture.cpp
 )
 
 target_include_directories(Engine
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/vendor/stb
 )
 
 target_link_libraries(Engine PUBLIC 

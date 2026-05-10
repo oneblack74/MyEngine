@@ -30,7 +30,7 @@
 - ✅ `Renderer` (Submit, BeginScene, EndScene)
 - ✅ Caméra orthographique (`OrthographicCamera`)
 - ✅ Dessiner un quad coloré
-- ⬜ Chargement et affichage d'une texture (stb_image)
+- ✅ Chargement et affichage d'une texture (stb_image)
 - ⬜ `Renderer2D` — batch rendering (quads + textures)
 - ⬜ `SubTexture2D` — support sprite sheets
 
