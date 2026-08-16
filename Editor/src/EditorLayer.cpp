@@ -128,4 +128,6 @@ void EditorLayer::RenderImGui()
     m_ViewportPanel.OnImGuiRender(m_Framebuffer);
     m_SceneHierarchyPanel.OnImGuiRender();
     m_InspectorPanel.OnImGuiRender(m_SceneHierarchyPanel.GetSelectedEntity());
+    m_ContentBrowserPanel.OnImGuiRender();
+    m_ConsolePanel.OnImGuiRender();
 }

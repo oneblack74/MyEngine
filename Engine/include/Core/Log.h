@@ -1,7 +1,9 @@
 #pragma once
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include <deque>
 #include <memory>
+#include <string>
 
 namespace Engine
 {
@@ -10,6 +12,9 @@ namespace Engine
     public:
         static void Init();
         static std::shared_ptr<spdlog::logger> &GetLogger() { return s_Logger; }
+
+        // Derniers messages loggés, pour ConsolePanel (Editor)
+        static const std::deque<std::string> &GetConsoleMessages();
 
     private:
         static std::shared_ptr<spdlog::logger> s_Logger;

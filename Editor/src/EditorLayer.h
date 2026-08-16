@@ -2,6 +2,8 @@
 #include "Panels/ViewportPanel.h"
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/InspectorPanel.h"
+#include "Panels/ContentBrowserPanel.h"
+#include "Panels/ConsolePanel.h"
 #include <Core/Layer.h>
 #include <Renderer/Framebuffer.h>
 #include <Renderer/OrthographicCamera.h>
@@ -27,4 +29,6 @@ private:
     ViewportPanel m_ViewportPanel;
     SceneHierarchyPanel m_SceneHierarchyPanel;
     InspectorPanel m_InspectorPanel;
+    ContentBrowserPanel m_ContentBrowserPanel;
+    ConsolePanel m_ConsolePanel;
 };
