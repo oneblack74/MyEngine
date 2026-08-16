@@ -11,6 +11,9 @@ add_library(Engine STATIC
     src/Renderer/SubTexture2D.cpp
     vendor/stb/stb_image.cpp
     src/Renderer/Texture.cpp
+    src/Scene/Scene.cpp
+    src/Scene/Entity.cpp
+    src/Scene/RenderSystem.cpp
 )
 
 target_include_directories(Engine
@@ -19,10 +22,11 @@ target_include_directories(Engine
         ${CMAKE_CURRENT_SOURCE_DIR}/vendor/stb
 )
 
-target_link_libraries(Engine PUBLIC 
-    glfw 
-    spdlog::spdlog 
+target_link_libraries(Engine PUBLIC
+    glfw
+    spdlog::spdlog
     glad_gl_core_46
     glm::glm
+    EnTT::EnTT
 )
 

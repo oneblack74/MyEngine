@@ -3,9 +3,12 @@
 #include "Core/Log.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/Renderer2D.h"
-#include "Renderer/SubTexture2D.h"
 #include "Renderer/OrthographicCamera.h"
 #include "Renderer/Texture.h"
+#include "Scene/Scene.h"
+#include "Scene/Entity.h"
+#include "Scene/Components.h"
+#include "Scene/RenderSystem.h"
 #include <filesystem>
 
 class GameLayer : public Engine::Layer
@@ -21,12 +24,29 @@ public:
         Engine::Renderer2D::Init();
 
         m_Texture = std::make_shared<Engine::Texture2D>("assets/textures/axololt.jpg");
-
-        // Démo SubTexture2D : on traite l'image (1400x1400) comme une grille 2x2
-        // et on n'affiche que la cellule (0,0), pour vérifier le découpage UV.
-        m_SubTexture = Engine::SubTexture2D::CreateFromCoords(m_Texture, {0.0f, 0.0f}, {700.0f, 700.0f});
-
         m_Camera = std::make_shared<Engine::OrthographicCamera>(-1.6f, 1.6f, -0.9f, 0.9f);
+
+        m_Scene = std::make_shared<Engine::Scene>();
+
+        auto redSquare = m_Scene->CreateEntity("RedSquare");
+        auto &redTransform = redSquare.GetComponent<Engine::TransformComponent>();
+        redTransform.Position = {-0.6f, 0.0f, 0.0f};
+        redTransform.Scale = {0.5f, 0.5f, 1.0f};
+        redSquare.AddComponent<Engine::SpriteRendererComponent>(glm::vec4(0.9f, 0.3f, 0.3f, 1.0f));
+
+        auto greenSquare = m_Scene->CreateEntity("GreenSquare");
+        auto &greenTransform = greenSquare.GetComponent<Engine::TransformComponent>();
+        greenTransform.Position = {0.0f, -0.5f, 0.0f};
+        greenTransform.Scale = {0.4f, 0.4f, 1.0f};
+        greenTransform.Rotation = 33.0f; // pour vérifier que la rotation du TransformComponent est bien appliquée
+        greenSquare.AddComponent<Engine::SpriteRendererComponent>(glm::vec4(0.3f, 0.8f, 0.4f, 1.0f));
+
+        auto axolotl = m_Scene->CreateEntity("Axolotl");
+        auto &axoTransform = axolotl.GetComponent<Engine::TransformComponent>();
+        axoTransform.Position = {0.4f, 0.2f, 0.0f};
+        axoTransform.Scale = {0.6f, 0.6f, 1.0f};
+        auto &axoSprite = axolotl.AddComponent<Engine::SpriteRendererComponent>();
+        axoSprite.Texture = m_Texture;
     }
 
     void OnDetach() override
@@ -39,12 +59,7 @@ public:
         Engine::Renderer::SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         Engine::Renderer::Clear();
 
-        Engine::Renderer2D::BeginScene(*m_Camera);
-        Engine::Renderer2D::DrawQuad({-0.6f, 0.0f}, {0.5f, 0.5f}, glm::vec4(0.9f, 0.3f, 0.3f, 1.0f));
-        Engine::Renderer2D::DrawQuad({0.0f, -0.5f}, {0.4f, 0.4f}, glm::vec4(0.3f, 0.8f, 0.4f, 1.0f));
-        Engine::Renderer2D::DrawQuad({0.4f, 0.2f}, {0.6f, 0.6f}, m_Texture);
-        Engine::Renderer2D::DrawQuad({-1.0f, -0.5f}, {0.5f, 0.5f}, m_SubTexture);
-        Engine::Renderer2D::EndScene();
+        Engine::RenderSystem::Render(*m_Scene, *m_Camera);
     }
 
     void OnEvent(Engine::Event &event) override
@@ -55,7 +70,7 @@ public:
 private:
     std::shared_ptr<Engine::OrthographicCamera> m_Camera;
     std::shared_ptr<Engine::Texture2D> m_Texture;
-    std::shared_ptr<Engine::SubTexture2D> m_SubTexture;
+    std::shared_ptr<Engine::Scene> m_Scene;
 };
 
 int main()

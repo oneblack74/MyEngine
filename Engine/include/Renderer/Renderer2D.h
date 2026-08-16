@@ -41,11 +41,17 @@ namespace Engine
                               float tilingFactor = 1.0f,
                               const glm::vec4 &tintColor = glm::vec4(1.0f));
 
+        // Quad à partir d'une transform complète (position/rotation/scale) — utilisé par l'ECS
+        static void DrawQuad(const glm::mat4 &transform, const glm::vec4 &color);
+        static void DrawQuad(const glm::mat4 &transform, const std::shared_ptr<Texture2D> &texture,
+                              float tilingFactor = 1.0f,
+                              const glm::vec4 &tintColor = glm::vec4(1.0f));
+
     private:
         static void StartBatch();
         static void NextBatch();
 
-        static void DrawQuadTexture(const glm::vec3 &position, const glm::vec2 &size,
+        static void DrawQuadTexture(const glm::mat4 &transform,
                                      const std::shared_ptr<Texture2D> &texture,
                                      const glm::vec2 *texCoords,
                                      float tilingFactor, const glm::vec4 &tintColor);
