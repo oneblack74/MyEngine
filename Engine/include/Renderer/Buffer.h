@@ -90,10 +90,13 @@ namespace Engine
     {
     public:
         VertexBuffer(float *vertices, uint32_t size);
+        VertexBuffer(uint32_t size); // buffer dynamique, sans données initiales
         ~VertexBuffer();
 
         void Bind() const;
         void Unbind() const;
+
+        void SetData(const void *data, uint32_t size);
 
         void SetLayout(const BufferLayout &layout) { m_Layout = layout; }
         const BufferLayout &GetLayout() const { return m_Layout; }

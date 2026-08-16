@@ -18,9 +18,11 @@ namespace Engine
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         }
 
-        static void DrawIndexed(const std::shared_ptr<VertexArray> &vertexArray)
+        // indexCount = 0 signifie "dessiner tout l'index buffer" (cas standard, non batché)
+        static void DrawIndexed(const std::shared_ptr<VertexArray> &vertexArray, uint32_t indexCount = 0)
         {
-            glDrawElements(GL_TRIANGLES, vertexArray->GetIndexBuffer()->GetCount(), GL_UNSIGNED_INT, nullptr);
+            uint32_t count = indexCount ? indexCount : vertexArray->GetIndexBuffer()->GetCount();
+            glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, nullptr);
         }
     };
 }

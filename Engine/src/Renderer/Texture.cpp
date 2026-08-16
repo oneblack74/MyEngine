@@ -34,6 +34,20 @@ namespace Engine
         stbi_image_free(data);
     }
 
+    Texture2D::Texture2D(uint32_t width, uint32_t height)
+        : m_Width(width), m_Height(height)
+    {
+        glGenTextures(1, &m_RendererID);
+        glBindTexture(GL_TEXTURE_2D, m_RendererID);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    }
+
     Texture2D::~Texture2D()
     {
         glDeleteTextures(1, &m_RendererID);
@@ -43,6 +57,16 @@ namespace Engine
     {
         glActiveTexture(GL_TEXTURE0 + slot);
         glBindTexture(GL_TEXTURE_2D, m_RendererID);
+    }
+
+    void Texture2D::SetData(const void *data, uint32_t size)
+    {
+        uint32_t bytesPerPixel = 4; // RGBA8
+        if (size != m_Width * m_Height * bytesPerPixel)
+            throw std::runtime_error("Texture2D::SetData: la taille des données ne correspond pas aux dimensions de la texture");
+
+        glBindTexture(GL_TEXTURE_2D, m_RendererID);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_Width, m_Height, GL_RGBA, GL_UNSIGNED_BYTE, data);
     }
 
 } // namespace Engine

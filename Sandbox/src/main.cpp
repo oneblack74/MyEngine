@@ -2,9 +2,7 @@
 #include "Core/Layer.h"
 #include "Core/Log.h"
 #include "Renderer/Renderer.h"
-#include "Renderer/Buffer.h"
-#include "Renderer/VertexArray.h"
-#include "Renderer/Shader.h"
+#include "Renderer/Renderer2D.h"
 #include "Renderer/OrthographicCamera.h"
 #include "Renderer/Texture.h"
 #include <filesystem>
@@ -19,64 +17,15 @@ public:
         LOG_INFO("GameLayer attached!");
         LOG_INFO("Working dir: {0}", std::filesystem::current_path().string());
 
-        // Triangle
-        float vertices[] = {
-            // position          // UV
-            -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
-            0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-            0.5f, 0.5f, 0.0f, 1.0f, 1.0f,
-            -0.5f, 0.5f, 0.0f, 0.0f, 1.0f};
-
-        uint32_t indices[] = {0, 1, 2,
-                              2, 3, 0};
-
-        m_VertexArray = std::make_shared<Engine::VertexArray>();
-
-        auto vb = std::make_shared<Engine::VertexBuffer>(vertices, sizeof(vertices));
-        vb->SetLayout({{Engine::ShaderDataType::Float3, "a_Position"},
-                       {Engine::ShaderDataType::Float2, "a_TexCoord"}});
-        m_VertexArray->AddVertexBuffer(vb);
-
-        auto ib = std::make_shared<Engine::IndexBuffer>(indices, 6);
-        m_VertexArray->SetIndexBuffer(ib);
-
-        std::string vertexSrc = R"(
-            // Vertex
-            #version 330 core
-            layout(location = 0) in vec3 a_Position;
-            layout(location = 1) in vec2 a_TexCoord;
-
-            uniform mat4 u_ViewProjection;
-
-            out vec2 v_TexCoord;
-
-            void main() {
-                v_TexCoord  = a_TexCoord;
-                gl_Position = u_ViewProjection * vec4(a_Position, 1.0);
-            }
-
-        )";
-
-        std::string fragmentSrc = R"(
-            // Fragment
-            #version 330 core
-            in vec2 v_TexCoord;
-            out vec4 color;
-
-            uniform sampler2D u_Texture;
-
-            void main() {
-                color = texture(u_Texture, v_TexCoord);
-            }
-
-        )";
-
-        m_Shader = std::make_shared<Engine::Shader>(vertexSrc, fragmentSrc);
+        Engine::Renderer2D::Init();
 
         m_Texture = std::make_shared<Engine::Texture2D>("assets/textures/axololt.jpg");
-
         m_Camera = std::make_shared<Engine::OrthographicCamera>(-1.6f, 1.6f, -0.9f, 0.9f);
-        m_Camera->SetPosition({0.3f, 0.3f, 0.0f});
+    }
+
+    void OnDetach() override
+    {
+        Engine::Renderer2D::Shutdown();
     }
 
     void OnUpdate() override
@@ -84,11 +33,11 @@ public:
         Engine::Renderer::SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         Engine::Renderer::Clear();
 
-        m_Shader->Bind();
-        m_Texture->Bind(0);
-        m_Shader->SetInt("u_Texture", 0);
-        m_Shader->SetMat4("u_ViewProjection", m_Camera->GetViewProjectionMatrix());
-        Engine::Renderer::Submit(m_VertexArray);
+        Engine::Renderer2D::BeginScene(*m_Camera);
+        Engine::Renderer2D::DrawQuad({-0.6f, 0.0f}, {0.5f, 0.5f}, glm::vec4(0.9f, 0.3f, 0.3f, 1.0f));
+        Engine::Renderer2D::DrawQuad({0.0f, -0.5f}, {0.4f, 0.4f}, glm::vec4(0.3f, 0.8f, 0.4f, 1.0f));
+        Engine::Renderer2D::DrawQuad({0.4f, 0.2f}, {0.6f, 0.6f}, m_Texture);
+        Engine::Renderer2D::EndScene();
     }
 
     void OnEvent(Engine::Event &event) override
@@ -97,8 +46,6 @@ public:
     }
 
 private:
-    std::shared_ptr<Engine::VertexArray> m_VertexArray;
-    std::shared_ptr<Engine::Shader> m_Shader;
     std::shared_ptr<Engine::OrthographicCamera> m_Camera;
     std::shared_ptr<Engine::Texture2D> m_Texture;
 };

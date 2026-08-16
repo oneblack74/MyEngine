@@ -81,4 +81,10 @@ namespace Engine
         glUniform1i(location, value);
     }
 
+    void Shader::SetIntArray(const std::string &name, int *values, uint32_t count)
+    {
+        GLint location = glGetUniformLocation(m_RendererID, name.c_str());
+        glUniform1iv(location, count, values);
+    }
+
 }
