@@ -63,8 +63,8 @@
 - ✅ `EditorLayer` — layer principal de l'éditeur
 - ✅ `ViewportPanel` — rendu dans un Framebuffer affiché comme texture ImGui
 - ✅ `Framebuffer` — abstraction OpenGL
-- ⬜ `SceneHierarchyPanel` — liste des entités de la scène
-- ⬜ `InspectorPanel` — édition des components d'une entité
+- ✅ `SceneHierarchyPanel` — liste des entités de la scène
+- ✅ `InspectorPanel` — édition des components d'une entité
 - ⬜ `ContentBrowserPanel` — navigation dans les assets
 - ⬜ `ConsolePanel` — affichage des logs spdlog dans l'UI
 - ⬜ Gizmos de transformation (translate, rotate, scale)
