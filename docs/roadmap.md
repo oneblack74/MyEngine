@@ -67,7 +67,7 @@
 - ✅ `InspectorPanel` — édition des components d'une entité
 - ✅ `ContentBrowserPanel` — navigation dans les assets
 - ✅ `ConsolePanel` — affichage des logs spdlog dans l'UI
-- ⬜ Gizmos de transformation (translate, rotate, scale)
+- ✅ Gizmos de transformation (translate, rotate, scale)
 - ⬜ Play / Pause / Stop depuis l'éditeur
 
 ---
