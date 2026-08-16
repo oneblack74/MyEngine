@@ -1,6 +1,8 @@
 #include "Core/Application.h"
 #include "Core/Layer.h"
 #include "Core/Log.h"
+#include "Core/Input.h"
+#include "Core/KeyCodes.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/Renderer2D.h"
 #include "Renderer/OrthographicCamera.h"
@@ -83,6 +85,21 @@ public:
 
     void OnUpdate() override
     {
+        // Démo de l'Input System : déplace la caméra tant qu'une flèche est maintenue
+        // (polling, à chaque frame — à comparer avec les KeyPressedEvent loggés en trace,
+        // qui ne se déclenchent qu'une fois par appui).
+        constexpr float cameraSpeed = 0.02f;
+        glm::vec3 cameraPos = m_Camera->GetPosition();
+        if (Engine::Input::IsKeyPressed(Engine::Key::Right))
+            cameraPos.x += cameraSpeed;
+        if (Engine::Input::IsKeyPressed(Engine::Key::Left))
+            cameraPos.x -= cameraSpeed;
+        if (Engine::Input::IsKeyPressed(Engine::Key::Up))
+            cameraPos.y += cameraSpeed;
+        if (Engine::Input::IsKeyPressed(Engine::Key::Down))
+            cameraPos.y -= cameraSpeed;
+        m_Camera->SetPosition(cameraPos);
+
         Engine::Renderer::SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         Engine::Renderer::Clear();
 

@@ -16,9 +16,14 @@ namespace Engine
         void PushLayer(Layer *layer);
         void PushOverlay(Layer *overlay);
 
+        Window &GetWindow() { return m_Window; }
+        static Application &Get() { return *s_Instance; }
+
     private:
         Window m_Window;
         LayerStack m_LayerStack;
         bool m_Running = true;
+
+        static Application *s_Instance;
     };
 }
