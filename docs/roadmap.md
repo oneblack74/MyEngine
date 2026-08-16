@@ -43,7 +43,7 @@
 - ✅ `Scene` (contient le registry EnTT)
 - ✅ `Components.h` (`TransformComponent`, `SpriteRendererComponent`, `TagComponent`)
 - ✅ `RenderSystem` (itère les entités et les dessine)
-- ⬜ `UUID` (identifiants uniques pour les entités)
+- ✅ `UUID` (identifiants uniques pour les entités)
 - ⬜ Sérialisation de scène en JSON ou YAML
 - ⬜ `SceneManager` (load / save / switch de scènes)
 
