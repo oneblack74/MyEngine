@@ -51,9 +51,9 @@
 
 ## Phase 3 — Input System
 
-- ⬜ `Input` — polling clavier et souris (Input::IsKeyPressed, etc.)
-- ⬜ `KeyCodes.h` et `MouseCodes.h`
-- ⬜ Intégration dans l'éditeur (raccourcis, navigation caméra)
+- ✅ `Input` — polling clavier et souris (Input::IsKeyPressed, etc.)
+- ✅ `KeyCodes.h` et `MouseCodes.h`
+- ⬜ Intégration dans l'éditeur (raccourcis, navigation caméra) — nécessite l'Editor (Phase 4) ; navigation caméra déjà validée dans le Sandbox en attendant
 
 ---
 
