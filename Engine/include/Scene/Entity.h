@@ -1,5 +1,6 @@
 #pragma once
 #include "Scene/Scene.h"
+#include "Scene/Components.h"
 #include <entt/entt.hpp>
 #include <cassert>
 #include <utility>
@@ -39,6 +40,9 @@ namespace Engine
             assert(HasComponent<T>() && "L'entité n'a pas ce component !");
             m_Scene->m_Registry.remove<T>(m_EntityHandle);
         }
+
+        UUID GetUUID() { return GetComponent<IDComponent>().ID; }
+        const std::string &GetName() { return GetComponent<TagComponent>().Tag; }
 
         operator bool() const { return m_EntityHandle != entt::null; }
         operator entt::entity() const { return m_EntityHandle; }

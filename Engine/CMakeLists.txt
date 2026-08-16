@@ -3,6 +3,7 @@ add_library(Engine STATIC
     src/Core/Window.cpp
     src/Core/LayerStack.cpp
     src/Core/Log.cpp
+    src/Core/UUID.cpp
     src/Renderer/Buffer.cpp
     src/Renderer/VertexArray.cpp
     src/Renderer/Shader.cpp

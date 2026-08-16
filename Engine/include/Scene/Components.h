@@ -1,4 +1,5 @@
 #pragma once
+#include "Core/UUID.h"
 #include "Renderer/Texture.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -7,6 +8,14 @@
 
 namespace Engine
 {
+    struct IDComponent
+    {
+        UUID ID;
+
+        IDComponent() = default;
+        IDComponent(const IDComponent &) = default;
+    };
+
     struct TagComponent
     {
         std::string Tag;

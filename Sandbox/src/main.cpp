@@ -47,6 +47,11 @@ public:
         axoTransform.Scale = {0.6f, 0.6f, 1.0f};
         auto &axoSprite = axolotl.AddComponent<Engine::SpriteRendererComponent>();
         axoSprite.Texture = m_Texture;
+
+        // Vérification manuelle : chaque entité doit avoir un UUID distinct
+        LOG_INFO("{0} UUID: {1}", redSquare.GetName(), (uint64_t)redSquare.GetUUID());
+        LOG_INFO("{0} UUID: {1}", greenSquare.GetName(), (uint64_t)greenSquare.GetUUID());
+        LOG_INFO("{0} UUID: {1}", axolotl.GetName(), (uint64_t)axolotl.GetUUID());
     }
 
     void OnDetach() override
