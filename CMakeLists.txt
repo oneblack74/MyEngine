@@ -79,6 +79,17 @@ target_include_directories(imgui PUBLIC
 target_compile_definitions(imgui PUBLIC IMGUI_IMPL_OPENGL_LOADER_GLAD2)
 target_link_libraries(imgui PUBLIC glfw glad_gl_core_46)
 
+FetchContent_Declare(
+    imguizmo
+    GIT_REPOSITORY https://github.com/CedricGuillemet/ImGuizmo.git
+    GIT_TAG        master
+)
+FetchContent_MakeAvailable(imguizmo)
+
+# ImGuizmo fournit son propre CMakeLists.txt (target "imguizmo") mais ne lie pas
+# ImGui lui-même quand utilisé en sous-projet : on complète le lien nous-mêmes.
+target_link_libraries(imguizmo PUBLIC imgui)
+
 add_subdirectory(Engine)
 add_subdirectory(Editor)
 add_subdirectory(Sandbox)

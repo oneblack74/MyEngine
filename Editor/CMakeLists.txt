@@ -17,6 +17,7 @@ target_link_libraries(Editor
     PRIVATE
         Engine
         imgui
+        imguizmo
 )
 
 add_custom_command(TARGET Editor POST_BUILD

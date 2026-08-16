@@ -11,6 +11,7 @@
 #include <imgui_internal.h> // DockBuilder* : API "interne" ImGui, mais c'est le seul moyen de définir un layout par défaut
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
+#include <ImGuizmo.h>
 #include <GLFW/glfw3.h>
 
 EditorLayer::EditorLayer() : Layer("EditorLayer") {}
@@ -86,6 +87,7 @@ void EditorLayer::OnUpdate()
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+    ImGuizmo::BeginFrame(); // requis une fois par frame pour qu'ImGuizmo suive le drag de la souris
 
     RenderImGui();
 
@@ -158,7 +160,9 @@ void EditorLayer::RenderImGui()
 
     ImGui::End();
 
-    m_ViewportPanel.OnImGuiRender(m_Framebuffer);
+    m_ViewportPanel.OnImGuiRender(m_Framebuffer, m_ActiveScene, *m_Camera, m_SceneHierarchyPanel.GetSelectedEntity(),
+                                   [this](Engine::Entity picked)
+                                   { m_SceneHierarchyPanel.SetSelectedEntity(picked); });
     m_SceneHierarchyPanel.OnImGuiRender();
     m_InspectorPanel.OnImGuiRender(m_SceneHierarchyPanel.GetSelectedEntity());
     m_ContentBrowserPanel.OnImGuiRender();
@@ -173,7 +177,7 @@ void EditorLayer::SetupDefaultDockLayout()
     ImGui::DockBuilderAddNode(dockspaceId, ImGuiDockNodeFlags_DockSpace);
     ImGui::DockBuilderSetNodeSize(dockspaceId, ImGui::GetMainViewport()->Size);
 
-    // 3 colonnes : gauche (Viewport / Console), milieu (Inspecteur / Content Browser), droite (Hiérarchie)
+    // 3 colonnes : gauche (Viewport / Console), milieu (Hiérarchie / Content Browser), droite (Inspecteur)
     ImGuiID dockRemaining = dockspaceId;
     ImGuiID dockRight = ImGui::DockBuilderSplitNode(dockRemaining, ImGuiDir_Right, 0.2f, nullptr, &dockRemaining);
     ImGuiID dockLeft = ImGui::DockBuilderSplitNode(dockRemaining, ImGuiDir_Left, 0.55f, nullptr, &dockRemaining);
@@ -187,9 +191,9 @@ void EditorLayer::SetupDefaultDockLayout()
 
     ImGui::DockBuilderDockWindow("Viewport", dockLeftTop);
     ImGui::DockBuilderDockWindow("Console", dockLeftBottom);
-    ImGui::DockBuilderDockWindow("Inspecteur", dockMiddleTop);
+    ImGui::DockBuilderDockWindow("Hiérarchie de la scène", dockMiddleTop);
     ImGui::DockBuilderDockWindow("Content Browser", dockMiddleBottom);
-    ImGui::DockBuilderDockWindow("Hiérarchie de la scène", dockRight);
+    ImGui::DockBuilderDockWindow("Inspecteur", dockRight);
 
     ImGui::DockBuilderFinish(dockspaceId);
 }

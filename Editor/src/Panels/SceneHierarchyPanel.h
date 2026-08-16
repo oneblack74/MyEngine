@@ -13,6 +13,7 @@ public:
     void OnImGuiRender();
 
     Engine::Entity GetSelectedEntity() const { return m_SelectionContext; }
+    void SetSelectedEntity(Engine::Entity entity) { m_SelectionContext = entity; }
 
 private:
     void DrawEntityNode(Engine::Entity entity);
