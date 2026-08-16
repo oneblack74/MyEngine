@@ -10,6 +10,12 @@
 #include <Scene/Scene.h>
 #include <memory>
 
+enum class SceneState
+{
+    Edit = 0,
+    Play = 1
+};
+
 class EditorLayer : public Engine::Layer
 {
 public:
@@ -23,9 +29,22 @@ private:
     void RenderImGui();
     void SetupDefaultDockLayout();
 
+    void OnScenePlay();
+    void OnSceneStop();
+    const std::shared_ptr<Engine::Scene> &GetActiveScene() const
+    {
+        return m_SceneState == SceneState::Edit ? m_EditorScene : m_RuntimeScene;
+    }
+
     std::shared_ptr<Engine::Framebuffer> m_Framebuffer;
     std::shared_ptr<Engine::OrthographicCamera> m_Camera;
-    std::shared_ptr<Engine::Scene> m_ActiveScene;
+
+    // m_EditorScene est la scène éditée, jamais modifiée pendant le Play.
+    // m_RuntimeScene est une copie créée au Play et jetée au Stop.
+    std::shared_ptr<Engine::Scene> m_EditorScene;
+    std::shared_ptr<Engine::Scene> m_RuntimeScene;
+    SceneState m_SceneState = SceneState::Edit;
+    bool m_ScenePaused = false;
 
     ViewportPanel m_ViewportPanel;
     SceneHierarchyPanel m_SceneHierarchyPanel;

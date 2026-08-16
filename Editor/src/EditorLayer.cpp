@@ -28,13 +28,13 @@ void EditorLayer::OnAttach()
     m_Camera = std::make_shared<Engine::OrthographicCamera>(-1.6f, 1.6f, -0.9f, 0.9f);
 
     // Scène de démo, le temps que SceneHierarchyPanel/ContentBrowserPanel existent
-    m_ActiveScene = Engine::SceneManager::NewScene();
-    auto square = m_ActiveScene->CreateEntity("Square");
+    m_EditorScene = Engine::SceneManager::NewScene();
+    auto square = m_EditorScene->CreateEntity("Square");
     auto &transform = square.GetComponent<Engine::TransformComponent>();
     transform.Scale = {0.5f, 0.5f, 1.0f};
     square.AddComponent<Engine::SpriteRendererComponent>(glm::vec4(0.2f, 0.6f, 0.9f, 1.0f));
 
-    m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+    m_SceneHierarchyPanel.SetContext(m_EditorScene);
 
     // Init ImGui (contexte + backends GLFW/OpenGL3), avec le docking activé
     IMGUI_CHECKVERSION();
@@ -80,7 +80,7 @@ void EditorLayer::OnUpdate()
     m_Framebuffer->Bind();
     Engine::Renderer::SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     Engine::Renderer::Clear();
-    Engine::RenderSystem::Render(*m_ActiveScene, *m_Camera);
+    Engine::RenderSystem::Render(*GetActiveScene(), *m_Camera);
     m_Framebuffer->Unbind();
 
     // Rendu de l'UI ImGui (dockspace + panels) par-dessus
@@ -155,12 +155,30 @@ void EditorLayer::RenderImGui()
                 m_LoadLastSavedLayoutRequested = true;
             ImGui::EndMenu();
         }
+
+        // Toolbar Play/Pause/Stop, centrée dans la barre de menu
+        float buttonsWidth = m_SceneState == SceneState::Edit ? 50.0f : 120.0f;
+        ImGui::SetCursorPosX(ImGui::GetWindowWidth() * 0.5f - buttonsWidth * 0.5f);
+        if (m_SceneState == SceneState::Edit)
+        {
+            if (ImGui::Button("Play"))
+                OnScenePlay();
+        }
+        else
+        {
+            if (ImGui::Button(m_ScenePaused ? "Reprendre" : "Pause"))
+                m_ScenePaused = !m_ScenePaused;
+            ImGui::SameLine();
+            if (ImGui::Button("Stop"))
+                OnSceneStop();
+        }
+
         ImGui::EndMenuBar();
     }
 
     ImGui::End();
 
-    m_ViewportPanel.OnImGuiRender(m_Framebuffer, m_ActiveScene, *m_Camera, m_SceneHierarchyPanel.GetSelectedEntity(),
+    m_ViewportPanel.OnImGuiRender(m_Framebuffer, GetActiveScene(), *m_Camera, m_SceneHierarchyPanel.GetSelectedEntity(),
                                    [this](Engine::Entity picked)
                                    { m_SceneHierarchyPanel.SetSelectedEntity(picked); });
     m_SceneHierarchyPanel.OnImGuiRender();
@@ -196,4 +214,24 @@ void EditorLayer::SetupDefaultDockLayout()
     ImGui::DockBuilderDockWindow("Inspecteur", dockRight);
 
     ImGui::DockBuilderFinish(dockspaceId);
+}
+
+void EditorLayer::OnScenePlay()
+{
+    m_SceneState = SceneState::Play;
+    m_ScenePaused = false;
+
+    m_RuntimeScene = m_EditorScene->Copy();
+    m_SceneHierarchyPanel.SetContext(m_RuntimeScene);
+}
+
+void EditorLayer::OnSceneStop()
+{
+    m_SceneState = SceneState::Edit;
+    m_ScenePaused = false;
+
+    m_RuntimeScene = nullptr;
+    m_SceneHierarchyPanel.SetContext(m_EditorScene);
+    // L'entité sélectionnée appartenait potentiellement à la scène runtime qu'on vient de jeter
+    m_SceneHierarchyPanel.SetSelectedEntity({});
 }
