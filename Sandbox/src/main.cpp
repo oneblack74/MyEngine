@@ -9,6 +9,7 @@
 #include "Scene/Entity.h"
 #include "Scene/Components.h"
 #include "Scene/RenderSystem.h"
+#include "Scene/SceneSerializer.h"
 #include <filesystem>
 
 class GameLayer : public Engine::Layer
@@ -52,6 +53,24 @@ public:
         LOG_INFO("{0} UUID: {1}", redSquare.GetName(), (uint64_t)redSquare.GetUUID());
         LOG_INFO("{0} UUID: {1}", greenSquare.GetName(), (uint64_t)greenSquare.GetUUID());
         LOG_INFO("{0} UUID: {1}", axolotl.GetName(), (uint64_t)axolotl.GetUUID());
+
+        // Test round-trip de la sérialisation : on écrit la scène sur disque, puis on la
+        // recharge dans une Scene séparée (pas utilisée pour le rendu) pour vérifier que
+        // les entités et leurs UUID sont bien préservés après un cycle save/load.
+        Engine::SceneSerializer serializer(m_Scene);
+        serializer.Serialize("demo_scene.json");
+
+        auto reloadedScene = std::make_shared<Engine::Scene>();
+        Engine::SceneSerializer loader(reloadedScene);
+        if (loader.Deserialize("demo_scene.json"))
+        {
+            auto view = reloadedScene->GetAllEntitiesWith<Engine::IDComponent>();
+            for (auto entityHandle : view)
+            {
+                Engine::Entity entity{entityHandle, reloadedScene.get()};
+                LOG_INFO("Reloaded: {0} UUID: {1}", entity.GetName(), (uint64_t)entity.GetUUID());
+            }
+        }
     }
 
     void OnDetach() override

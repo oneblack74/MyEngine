@@ -15,6 +15,7 @@ add_library(Engine STATIC
     src/Scene/Scene.cpp
     src/Scene/Entity.cpp
     src/Scene/RenderSystem.cpp
+    src/Scene/SceneSerializer.cpp
 )
 
 target_include_directories(Engine
@@ -29,5 +30,6 @@ target_link_libraries(Engine PUBLIC
     glad_gl_core_46
     glm::glm
     EnTT::EnTT
+    nlohmann_json::nlohmann_json
 )
 

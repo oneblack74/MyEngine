@@ -47,6 +47,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(entt)
 
+FetchContent_Declare(
+    json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG        v3.11.3
+)
+FetchContent_MakeAvailable(json)
+
 add_subdirectory(Engine)
 add_subdirectory(Editor)
 add_subdirectory(Sandbox)
