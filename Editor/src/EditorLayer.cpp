@@ -32,6 +32,8 @@ void EditorLayer::OnAttach()
     transform.Scale = {0.5f, 0.5f, 1.0f};
     square.AddComponent<Engine::SpriteRendererComponent>(glm::vec4(0.2f, 0.6f, 0.9f, 1.0f));
 
+    m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+
     // Init ImGui (contexte + backends GLFW/OpenGL3), avec le docking activé
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -63,6 +65,13 @@ void EditorLayer::OnUpdate()
         (spec.Width != (uint32_t)viewportSize.x || spec.Height != (uint32_t)viewportSize.y))
     {
         m_Framebuffer->Resize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
+
+        // La projection de la caméra doit suivre le nouveau ratio largeur/hauteur du
+        // panel, sinon l'image rendue est étirée pour remplir un cadre qui n'a pas
+        // le même ratio que ce pour quoi elle a été projetée.
+        float aspectRatio = viewportSize.x / viewportSize.y;
+        constexpr float zoom = 0.9f;
+        m_Camera->SetProjection(-aspectRatio * zoom, aspectRatio * zoom, -zoom, zoom);
     }
 
     // Rendu de la scène hors écran, dans le Framebuffer
@@ -117,4 +126,6 @@ void EditorLayer::RenderImGui()
     ImGui::End();
 
     m_ViewportPanel.OnImGuiRender(m_Framebuffer);
+    m_SceneHierarchyPanel.OnImGuiRender();
+    m_InspectorPanel.OnImGuiRender(m_SceneHierarchyPanel.GetSelectedEntity());
 }

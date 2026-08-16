@@ -1,5 +1,7 @@
 #pragma once
 #include "Panels/ViewportPanel.h"
+#include "Panels/SceneHierarchyPanel.h"
+#include "Panels/InspectorPanel.h"
 #include <Core/Layer.h>
 #include <Renderer/Framebuffer.h>
 #include <Renderer/OrthographicCamera.h>
@@ -23,4 +25,6 @@ private:
     std::shared_ptr<Engine::Scene> m_ActiveScene;
 
     ViewportPanel m_ViewportPanel;
+    SceneHierarchyPanel m_SceneHierarchyPanel;
+    InspectorPanel m_InspectorPanel;
 };

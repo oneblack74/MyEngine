@@ -2,6 +2,8 @@ add_executable(Editor
     src/main.cpp
     src/EditorLayer.cpp
     src/Panels/ViewportPanel.cpp
+    src/Panels/SceneHierarchyPanel.cpp
+    src/Panels/InspectorPanel.cpp
 )
 
 target_include_directories(Editor
