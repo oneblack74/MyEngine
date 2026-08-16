@@ -7,7 +7,6 @@
 #include "Renderer/Shader.h"
 #include "Renderer/OrthographicCamera.h"
 #include "Renderer/Texture.h"
-#include <iostream>
 #include <filesystem>
 
 class GameLayer : public Engine::Layer
@@ -17,8 +16,8 @@ public:
 
     void OnAttach() override
     {
-        std::cout << "GameLayer attached!" << std::endl;
-        std::cout << "Working dir: " << std::filesystem::current_path() << std::endl;
+        LOG_INFO("GameLayer attached!");
+        LOG_INFO("Working dir: {0}", std::filesystem::current_path().string());
 
         // Triangle
         float vertices[] = {
@@ -89,13 +88,12 @@ public:
         m_Texture->Bind(0);
         m_Shader->SetInt("u_Texture", 0);
         m_Shader->SetMat4("u_ViewProjection", m_Camera->GetViewProjectionMatrix());
-        m_VertexArray->Bind();
-        glDrawElements(GL_TRIANGLES, m_VertexArray->GetIndexBuffer()->GetCount(), GL_UNSIGNED_INT, nullptr);
+        Engine::Renderer::Submit(m_VertexArray);
     }
 
     void OnEvent(Engine::Event &event) override
     {
-        std::cout << "GameLayer received: " << event.ToString() << std::endl;
+        LOG_TRACE("GameLayer received: {0}", event.ToString());
     }
 
 private:
@@ -108,9 +106,9 @@ private:
 int main()
 {
     Engine::Log::Init();
-    Engine::LOG_INFO("Engine starting...");
+    LOG_INFO("Engine starting...");
 
-    MyEngine::Application app;
+    Engine::Application app;
     app.PushLayer(new GameLayer());
     app.Run();
 
