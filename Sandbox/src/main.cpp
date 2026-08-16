@@ -3,9 +3,13 @@
 #include "Core/Log.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/Renderer2D.h"
-#include "Renderer/SubTexture2D.h"
 #include "Renderer/OrthographicCamera.h"
 #include "Renderer/Texture.h"
+#include "Scene/Scene.h"
+#include "Scene/Entity.h"
+#include "Scene/Components.h"
+#include "Scene/RenderSystem.h"
+#include "Scene/SceneManager.h"
 #include <filesystem>
 
 class GameLayer : public Engine::Layer
@@ -21,12 +25,55 @@ public:
         Engine::Renderer2D::Init();
 
         m_Texture = std::make_shared<Engine::Texture2D>("assets/textures/axololt.jpg");
-
-        // Démo SubTexture2D : on traite l'image (1400x1400) comme une grille 2x2
-        // et on n'affiche que la cellule (0,0), pour vérifier le découpage UV.
-        m_SubTexture = Engine::SubTexture2D::CreateFromCoords(m_Texture, {0.0f, 0.0f}, {700.0f, 700.0f});
-
         m_Camera = std::make_shared<Engine::OrthographicCamera>(-1.6f, 1.6f, -0.9f, 0.9f);
+
+        m_Scene = Engine::SceneManager::NewScene();
+
+        auto redSquare = m_Scene->CreateEntity("RedSquare");
+        auto &redTransform = redSquare.GetComponent<Engine::TransformComponent>();
+        redTransform.Position = {-0.6f, 0.0f, 0.0f};
+        redTransform.Scale = {0.5f, 0.5f, 1.0f};
+        redSquare.AddComponent<Engine::SpriteRendererComponent>(glm::vec4(0.9f, 0.3f, 0.3f, 1.0f));
+
+        auto greenSquare = m_Scene->CreateEntity("GreenSquare");
+        auto &greenTransform = greenSquare.GetComponent<Engine::TransformComponent>();
+        greenTransform.Position = {0.0f, -0.5f, 0.0f};
+        greenTransform.Scale = {0.4f, 0.4f, 1.0f};
+        greenTransform.Rotation = 33.0f; // pour vérifier que la rotation du TransformComponent est bien appliquée
+        greenSquare.AddComponent<Engine::SpriteRendererComponent>(glm::vec4(0.3f, 0.8f, 0.4f, 1.0f));
+
+        auto axolotl = m_Scene->CreateEntity("Axolotl");
+        auto &axoTransform = axolotl.GetComponent<Engine::TransformComponent>();
+        axoTransform.Position = {0.4f, 0.2f, 0.0f};
+        axoTransform.Scale = {0.6f, 0.6f, 1.0f};
+        auto &axoSprite = axolotl.AddComponent<Engine::SpriteRendererComponent>();
+        axoSprite.Texture = m_Texture;
+
+        // Vérification manuelle : chaque entité doit avoir un UUID distinct
+        LOG_INFO("{0} UUID: {1}", redSquare.GetName(), (uint64_t)redSquare.GetUUID());
+        LOG_INFO("{0} UUID: {1}", greenSquare.GetName(), (uint64_t)greenSquare.GetUUID());
+        LOG_INFO("{0} UUID: {1}", axolotl.GetName(), (uint64_t)axolotl.GetUUID());
+
+        // Test save/load/switch via SceneManager : on sauvegarde la scène active, on la
+        // recharge (ce qui bascule le SceneManager dessus - "switch de scènes"), puis on
+        // restaure explicitement m_Scene comme scène active pour le rendu.
+        // Note : la texture de l'axolotl n'est pas encore sérialisée (pas d'asset system,
+        // prévu en Phase 7), donc la scène rechargée l'afficherait en blanc si on la
+        // rendait telle quelle — normal à ce stade.
+        Engine::SceneManager::SaveActiveScene("demo_scene.json");
+
+        auto reloadedScene = Engine::SceneManager::LoadScene("demo_scene.json");
+        if (reloadedScene)
+        {
+            auto view = reloadedScene->GetAllEntitiesWith<Engine::IDComponent>();
+            for (auto entityHandle : view)
+            {
+                Engine::Entity entity{entityHandle, reloadedScene.get()};
+                LOG_INFO("Reloaded: {0} UUID: {1}", entity.GetName(), (uint64_t)entity.GetUUID());
+            }
+        }
+
+        Engine::SceneManager::SetActiveScene(m_Scene);
     }
 
     void OnDetach() override
@@ -39,12 +86,7 @@ public:
         Engine::Renderer::SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         Engine::Renderer::Clear();
 
-        Engine::Renderer2D::BeginScene(*m_Camera);
-        Engine::Renderer2D::DrawQuad({-0.6f, 0.0f}, {0.5f, 0.5f}, glm::vec4(0.9f, 0.3f, 0.3f, 1.0f));
-        Engine::Renderer2D::DrawQuad({0.0f, -0.5f}, {0.4f, 0.4f}, glm::vec4(0.3f, 0.8f, 0.4f, 1.0f));
-        Engine::Renderer2D::DrawQuad({0.4f, 0.2f}, {0.6f, 0.6f}, m_Texture);
-        Engine::Renderer2D::DrawQuad({-1.0f, -0.5f}, {0.5f, 0.5f}, m_SubTexture);
-        Engine::Renderer2D::EndScene();
+        Engine::RenderSystem::Render(*Engine::SceneManager::GetActiveScene(), *m_Camera);
     }
 
     void OnEvent(Engine::Event &event) override
@@ -55,7 +97,7 @@ public:
 private:
     std::shared_ptr<Engine::OrthographicCamera> m_Camera;
     std::shared_ptr<Engine::Texture2D> m_Texture;
-    std::shared_ptr<Engine::SubTexture2D> m_SubTexture;
+    std::shared_ptr<Engine::Scene> m_Scene;
 };
 
 int main()

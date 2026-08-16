@@ -3,6 +3,7 @@ add_library(Engine STATIC
     src/Core/Window.cpp
     src/Core/LayerStack.cpp
     src/Core/Log.cpp
+    src/Core/UUID.cpp
     src/Renderer/Buffer.cpp
     src/Renderer/VertexArray.cpp
     src/Renderer/Shader.cpp
@@ -11,6 +12,11 @@ add_library(Engine STATIC
     src/Renderer/SubTexture2D.cpp
     vendor/stb/stb_image.cpp
     src/Renderer/Texture.cpp
+    src/Scene/Scene.cpp
+    src/Scene/Entity.cpp
+    src/Scene/RenderSystem.cpp
+    src/Scene/SceneSerializer.cpp
+    src/Scene/SceneManager.cpp
 )
 
 target_include_directories(Engine
@@ -19,10 +25,12 @@ target_include_directories(Engine
         ${CMAKE_CURRENT_SOURCE_DIR}/vendor/stb
 )
 
-target_link_libraries(Engine PUBLIC 
-    glfw 
-    spdlog::spdlog 
+target_link_libraries(Engine PUBLIC
+    glfw
+    spdlog::spdlog
     glad_gl_core_46
     glm::glm
+    EnTT::EnTT
+    nlohmann_json::nlohmann_json
 )
 

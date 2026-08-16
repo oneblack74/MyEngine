@@ -38,14 +38,14 @@
 
 ## Phase 2 — ECS & Scene
 
-- ⬜ Intégration **EnTT**
-- ⬜ `Entity` (wrapper autour d'un entt::entity)
-- ⬜ `Scene` (contient le registry EnTT)
-- ⬜ `Components.h` (`TransformComponent`, `SpriteRendererComponent`, `TagComponent`)
-- ⬜ `RenderSystem` (itère les entités et les dessine)
-- ⬜ `UUID` (identifiants uniques pour les entités)
-- ⬜ Sérialisation de scène en JSON ou YAML
-- ⬜ `SceneManager` (load / save / switch de scènes)
+- ✅ Intégration **EnTT**
+- ✅ `Entity` (wrapper autour d'un entt::entity)
+- ✅ `Scene` (contient le registry EnTT)
+- ✅ `Components.h` (`TransformComponent`, `SpriteRendererComponent`, `TagComponent`)
+- ✅ `RenderSystem` (itère les entités et les dessine)
+- ✅ `UUID` (identifiants uniques pour les entités)
+- ✅ Sérialisation de scène en JSON ou YAML
+- ✅ `SceneManager` (load / save / switch de scènes)
 
 ---
 
