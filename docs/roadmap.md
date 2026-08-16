@@ -49,7 +49,15 @@
 
 ---
 
-## Phase 3 — Editor
+## Phase 3 — Input System
+
+- ⬜ `Input` — polling clavier et souris (Input::IsKeyPressed, etc.)
+- ⬜ `KeyCodes.h` et `MouseCodes.h`
+- ⬜ Intégration dans l'éditeur (raccourcis, navigation caméra)
+
+---
+
+## Phase 4 — Editor
 
 - ⬜ Intégration **ImGui** (docking branch)
 - ⬜ `EditorLayer` — layer principal de l'éditeur
@@ -61,14 +69,6 @@
 - ⬜ `ConsolePanel` — affichage des logs spdlog dans l'UI
 - ⬜ Gizmos de transformation (translate, rotate, scale)
 - ⬜ Play / Pause / Stop depuis l'éditeur
-
----
-
-## Phase 4 — Input System
-
-- ⬜ `Input` — polling clavier et souris (Input::IsKeyPressed, etc.)
-- ⬜ `KeyCodes.h` et `MouseCodes.h`
-- ⬜ Intégration dans l'éditeur (raccourcis, navigation caméra)
 
 ---
 
