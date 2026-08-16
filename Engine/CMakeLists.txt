@@ -8,6 +8,7 @@ add_library(Engine STATIC
     src/Renderer/Shader.cpp
     src/Renderer/OrthographicCamera.cpp
     src/Renderer/Renderer2D.cpp
+    src/Renderer/SubTexture2D.cpp
     vendor/stb/stb_image.cpp
     src/Renderer/Texture.cpp
 )

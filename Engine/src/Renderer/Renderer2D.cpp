@@ -204,6 +204,29 @@ namespace Engine
                                const std::shared_ptr<Texture2D> &texture,
                                float tilingFactor, const glm::vec4 &tintColor)
     {
+        glm::vec2 texCoords[4] = {{0.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 1.0f}};
+        DrawQuadTexture(position, size, texture, texCoords, tilingFactor, tintColor);
+    }
+
+    void Renderer2D::DrawQuad(const glm::vec2 &position, const glm::vec2 &size,
+                               const std::shared_ptr<SubTexture2D> &subTexture,
+                               float tilingFactor, const glm::vec4 &tintColor)
+    {
+        DrawQuad({position.x, position.y, 0.0f}, size, subTexture, tilingFactor, tintColor);
+    }
+
+    void Renderer2D::DrawQuad(const glm::vec3 &position, const glm::vec2 &size,
+                               const std::shared_ptr<SubTexture2D> &subTexture,
+                               float tilingFactor, const glm::vec4 &tintColor)
+    {
+        DrawQuadTexture(position, size, subTexture->GetTexture(), subTexture->GetTexCoords(), tilingFactor, tintColor);
+    }
+
+    void Renderer2D::DrawQuadTexture(const glm::vec3 &position, const glm::vec2 &size,
+                                      const std::shared_ptr<Texture2D> &texture,
+                                      const glm::vec2 *texCoords,
+                                      float tilingFactor, const glm::vec4 &tintColor)
+    {
         if (s_Data.QuadIndexCount >= Renderer2DData::MaxIndices)
             NextBatch();
 
@@ -227,7 +250,6 @@ namespace Engine
             s_Data.TextureSlotIndex++;
         }
 
-        glm::vec2 texCoords[4] = {{0.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 1.0f}};
         glm::mat4 transform = glm::translate(glm::mat4(1.0f), position) *
                                glm::scale(glm::mat4(1.0f), {size.x, size.y, 1.0f});
 
