@@ -1,38 +1,40 @@
 #include "Core/Application.h"
-#include <iostream>
+#include "Core/Log.h"
 
-namespace MyEngine
+namespace Engine
 {
     Application::Application()
-        : m_Window(Engine::WindowProps())
+        : m_Window(WindowProps())
     {
-        m_Window.SetEventCallback([this](Engine::Event &e)
+        m_Window.SetEventCallback([this](Event &e)
                                   { OnEvent(e); });
     }
 
     Application::~Application() {}
 
-    void Application::OnEvent(Engine::Event &event)
+    void Application::OnEvent(Event &event)
     {
-        std::cout << event.ToString() << std::endl;
+        LOG_TRACE(event.ToString());
 
-        if (event.GetType() == Engine::EventType::WindowClose)
+        if (event.GetType() == EventType::WindowClose)
             m_Running = false;
 
-        // Propager aux layers en partant du haut
+        // Propager aux layers en partant du haut, jusqu'à ce qu'un layer marque l'event comme géré
         for (auto it = m_LayerStack.end(); it != m_LayerStack.begin();)
         {
             --it;
             (*it)->OnEvent(event);
+            if (event.Handled)
+                break;
         }
     }
 
-    void Application::PushLayer(Engine::Layer *layer)
+    void Application::PushLayer(Layer *layer)
     {
         m_LayerStack.PushLayer(layer);
     }
 
-    void Application::PushOverlay(Engine::Layer *overlay)
+    void Application::PushOverlay(Layer *overlay)
     {
         m_LayerStack.PushOverlay(overlay);
     }

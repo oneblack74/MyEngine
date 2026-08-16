@@ -2,7 +2,7 @@
 #include "Core/Window.h"
 #include "Core/LayerStack.h"
 
-namespace MyEngine
+namespace Engine
 {
     class Application
     {
@@ -11,14 +11,14 @@ namespace MyEngine
         ~Application();
 
         void Run();
-        void OnEvent(Engine::Event &event);
+        void OnEvent(Event &event);
 
-        void PushLayer(Engine::Layer *layer);
-        void PushOverlay(Engine::Layer *overlay);
+        void PushLayer(Layer *layer);
+        void PushOverlay(Layer *overlay);
 
     private:
-        Engine::Window m_Window;
-        Engine::LayerStack m_LayerStack;
+        Window m_Window;
+        LayerStack m_LayerStack;
         bool m_Running = true;
     };
 }

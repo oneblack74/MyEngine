@@ -16,8 +16,10 @@ namespace Engine
     };
 }
 
-// Macros
-#define LOG_INFO(...) Log::GetLogger()->info(__VA_ARGS__)
-#define LOG_WARN(...) Log::GetLogger()->warn(__VA_ARGS__)
-#define LOG_ERROR(...) Log::GetLogger()->error(__VA_ARGS__)
-#define LOG_DEBUG(...) Log::GetLogger()->debug(__VA_ARGS__)
+// Macros — non namespacées (comme d'habitude pour des macros), donc s'utilisent
+// sans préfixe "Engine::" : LOG_INFO(...), pas Engine::LOG_INFO(...)
+#define LOG_TRACE(...) ::Engine::Log::GetLogger()->trace(__VA_ARGS__)
+#define LOG_INFO(...) ::Engine::Log::GetLogger()->info(__VA_ARGS__)
+#define LOG_WARN(...) ::Engine::Log::GetLogger()->warn(__VA_ARGS__)
+#define LOG_ERROR(...) ::Engine::Log::GetLogger()->error(__VA_ARGS__)
+#define LOG_DEBUG(...) ::Engine::Log::GetLogger()->debug(__VA_ARGS__)

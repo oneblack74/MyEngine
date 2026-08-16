@@ -1,7 +1,8 @@
 #include "Core/Window.h"
+#include "Core/Log.h"
 #include "glad/gl.h"
 #include <GLFW/glfw3.h>
-#include <iostream>
+#include <stdexcept>
 
 namespace Engine
 {
@@ -23,8 +24,8 @@ namespace Engine
 
         if (!glfwInit())
         {
-            std::cerr << "Failed to initialize GLFW!" << std::endl;
-            return;
+            LOG_ERROR("Failed to initialize GLFW!");
+            throw std::runtime_error("Failed to initialize GLFW");
         }
 
         m_Window = glfwCreateWindow(m_Data.Width, m_Data.Height,
@@ -32,15 +33,15 @@ namespace Engine
 
         if (!m_Window)
         {
-            std::cerr << "Failed to create window!" << std::endl;
-            return;
+            LOG_ERROR("Failed to create window!");
+            throw std::runtime_error("Failed to create window");
         }
 
         glfwMakeContextCurrent(m_Window);
         if (!gladLoadGL((GLADloadfunc)glfwGetProcAddress))
         {
-            std::cerr << "Failed to initialize Glad!" << std::endl;
-            return;
+            LOG_ERROR("Failed to initialize Glad!");
+            throw std::runtime_error("Failed to initialize Glad");
         }
 
         glfwSetWindowUserPointer(m_Window, &m_Data);

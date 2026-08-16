@@ -18,8 +18,8 @@ namespace Engine
         m_Width = width;
         m_Height = height;
 
-        GLenum format = (channels == 4) ? GL_RGBA : GL_RGB;
-
+        // stbi_load est forcé à 4 canaux (desired_channels=4 ci-dessus),
+        // donc le buffer est toujours en RGBA quel que soit le fichier source.
         glGenTextures(1, &m_RendererID);
         glBindTexture(GL_TEXTURE_2D, m_RendererID);
 

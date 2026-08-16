@@ -2,7 +2,7 @@
 
 int main()
 {
-    MyEngine::Application app;
+    Engine::Application app;
     app.Run();
 
     return 0;
