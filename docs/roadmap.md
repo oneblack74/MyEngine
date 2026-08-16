@@ -59,10 +59,10 @@
 
 ## Phase 4 — Editor
 
-- ⬜ Intégration **ImGui** (docking branch)
-- ⬜ `EditorLayer` — layer principal de l'éditeur
-- ⬜ `ViewportPanel` — rendu dans un Framebuffer affiché comme texture ImGui
-- ⬜ `Framebuffer` — abstraction OpenGL
+- ✅ Intégration **ImGui** (docking branch)
+- ✅ `EditorLayer` — layer principal de l'éditeur
+- ✅ `ViewportPanel` — rendu dans un Framebuffer affiché comme texture ImGui
+- ✅ `Framebuffer` — abstraction OpenGL
 - ⬜ `SceneHierarchyPanel` — liste des entités de la scène
 - ⬜ `InspectorPanel` — édition des components d'une entité
 - ⬜ `ContentBrowserPanel` — navigation dans les assets
