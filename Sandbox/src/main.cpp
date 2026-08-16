@@ -9,7 +9,7 @@
 #include "Scene/Entity.h"
 #include "Scene/Components.h"
 #include "Scene/RenderSystem.h"
-#include "Scene/SceneSerializer.h"
+#include "Scene/SceneManager.h"
 #include <filesystem>
 
 class GameLayer : public Engine::Layer
@@ -27,7 +27,7 @@ public:
         m_Texture = std::make_shared<Engine::Texture2D>("assets/textures/axololt.jpg");
         m_Camera = std::make_shared<Engine::OrthographicCamera>(-1.6f, 1.6f, -0.9f, 0.9f);
 
-        m_Scene = std::make_shared<Engine::Scene>();
+        m_Scene = Engine::SceneManager::NewScene();
 
         auto redSquare = m_Scene->CreateEntity("RedSquare");
         auto &redTransform = redSquare.GetComponent<Engine::TransformComponent>();
@@ -54,15 +54,16 @@ public:
         LOG_INFO("{0} UUID: {1}", greenSquare.GetName(), (uint64_t)greenSquare.GetUUID());
         LOG_INFO("{0} UUID: {1}", axolotl.GetName(), (uint64_t)axolotl.GetUUID());
 
-        // Test round-trip de la sérialisation : on écrit la scène sur disque, puis on la
-        // recharge dans une Scene séparée (pas utilisée pour le rendu) pour vérifier que
-        // les entités et leurs UUID sont bien préservés après un cycle save/load.
-        Engine::SceneSerializer serializer(m_Scene);
-        serializer.Serialize("demo_scene.json");
+        // Test save/load/switch via SceneManager : on sauvegarde la scène active, on la
+        // recharge (ce qui bascule le SceneManager dessus - "switch de scènes"), puis on
+        // restaure explicitement m_Scene comme scène active pour le rendu.
+        // Note : la texture de l'axolotl n'est pas encore sérialisée (pas d'asset system,
+        // prévu en Phase 7), donc la scène rechargée l'afficherait en blanc si on la
+        // rendait telle quelle — normal à ce stade.
+        Engine::SceneManager::SaveActiveScene("demo_scene.json");
 
-        auto reloadedScene = std::make_shared<Engine::Scene>();
-        Engine::SceneSerializer loader(reloadedScene);
-        if (loader.Deserialize("demo_scene.json"))
+        auto reloadedScene = Engine::SceneManager::LoadScene("demo_scene.json");
+        if (reloadedScene)
         {
             auto view = reloadedScene->GetAllEntitiesWith<Engine::IDComponent>();
             for (auto entityHandle : view)
@@ -71,6 +72,8 @@ public:
                 LOG_INFO("Reloaded: {0} UUID: {1}", entity.GetName(), (uint64_t)entity.GetUUID());
             }
         }
+
+        Engine::SceneManager::SetActiveScene(m_Scene);
     }
 
     void OnDetach() override
@@ -83,7 +86,7 @@ public:
         Engine::Renderer::SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         Engine::Renderer::Clear();
 
-        Engine::RenderSystem::Render(*m_Scene, *m_Camera);
+        Engine::RenderSystem::Render(*Engine::SceneManager::GetActiveScene(), *m_Camera);
     }
 
     void OnEvent(Engine::Event &event) override

@@ -16,6 +16,7 @@ add_library(Engine STATIC
     src/Scene/Entity.cpp
     src/Scene/RenderSystem.cpp
     src/Scene/SceneSerializer.cpp
+    src/Scene/SceneManager.cpp
 )
 
 target_include_directories(Engine
