@@ -8,6 +8,7 @@
 #include <Scene/RenderSystem.h>
 #include <Scene/SceneManager.h>
 #include <imgui.h>
+#include <imgui_internal.h> // DockBuilder* : API "interne" ImGui, mais c'est le seul moyen de définir un layout par défaut
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 #include <GLFW/glfw3.h>
@@ -111,6 +112,25 @@ void EditorLayer::RenderImGui()
     ImGui::PopStyleVar(3);
 
     ImGuiID dockspaceId = ImGui::GetID("MyEngineDockSpace");
+
+    // La reconstruction du dock tree (DockBuilder*) doit se faire AVANT le DockSpace()
+    // de cette frame, jamais pendant/après (ça corromprait l'état actif en cours de frame,
+    // les fenêtres perdent leur ancrage) — donc on la déclenche ici, résultat d'un clic
+    // menu de la frame précédente, ou parce qu'aucune disposition n'a été chargée depuis
+    // imgui.ini (premier lancement, build/ tout neuf...).
+    if (m_ResetDockLayoutRequested || ImGui::DockBuilderGetNode(dockspaceId) == nullptr)
+    {
+        SetupDefaultDockLayout();
+        m_ResetDockLayoutRequested = false;
+    }
+
+    // Même règle : recharger l'ini doit aussi se faire avant DockSpace(), pas pendant.
+    if (m_LoadLastSavedLayoutRequested)
+    {
+        ImGui::LoadIniSettingsFromDisk(ImGui::GetIO().IniFilename);
+        m_LoadLastSavedLayoutRequested = false;
+    }
+
     ImGui::DockSpace(dockspaceId, ImVec2(0.0f, 0.0f));
 
     if (ImGui::BeginMenuBar())
@@ -118,6 +138,19 @@ void EditorLayer::RenderImGui()
         if (ImGui::BeginMenu("Fichier"))
         {
             ImGui::MenuItem("Quitter (bientôt)", nullptr, false, false);
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Fenêtre"))
+        {
+            if (ImGui::MenuItem("Réinitialiser la disposition"))
+                m_ResetDockLayoutRequested = true;
+            if (ImGui::MenuItem("Sauvegarder la disposition"))
+            {
+                ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
+                LOG_INFO("Disposition des panels sauvegardée");
+            }
+            if (ImGui::MenuItem("Charger la dernière disposition sauvegardée"))
+                m_LoadLastSavedLayoutRequested = true;
             ImGui::EndMenu();
         }
         ImGui::EndMenuBar();
@@ -130,4 +163,33 @@ void EditorLayer::RenderImGui()
     m_InspectorPanel.OnImGuiRender(m_SceneHierarchyPanel.GetSelectedEntity());
     m_ContentBrowserPanel.OnImGuiRender();
     m_ConsolePanel.OnImGuiRender();
+}
+
+void EditorLayer::SetupDefaultDockLayout()
+{
+    ImGuiID dockspaceId = ImGui::GetID("MyEngineDockSpace");
+
+    ImGui::DockBuilderRemoveNode(dockspaceId);
+    ImGui::DockBuilderAddNode(dockspaceId, ImGuiDockNodeFlags_DockSpace);
+    ImGui::DockBuilderSetNodeSize(dockspaceId, ImGui::GetMainViewport()->Size);
+
+    // 3 colonnes : gauche (Viewport / Console), milieu (Inspecteur / Content Browser), droite (Hiérarchie)
+    ImGuiID dockRemaining = dockspaceId;
+    ImGuiID dockRight = ImGui::DockBuilderSplitNode(dockRemaining, ImGuiDir_Right, 0.2f, nullptr, &dockRemaining);
+    ImGuiID dockLeft = ImGui::DockBuilderSplitNode(dockRemaining, ImGuiDir_Left, 0.55f, nullptr, &dockRemaining);
+    ImGuiID dockMiddle = dockRemaining;
+
+    ImGuiID dockLeftBottom = ImGui::DockBuilderSplitNode(dockLeft, ImGuiDir_Down, 0.3f, nullptr, &dockLeft);
+    ImGuiID dockLeftTop = dockLeft;
+
+    ImGuiID dockMiddleBottom = ImGui::DockBuilderSplitNode(dockMiddle, ImGuiDir_Down, 0.5f, nullptr, &dockMiddle);
+    ImGuiID dockMiddleTop = dockMiddle;
+
+    ImGui::DockBuilderDockWindow("Viewport", dockLeftTop);
+    ImGui::DockBuilderDockWindow("Console", dockLeftBottom);
+    ImGui::DockBuilderDockWindow("Inspecteur", dockMiddleTop);
+    ImGui::DockBuilderDockWindow("Content Browser", dockMiddleBottom);
+    ImGui::DockBuilderDockWindow("Hiérarchie de la scène", dockRight);
+
+    ImGui::DockBuilderFinish(dockspaceId);
 }

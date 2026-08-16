@@ -21,6 +21,7 @@ public:
 
 private:
     void RenderImGui();
+    void SetupDefaultDockLayout();
 
     std::shared_ptr<Engine::Framebuffer> m_Framebuffer;
     std::shared_ptr<Engine::OrthographicCamera> m_Camera;
@@ -31,4 +32,7 @@ private:
     InspectorPanel m_InspectorPanel;
     ContentBrowserPanel m_ContentBrowserPanel;
     ConsolePanel m_ConsolePanel;
+
+    bool m_ResetDockLayoutRequested = false;
+    bool m_LoadLastSavedLayoutRequested = false;
 };
