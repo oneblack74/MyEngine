@@ -65,8 +65,8 @@
 - ✅ `Framebuffer` — abstraction OpenGL
 - ✅ `SceneHierarchyPanel` — liste des entités de la scène
 - ✅ `InspectorPanel` — édition des components d'une entité
-- ⬜ `ContentBrowserPanel` — navigation dans les assets
-- ⬜ `ConsolePanel` — affichage des logs spdlog dans l'UI
+- ✅ `ContentBrowserPanel` — navigation dans les assets
+- ✅ `ConsolePanel` — affichage des logs spdlog dans l'UI
 - ⬜ Gizmos de transformation (translate, rotate, scale)
 - ⬜ Play / Pause / Stop depuis l'éditeur
 
