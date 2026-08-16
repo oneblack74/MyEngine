@@ -33,6 +33,8 @@ namespace Engine
         unsigned int GetHeight() const { return m_Data.Height; }
         bool ShouldClose() const;
 
+        GLFWwindow *GetNativeWindow() const { return m_Window; }
+
         void SetEventCallback(const std::function<void(Event &)> &callback)
         {
             m_Data.EventCallback = callback;

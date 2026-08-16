@@ -4,12 +4,14 @@ add_library(Engine STATIC
     src/Core/LayerStack.cpp
     src/Core/Log.cpp
     src/Core/UUID.cpp
+    src/Core/Input.cpp
     src/Renderer/Buffer.cpp
     src/Renderer/VertexArray.cpp
     src/Renderer/Shader.cpp
     src/Renderer/OrthographicCamera.cpp
     src/Renderer/Renderer2D.cpp
     src/Renderer/SubTexture2D.cpp
+    src/Renderer/Framebuffer.cpp
     vendor/stb/stb_image.cpp
     src/Renderer/Texture.cpp
     src/Scene/Scene.cpp

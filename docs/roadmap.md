@@ -51,24 +51,24 @@
 
 ## Phase 3 — Input System
 
-- ⬜ `Input` — polling clavier et souris (Input::IsKeyPressed, etc.)
-- ⬜ `KeyCodes.h` et `MouseCodes.h`
-- ⬜ Intégration dans l'éditeur (raccourcis, navigation caméra)
+- ✅ `Input` — polling clavier et souris (Input::IsKeyPressed, etc.)
+- ✅ `KeyCodes.h` et `MouseCodes.h`
+- ⬜ Intégration dans l'éditeur (raccourcis, navigation caméra) — nécessite l'Editor (Phase 4) ; navigation caméra déjà validée dans le Sandbox en attendant
 
 ---
 
 ## Phase 4 — Editor
 
-- ⬜ Intégration **ImGui** (docking branch)
-- ⬜ `EditorLayer` — layer principal de l'éditeur
-- ⬜ `ViewportPanel` — rendu dans un Framebuffer affiché comme texture ImGui
-- ⬜ `Framebuffer` — abstraction OpenGL
-- ⬜ `SceneHierarchyPanel` — liste des entités de la scène
-- ⬜ `InspectorPanel` — édition des components d'une entité
-- ⬜ `ContentBrowserPanel` — navigation dans les assets
-- ⬜ `ConsolePanel` — affichage des logs spdlog dans l'UI
-- ⬜ Gizmos de transformation (translate, rotate, scale)
-- ⬜ Play / Pause / Stop depuis l'éditeur
+- ✅ Intégration **ImGui** (docking branch)
+- ✅ `EditorLayer` — layer principal de l'éditeur
+- ✅ `ViewportPanel` — rendu dans un Framebuffer affiché comme texture ImGui
+- ✅ `Framebuffer` — abstraction OpenGL
+- ✅ `SceneHierarchyPanel` — liste des entités de la scène
+- ✅ `InspectorPanel` — édition des components d'une entité
+- ✅ `ContentBrowserPanel` — navigation dans les assets
+- ✅ `ConsolePanel` — affichage des logs spdlog dans l'UI
+- ✅ Gizmos de transformation (translate, rotate, scale)
+- ✅ Play / Pause / Stop depuis l'éditeur
 
 ---
 

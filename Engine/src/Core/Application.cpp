@@ -1,11 +1,17 @@
 #include "Core/Application.h"
 #include "Core/Log.h"
+#include <cassert>
 
 namespace Engine
 {
+    Application *Application::s_Instance = nullptr;
+
     Application::Application()
         : m_Window(WindowProps())
     {
+        assert(!s_Instance && "Une Application existe déjà !");
+        s_Instance = this;
+
         m_Window.SetEventCallback([this](Event &e)
                                   { OnEvent(e); });
     }

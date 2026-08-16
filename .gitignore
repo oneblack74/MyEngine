@@ -58,3 +58,6 @@ Makefile
 .idea/
 *.user
 *.suo
+
+# Notes de session perso (jamais commit)
+NOTES.md

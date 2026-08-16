@@ -18,4 +18,28 @@ namespace Engine
     {
         m_Registry.destroy(entity);
     }
+
+    std::shared_ptr<Scene> Scene::Copy()
+    {
+        auto newScene = std::make_shared<Scene>();
+
+        auto view = GetAllEntitiesWith<IDComponent>();
+        for (auto entityHandle : view)
+        {
+            Entity srcEntity{entityHandle, this};
+            UUID uuid = srcEntity.GetComponent<IDComponent>().ID;
+            const std::string &name = srcEntity.GetComponent<TagComponent>().Tag;
+
+            Entity newEntity = newScene->CreateEntity(name);
+            newEntity.GetComponent<IDComponent>().ID = uuid;
+
+            if (srcEntity.HasComponent<TransformComponent>())
+                newEntity.GetComponent<TransformComponent>() = srcEntity.GetComponent<TransformComponent>();
+
+            if (srcEntity.HasComponent<SpriteRendererComponent>())
+                newEntity.AddComponent<SpriteRendererComponent>(srcEntity.GetComponent<SpriteRendererComponent>());
+        }
+
+        return newScene;
+    }
 }
