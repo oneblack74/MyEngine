@@ -107,13 +107,15 @@ void EditorLayer::OnUpdate(Engine::Timestep ts)
         (spec.Width != (uint32_t)viewportSize.x || spec.Height != (uint32_t)viewportSize.y))
     {
         m_Framebuffer->Resize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
+    }
 
-        // La projection de la caméra doit suivre le nouveau ratio largeur/hauteur du
-        // panel, sinon l'image rendue est étirée pour remplir un cadre qui n'a pas
-        // le même ratio que ce pour quoi elle a été projetée.
-        float aspectRatio = viewportSize.x / viewportSize.y;
-        constexpr float zoom = 0.9f;
-        m_Camera->SetProjection(-aspectRatio * zoom, aspectRatio * zoom, -zoom, zoom);
+    // La projection est recalculée à chaque frame (pas seulement au resize) : elle doit
+    // suivre le ratio largeur/hauteur du panel (sinon l'image est étirée) ET le zoom
+    // courant, modifié à la molette dans le Viewport la frame précédente.
+    if (spec.Width > 0 && spec.Height > 0)
+    {
+        float aspectRatio = (float)spec.Width / (float)spec.Height;
+        m_Camera->SetProjection(-aspectRatio * m_CameraZoom, aspectRatio * m_CameraZoom, -m_CameraZoom, m_CameraZoom);
     }
 
     // Rendu de la scène hors écran, dans le Framebuffer
@@ -218,7 +220,8 @@ void EditorLayer::RenderImGui()
 
     ImGui::End();
 
-    m_ViewportPanel.OnImGuiRender(m_Framebuffer, GetActiveScene(), *m_Camera, m_SceneHierarchyPanel.GetSelectedEntity(),
+    m_ViewportPanel.OnImGuiRender(m_Framebuffer, GetActiveScene(), *m_Camera, m_CameraZoom,
+                                   m_SceneHierarchyPanel.GetSelectedEntity(),
                                    [this](Engine::Entity picked)
                                    { m_SceneHierarchyPanel.SetSelectedEntity(picked); });
     m_SceneHierarchyPanel.OnImGuiRender();

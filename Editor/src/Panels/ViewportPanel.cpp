@@ -24,7 +24,8 @@ static bool DecomposeTransform(const glm::mat4 &transform, glm::vec3 &translatio
 
 void ViewportPanel::OnImGuiRender(const std::shared_ptr<Engine::Framebuffer> &framebuffer,
                                    const std::shared_ptr<Engine::Scene> &scene,
-                                   const Engine::OrthographicCamera &camera,
+                                   Engine::OrthographicCamera &camera,
+                                   float &cameraZoom,
                                    Engine::Entity selectedEntity,
                                    const std::function<void(Engine::Entity)> &onEntityPicked)
 {
@@ -41,6 +42,8 @@ void ViewportPanel::OnImGuiRender(const std::shared_ptr<Engine::Framebuffer> &fr
 
     uint32_t textureID = framebuffer->GetColorAttachmentRendererID();
     ImGui::Image((ImTextureID)(intptr_t)textureID, ImVec2{m_Size.x, m_Size.y}, ImVec2{0, 1}, ImVec2{1, 0});
+
+    HandleCameraNavigation(hovered, camera, cameraZoom);
 
     // Raccourcis Unity/Unreal : W = translate, E = rotate, R = scale.
     // On ignore pendant une manipulation en cours pour ne pas changer d'outil sous la souris.
@@ -92,6 +95,39 @@ void ViewportPanel::DrawGizmo(const Engine::OrthographicCamera &camera, Engine::
             transformComponent.Rotation = glm::degrees(rotation.z);
             transformComponent.Scale = scale;
         }
+    }
+}
+
+void ViewportPanel::HandleCameraNavigation(bool hovered, Engine::OrthographicCamera &camera, float &cameraZoom)
+{
+    // Zoom (molette) : ne réagit que si la souris survole le viewport.
+    if (hovered)
+    {
+        float scroll = ImGui::GetIO().MouseWheel;
+        if (scroll != 0.0f)
+            cameraZoom = glm::clamp(cameraZoom * (1.0f - scroll * 0.1f), 0.05f, 10.0f);
+    }
+
+    // Pan (clic molette + drag) : le drag démarre seulement si survolé, mais continue
+    // même si la souris ressort du panel entre-temps (comportement standard d'éditeur).
+    if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
+        m_IsPanning = true;
+    if (ImGui::IsMouseReleased(ImGuiMouseButton_Middle))
+        m_IsPanning = false;
+
+    if (m_IsPanning && m_Size.y > 0.0f)
+    {
+        // Convertit un delta écran (pixels) en delta monde, selon la portion de scène
+        // actuellement visible dans le viewport (dépend du zoom courant).
+        float aspectRatio = m_Size.x / m_Size.y;
+        float worldWidth = 2.0f * aspectRatio * cameraZoom;
+        float worldHeight = 2.0f * cameraZoom;
+
+        ImVec2 delta = ImGui::GetIO().MouseDelta;
+        glm::vec3 position = camera.GetPosition();
+        position.x -= (delta.x / m_Size.x) * worldWidth;
+        position.y += (delta.y / m_Size.y) * worldHeight; // écran Y vers le bas, monde Y vers le haut
+        camera.SetPosition(position);
     }
 }
 

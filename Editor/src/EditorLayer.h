@@ -39,6 +39,7 @@ private:
 
     std::shared_ptr<Engine::Framebuffer> m_Framebuffer;
     std::shared_ptr<Engine::OrthographicCamera> m_Camera;
+    float m_CameraZoom = 0.9f; // demi-hauteur visible en unités monde ; ajusté à la molette dans le Viewport
 
     // m_EditorScene est la scène éditée, jamais modifiée pendant le Play.
     // m_RuntimeScene est une copie créée au Play et jetée au Stop.

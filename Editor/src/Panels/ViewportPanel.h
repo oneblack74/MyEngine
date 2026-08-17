@@ -20,7 +20,8 @@ public:
 
     void OnImGuiRender(const std::shared_ptr<Engine::Framebuffer> &framebuffer,
                         const std::shared_ptr<Engine::Scene> &scene,
-                        const Engine::OrthographicCamera &camera,
+                        Engine::OrthographicCamera &camera,
+                        float &cameraZoom,
                         Engine::Entity selectedEntity,
                         const std::function<void(Engine::Entity)> &onEntityPicked);
 
@@ -31,8 +32,10 @@ private:
     void DrawGizmo(const Engine::OrthographicCamera &camera, Engine::Entity selectedEntity);
     void HandlePicking(const std::shared_ptr<Engine::Scene> &scene, const Engine::OrthographicCamera &camera,
                         const glm::vec2 &imageScreenPos, const std::function<void(Engine::Entity)> &onEntityPicked);
+    void HandleCameraNavigation(bool hovered, Engine::OrthographicCamera &camera, float &cameraZoom);
 
     glm::vec2 m_Size = {0.0f, 0.0f};
     bool m_Focused = false;
+    bool m_IsPanning = false;
     ImGuizmo::OPERATION m_GizmoOperation = ImGuizmo::TRANSLATE;
 };
