@@ -74,11 +74,12 @@
 
 ## Phase 5 — Physics 2D
 
-- ⬜ Intégration **Box2D**
-- ⬜ `Physics2D` — wrapper Box2D (monde, step)
-- ⬜ `RigidBodyComponent` (`Static`, `Dynamic`, `Kinematic`)
-- ⬜ `BoxColliderComponent`, `CircleColliderComponent`
-- ⬜ `PhysicsSystem` — synchronise Transform ↔ Box2D body
+- ✅ Intégration **Box2D**
+- ✅ `Physics2D` — wrapper Box2D (monde, step)
+- ✅ `RigidBodyComponent` (`Static`, `Dynamic`, `Kinematic`)
+- ✅ `BoxColliderComponent`
+- ⬜ `CircleColliderComponent`
+- ✅ `PhysicsSystem` — synchronise Transform ↔ Box2D body
 - ⬜ Callbacks de collision
 
 ---
