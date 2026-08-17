@@ -19,6 +19,7 @@ add_library(Engine STATIC
     src/Scene/RenderSystem.cpp
     src/Scene/SceneSerializer.cpp
     src/Scene/SceneManager.cpp
+    src/Physics/Physics2D.cpp
 )
 
 target_include_directories(Engine
@@ -34,5 +35,6 @@ target_link_libraries(Engine PUBLIC
     glm::glm
     EnTT::EnTT
     nlohmann_json::nlohmann_json
+    box2d
 )
 
