@@ -15,6 +15,19 @@ namespace Engine
         return b2_staticBody;
     }
 
+    // Box2D stocke un void* de user data par shape ; on y met directement le handle
+    // EnTT de l'entité (encodé dans le pointeur, jamais déréférencé comme un vrai
+    // pointeur), pour retrouver l'Entity propriétaire d'une shape dans les contact events.
+    static void *EntityToUserData(entt::entity entityHandle)
+    {
+        return (void *)(uintptr_t)(uint32_t)entityHandle;
+    }
+
+    static Entity UserDataToEntity(Scene &scene, void *userData)
+    {
+        return Entity{(entt::entity)(uint32_t)(uintptr_t)userData, &scene};
+    }
+
     void PhysicsSystem::OnRuntimeStart(Scene &scene)
     {
         m_Physics = std::make_unique<Physics2D>();
@@ -48,6 +61,8 @@ namespace Engine
                 shapeDef.density = bc.Density;
                 shapeDef.material.friction = bc.Friction;
                 shapeDef.material.restitution = bc.Restitution;
+                shapeDef.enableContactEvents = true;
+                shapeDef.userData = EntityToUserData(entityHandle);
 
                 bc.RuntimeShape = b2CreatePolygonShape(rb.RuntimeBody, &shapeDef, &box);
             }
@@ -67,6 +82,8 @@ namespace Engine
                 shapeDef.density = cc.Density;
                 shapeDef.material.friction = cc.Friction;
                 shapeDef.material.restitution = cc.Restitution;
+                shapeDef.enableContactEvents = true;
+                shapeDef.userData = EntityToUserData(entityHandle);
 
                 cc.RuntimeShape = b2CreateCircleShape(rb.RuntimeBody, &shapeDef, &circle);
             }
@@ -98,6 +115,36 @@ namespace Engine
             transform.Position.x = position.x;
             transform.Position.y = position.y;
             transform.Rotation = glm::degrees(b2Rot_GetAngle(rotation));
+        }
+
+        // Les contact events sont bufferisés par Box2D pendant le Step() et lus ici,
+        // juste après — pas de callback direct dans l'API v3.
+        b2ContactEvents events = b2World_GetContactEvents(m_Physics->GetWorldId());
+
+        if (OnCollisionBegin)
+        {
+            for (int i = 0; i < events.beginCount; i++)
+            {
+                const b2ContactBeginTouchEvent &e = events.beginEvents[i];
+                OnCollisionBegin(UserDataToEntity(scene, b2Shape_GetUserData(e.shapeIdA)),
+                                  UserDataToEntity(scene, b2Shape_GetUserData(e.shapeIdB)));
+            }
+        }
+
+        if (OnCollisionEnd)
+        {
+            for (int i = 0; i < events.endCount; i++)
+            {
+                const b2ContactEndTouchEvent &e = events.endEvents[i];
+                // D'après la doc Box2D, une shape peut avoir été détruite entre temps
+                // (destruction d'entité en cours de Play, pas encore possible ici mais
+                // sera vrai dès que ça le sera) — vérifier avant de lire son user data.
+                if (!b2Shape_IsValid(e.shapeIdA) || !b2Shape_IsValid(e.shapeIdB))
+                    continue;
+
+                OnCollisionEnd(UserDataToEntity(scene, b2Shape_GetUserData(e.shapeIdA)),
+                                UserDataToEntity(scene, b2Shape_GetUserData(e.shapeIdB)));
+            }
         }
     }
 }
