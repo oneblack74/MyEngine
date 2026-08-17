@@ -19,6 +19,7 @@ add_library(Engine STATIC
     src/Scene/RenderSystem.cpp
     src/Scene/SceneSerializer.cpp
     src/Scene/SceneManager.cpp
+    src/Scene/PhysicsSystem.cpp
     src/Physics/Physics2D.cpp
 )
 

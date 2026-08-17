@@ -34,6 +34,20 @@ void EditorLayer::OnAttach()
     transform.Scale = {0.5f, 0.5f, 1.0f};
     square.AddComponent<Engine::SpriteRendererComponent>(glm::vec4(0.2f, 0.6f, 0.9f, 1.0f));
 
+    // Démo Phase 5 : au Play, ce carré doit tomber sous l'effet de la gravité et
+    // s'arrêter sur le sol statique — à retirer une fois PhysicsSystem validé visuellement.
+    auto &squareBody = square.AddComponent<Engine::RigidBodyComponent>();
+    squareBody.Type = Engine::RigidBodyComponent::BodyType::Dynamic;
+    square.AddComponent<Engine::BoxColliderComponent>();
+
+    auto ground = m_EditorScene->CreateEntity("Ground");
+    auto &groundTransform = ground.GetComponent<Engine::TransformComponent>();
+    groundTransform.Position = {0.0f, -0.7f, 0.0f};
+    groundTransform.Scale = {2.5f, 0.2f, 1.0f};
+    ground.AddComponent<Engine::SpriteRendererComponent>(glm::vec4(0.5f, 0.4f, 0.3f, 1.0f));
+    ground.AddComponent<Engine::RigidBodyComponent>();
+    ground.AddComponent<Engine::BoxColliderComponent>();
+
     m_SceneHierarchyPanel.SetContext(m_EditorScene);
 
     // Init ImGui (contexte + backends GLFW/OpenGL3), avec le docking activé
@@ -58,8 +72,13 @@ void EditorLayer::OnDetach()
     Engine::Renderer2D::Shutdown();
 }
 
-void EditorLayer::OnUpdate()
+void EditorLayer::OnUpdate(Engine::Timestep ts)
 {
+    // La physique ne tourne que pendant le Play, et se fige en Pause (comme le
+    // ferait n'importe quel moteur : Pause gèle la simulation, pas juste le rendu).
+    if (m_SceneState == SceneState::Play && !m_ScenePaused)
+        m_PhysicsSystem.OnUpdate(*m_RuntimeScene, ts);
+
     // Redimensionne le Framebuffer si le panel Viewport a changé de taille
     const glm::vec2 &viewportSize = m_ViewportPanel.GetSize();
     const auto &spec = m_Framebuffer->GetSpecification();
@@ -222,6 +241,7 @@ void EditorLayer::OnScenePlay()
     m_ScenePaused = false;
 
     m_RuntimeScene = m_EditorScene->Copy();
+    m_PhysicsSystem.OnRuntimeStart(*m_RuntimeScene);
     m_SceneHierarchyPanel.SetContext(m_RuntimeScene);
 }
 
@@ -230,6 +250,7 @@ void EditorLayer::OnSceneStop()
     m_SceneState = SceneState::Edit;
     m_ScenePaused = false;
 
+    m_PhysicsSystem.OnRuntimeStop();
     m_RuntimeScene = nullptr;
     m_SceneHierarchyPanel.SetContext(m_EditorScene);
     // L'entité sélectionnée appartenait potentiellement à la scène runtime qu'on vient de jeter
