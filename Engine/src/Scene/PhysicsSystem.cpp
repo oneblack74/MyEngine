@@ -90,6 +90,60 @@ namespace Engine
         }
     }
 
+    // Pousse les valeurs actuelles des components vers Box2D avant chaque Step() : sans
+    // ça, éditer RigidBody/BoxCollider/CircleCollider dans l'Inspecteur pendant le Play
+    // ne change que la donnée ECS, jamais le corps/shape déjà créés à OnRuntimeStart.
+    // Appelé chaque frame et pas seulement sur changement : plus simple qu'un diff, et le
+    // coût est négligeable vu le nombre d'entités en jeu ici.
+    static void SyncComponentsToBox2D(Scene &scene)
+    {
+        auto view = scene.GetAllEntitiesWith<RigidBodyComponent>();
+        for (auto entityHandle : view)
+        {
+            Entity entity{entityHandle, &scene};
+            auto &rb = entity.GetComponent<RigidBodyComponent>();
+            auto &transform = entity.GetComponent<TransformComponent>();
+
+            // b2Body_SetType déplace le body entre solver sets côté Box2D (plus coûteux
+            // qu'un simple write, et peut le réveiller) : on ne l'appelle que si le type a
+            // réellement changé, contrairement au reste ci-dessous.
+            b2BodyType desiredType = ToBox2DBodyType(rb.Type);
+            if (b2Body_GetType(rb.RuntimeBody) != desiredType)
+                b2Body_SetType(rb.RuntimeBody, desiredType);
+            if (b2Body_IsFixedRotation(rb.RuntimeBody) != rb.FixedRotation)
+                b2Body_SetFixedRotation(rb.RuntimeBody, rb.FixedRotation);
+
+            if (entity.HasComponent<BoxColliderComponent>())
+            {
+                auto &bc = entity.GetComponent<BoxColliderComponent>();
+
+                b2Vec2 halfExtents = {bc.Size.x * transform.Scale.x, bc.Size.y * transform.Scale.y};
+                b2Vec2 offset = {bc.Offset.x, bc.Offset.y};
+                b2Polygon box = b2MakeOffsetBox(halfExtents.x, halfExtents.y, offset, b2Rot_identity);
+                b2Shape_SetPolygon(bc.RuntimeShape, &box);
+
+                b2Shape_SetDensity(bc.RuntimeShape, bc.Density, true);
+                b2Shape_SetFriction(bc.RuntimeShape, bc.Friction);
+                b2Shape_SetRestitution(bc.RuntimeShape, bc.Restitution);
+            }
+
+            if (entity.HasComponent<CircleColliderComponent>())
+            {
+                auto &cc = entity.GetComponent<CircleColliderComponent>();
+
+                float scale = (transform.Scale.x + transform.Scale.y) * 0.5f;
+                b2Circle circle;
+                circle.center = {cc.Offset.x, cc.Offset.y};
+                circle.radius = cc.Radius * scale;
+                b2Shape_SetCircle(cc.RuntimeShape, &circle);
+
+                b2Shape_SetDensity(cc.RuntimeShape, cc.Density, true);
+                b2Shape_SetFriction(cc.RuntimeShape, cc.Friction);
+                b2Shape_SetRestitution(cc.RuntimeShape, cc.Restitution);
+            }
+        }
+    }
+
     void PhysicsSystem::OnRuntimeStop()
     {
         // Détruire le monde libère tous ses bodies/shapes avec — pas besoin de les
@@ -100,6 +154,8 @@ namespace Engine
 
     void PhysicsSystem::OnUpdate(Scene &scene, float timestep)
     {
+        SyncComponentsToBox2D(scene);
+
         m_Physics->Step(timestep);
 
         auto view = scene.GetAllEntitiesWith<RigidBodyComponent>();
