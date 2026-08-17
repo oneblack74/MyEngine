@@ -84,6 +84,7 @@
 - ✅ `PhysicsSystem` — synchronise Transform ↔ Box2D body
 - ✅ Callbacks de collision
 - ⬜ Debug-draw des colliders dans le Viewport (contours Box/Circle, superposés à la scène)
+- ⬜ Bug : éditer RigidBody/BoxCollider/CircleCollider dans l'Inspecteur pendant le Play n'a aucun effet — `PhysicsSystem` crée les `b2BodyId`/`b2ShapeId` une seule fois à `OnRuntimeStart` et ne relit jamais les components ensuite (il faudrait détecter les changements et appeler les setters Box2D correspondants, ex. `b2Body_SetType`, recréer la shape pour un nouveau rayon)
 
 ---
 
