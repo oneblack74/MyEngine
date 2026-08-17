@@ -80,7 +80,7 @@
 - ✅ `BoxColliderComponent`
 - ✅ `CircleColliderComponent`
 - ✅ `PhysicsSystem` — synchronise Transform ↔ Box2D body
-- ⬜ Callbacks de collision
+- ✅ Callbacks de collision
 
 ---
 
