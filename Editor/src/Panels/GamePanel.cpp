@@ -1,18 +1,28 @@
 #include "Panels/GamePanel.h"
 #include <Renderer/Renderer.h>
+#include <Scene/Entity.h>
+#include <Scene/Components.h>
 #include <Scene/RenderSystem.h>
 #include <imgui.h>
 
-GamePanel::GamePanel() : m_Camera(-1.6f, 1.6f, -0.9f, 0.9f)
+static Engine::Entity FindPrimaryCamera(Engine::Scene &scene)
+{
+    auto view = scene.GetAllEntitiesWith<Engine::CameraComponent>();
+    for (auto entityHandle : view)
+    {
+        Engine::Entity entity{entityHandle, &scene};
+        if (entity.GetComponent<Engine::CameraComponent>().Primary)
+            return entity;
+    }
+    return {};
+}
+
+GamePanel::GamePanel()
 {
     Engine::FramebufferSpecification spec;
     spec.Width = (uint32_t)m_TargetWidth;
     spec.Height = (uint32_t)m_TargetHeight;
     m_Framebuffer = std::make_shared<Engine::Framebuffer>(spec);
-
-    float aspectRatio = (float)m_TargetWidth / (float)m_TargetHeight;
-    constexpr float zoom = 0.9f;
-    m_Camera.SetProjection(-aspectRatio * zoom, aspectRatio * zoom, -zoom, zoom);
 }
 
 bool GamePanel::OnImGuiRender(const std::shared_ptr<Engine::Scene> &scene, bool visible)
@@ -35,14 +45,35 @@ bool GamePanel::OnImGuiRender(const std::shared_ptr<Engine::Scene> &scene, bool 
     ImGui::SameLine();
     ImGui::Text("(%dx%d)", m_TargetWidth, m_TargetHeight);
 
+    Engine::Entity primaryCamera;
     if (scene)
+        primaryCamera = FindPrimaryCamera(*scene);
+
+    if (!primaryCamera)
     {
-        m_Framebuffer->Bind();
-        Engine::Renderer::SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        Engine::Renderer::Clear();
-        Engine::RenderSystem::Render(*scene, m_Camera);
-        m_Framebuffer->Unbind();
+        ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.2f, 1.0f),
+                            "Aucune caméra principale (CameraComponent avec Primary) dans la scène");
+        ImGui::End();
+        return open;
     }
+
+    auto &cameraComponent = primaryCamera.GetComponent<Engine::CameraComponent>();
+    auto &transform = primaryCamera.GetComponent<Engine::TransformComponent>();
+
+    // La projection suit toujours le ratio de la résolution cible (jamais celui de la
+    // fenêtre ImGui, qui n'affiche l'image qu'à l'échelle du slider) ; la position/
+    // rotation viennent du TransformComponent, pas d'un état propre à la caméra.
+    float aspectRatio = (float)m_TargetWidth / (float)m_TargetHeight;
+    float size = cameraComponent.OrthographicSize;
+    cameraComponent.Camera.SetProjection(-aspectRatio * size, aspectRatio * size, -size, size);
+    cameraComponent.Camera.SetPosition(transform.Position);
+    cameraComponent.Camera.SetRotation(transform.Rotation);
+
+    m_Framebuffer->Bind();
+    Engine::Renderer::SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    Engine::Renderer::Clear();
+    Engine::RenderSystem::Render(*scene, cameraComponent.Camera);
+    m_Framebuffer->Unbind();
 
     // Rendu à résolution fixe, affiché à l'échelle du slider : si l'image dépasse la
     // zone visible (scale > 1, ou fenêtre petite), on scrolle au lieu d'écraser le ratio.

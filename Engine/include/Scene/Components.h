@@ -1,6 +1,7 @@
 #pragma once
 #include "Core/UUID.h"
 #include "Renderer/Texture.h"
+#include "Renderer/OrthographicCamera.h"
 #include <box2d/id.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -105,5 +106,22 @@ namespace Engine
 
         CircleColliderComponent() = default;
         CircleColliderComponent(const CircleColliderComponent &) = default;
+    };
+
+    struct CameraComponent
+    {
+        // Recalculée à chaque rendu (SetProjection) selon OrthographicSize et le ratio du
+        // rendu cible, et repositionnée depuis le TransformComponent de la même entité —
+        // ne stocke pas d'état propre entre deux rendus, ce n'est qu'un objet de travail.
+        OrthographicCamera Camera{-1.6f, 1.6f, -0.9f, 0.9f};
+
+        float OrthographicSize = 0.9f; // demi-hauteur visible, en unités monde (façon "Size" Unity)
+
+        // La première CameraComponent Primary trouvée dans la scène est celle utilisée
+        // pour le rendu (GamePanel). Pas d'unicité forcée si plusieurs sont à true.
+        bool Primary = true;
+
+        CameraComponent() = default;
+        CameraComponent(const CameraComponent &) = default;
     };
 }

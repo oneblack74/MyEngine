@@ -61,6 +61,11 @@ void EditorLayer::OnAttach()
     ground.AddComponent<Engine::RigidBodyComponent>();
     ground.AddComponent<Engine::BoxColliderComponent>();
 
+    // Démo CameraComponent : sans ça, GamePanel n'a aucune caméra "Primary" à utiliser
+    // et affiche juste son avertissement à la place d'un rendu.
+    auto mainCamera = m_EditorScene->CreateEntity("Main Camera");
+    mainCamera.AddComponent<Engine::CameraComponent>();
+
     // Démo Phase 5 : logue chaque début/fin de collision dans la Console pour vérifier
     // que les contact events Box2D remontent bien jusqu'à l'ECS (via Entity, pas juste
     // des b2ShapeId bruts).
@@ -297,9 +302,33 @@ void EditorLayer::OnScenePlay()
     m_SceneState = SceneState::Play;
     m_ScenePaused = false;
 
+    // Scene::Copy() donne à chaque entité un nouveau entt::entity handle (mais garde son
+    // UUID) : la sélection courante, qui pointe vers m_EditorScene, doit être retrouvée
+    // dans m_RuntimeScene par UUID après la copie — sinon l'Inspecteur continue d'éditer
+    // la scène d'édition (jamais utilisée pour le rendu du Play), silencieusement sans effet.
+    Engine::Entity previousSelection = m_SceneHierarchyPanel.GetSelectedEntity();
+    bool hadSelection = (bool)previousSelection;
+    Engine::UUID selectedUUID = hadSelection ? previousSelection.GetUUID() : Engine::UUID(0);
+
     m_RuntimeScene = m_EditorScene->Copy();
     m_PhysicsSystem.OnRuntimeStart(*m_RuntimeScene);
     m_SceneHierarchyPanel.SetContext(m_RuntimeScene);
+
+    Engine::Entity newSelection;
+    if (hadSelection)
+    {
+        auto view = m_RuntimeScene->GetAllEntitiesWith<Engine::IDComponent>();
+        for (auto entityHandle : view)
+        {
+            Engine::Entity candidate{entityHandle, m_RuntimeScene.get()};
+            if (candidate.GetUUID() == selectedUUID)
+            {
+                newSelection = candidate;
+                break;
+            }
+        }
+    }
+    m_SceneHierarchyPanel.SetSelectedEntity(newSelection);
 }
 
 void EditorLayer::OnSceneStop()

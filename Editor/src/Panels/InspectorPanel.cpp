@@ -94,4 +94,15 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
             ImGui::TreePop();
         }
     }
+
+    if (entity.HasComponent<Engine::CameraComponent>())
+    {
+        if (ImGui::TreeNodeEx("Camera", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            auto &cc = entity.GetComponent<Engine::CameraComponent>();
+            ImGui::Checkbox("Principale (Primary)", &cc.Primary);
+            ImGui::DragFloat("Taille orthographique", &cc.OrthographicSize, 0.05f, 0.05f, 100.0f);
+            ImGui::TreePop();
+        }
+    }
 }

@@ -49,6 +49,9 @@ namespace Engine
 
             if (srcEntity.HasComponent<CircleColliderComponent>())
                 newEntity.AddComponent<CircleColliderComponent>(srcEntity.GetComponent<CircleColliderComponent>());
+
+            if (srcEntity.HasComponent<CameraComponent>())
+                newEntity.AddComponent<CameraComponent>(srcEntity.GetComponent<CameraComponent>());
         }
 
         return newScene;

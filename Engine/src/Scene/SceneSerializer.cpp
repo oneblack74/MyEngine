@@ -76,6 +76,15 @@ namespace Engine
                 entityJson["CircleColliderComponent"]["Restitution"] = cc.Restitution;
             }
 
+            if (entity.HasComponent<CameraComponent>())
+            {
+                auto &cc = entity.GetComponent<CameraComponent>();
+                entityJson["CameraComponent"]["OrthographicSize"] = cc.OrthographicSize;
+                entityJson["CameraComponent"]["Primary"] = cc.Primary;
+                // Camera (OrthographicCamera) n'est pas sérialisée : c'est un objet de
+                // travail recalculé à chaque rendu depuis OrthographicSize, pas un état.
+            }
+
             root["Entities"].push_back(entityJson);
         }
 
@@ -157,6 +166,13 @@ namespace Engine
                 cc.Density = entityJson["CircleColliderComponent"]["Density"].get<float>();
                 cc.Friction = entityJson["CircleColliderComponent"]["Friction"].get<float>();
                 cc.Restitution = entityJson["CircleColliderComponent"]["Restitution"].get<float>();
+            }
+
+            if (entityJson.contains("CameraComponent"))
+            {
+                auto &cc = entity.AddComponent<CameraComponent>();
+                cc.OrthographicSize = entityJson["CameraComponent"]["OrthographicSize"].get<float>();
+                cc.Primary = entityJson["CameraComponent"]["Primary"].get<bool>();
             }
         }
 
