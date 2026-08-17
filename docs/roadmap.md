@@ -81,6 +81,7 @@
 - ✅ `CircleColliderComponent`
 - ✅ `PhysicsSystem` — synchronise Transform ↔ Box2D body
 - ✅ Callbacks de collision
+- ⬜ Debug-draw des colliders dans le Viewport (contours Box/Circle, superposés à la scène)
 
 ---
 
