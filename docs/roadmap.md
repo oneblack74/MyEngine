@@ -70,7 +70,7 @@
 - ✅ Gizmos de transformation (translate, rotate, scale)
 - ✅ Play / Pause / Stop depuis l'éditeur
 - ⬜ Raccourcis clavier standards de l'éditeur (Undo/Redo `Ctrl+Z`/`Ctrl+Y`, Copier/Coller `Ctrl+C`/`Ctrl+V`, etc.)
-- ⬜ `GamePanel` — vue de jeu séparée du Viewport d'édition, ouvrable dans une fenêtre à part (façon Godot) ; l'Inspecteur reste éditable en direct pendant le Play (façon Unity)
+- ✅ `GamePanel` — vue de jeu séparée du Viewport d'édition, ouvrable dans une fenêtre à part (façon Godot) ; l'Inspecteur reste éditable en direct pendant le Play (façon Unity)
 
 ---
 
