@@ -1,5 +1,6 @@
 #include "Core/Application.h"
 #include "Core/Log.h"
+#include <GLFW/glfw3.h>
 #include <cassert>
 
 namespace Engine
@@ -47,10 +48,16 @@ namespace Engine
 
     void Application::Run()
     {
+        float lastFrameTime = (float)glfwGetTime();
+
         while (m_Running)
         {
+            float time = (float)glfwGetTime();
+            Timestep timestep = time - lastFrameTime;
+            lastFrameTime = time;
+
             for (Engine::Layer *layer : m_LayerStack)
-                layer->OnUpdate();
+                layer->OnUpdate(timestep);
 
             m_Window.OnUpdate();
         }

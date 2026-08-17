@@ -50,4 +50,48 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
             ImGui::TreePop();
         }
     }
+
+    if (entity.HasComponent<Engine::RigidBodyComponent>())
+    {
+        if (ImGui::TreeNodeEx("Rigid Body", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            auto &rb = entity.GetComponent<Engine::RigidBodyComponent>();
+
+            const char *typeLabels[] = {"Static", "Dynamic", "Kinematic"};
+            int currentType = (int)rb.Type;
+            if (ImGui::Combo("Type", &currentType, typeLabels, 3))
+                rb.Type = (Engine::RigidBodyComponent::BodyType)currentType;
+
+            ImGui::Checkbox("Rotation fixe", &rb.FixedRotation);
+            ImGui::TreePop();
+        }
+    }
+
+    if (entity.HasComponent<Engine::BoxColliderComponent>())
+    {
+        if (ImGui::TreeNodeEx("Box Collider", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            auto &bc = entity.GetComponent<Engine::BoxColliderComponent>();
+            ImGui::DragFloat2("Offset", &bc.Offset.x, 0.05f);
+            ImGui::DragFloat2("Taille (demi)", &bc.Size.x, 0.05f, 0.01f, 100.0f);
+            ImGui::DragFloat("Densité", &bc.Density, 0.05f, 0.0f, 100.0f);
+            ImGui::DragFloat("Friction", &bc.Friction, 0.01f, 0.0f, 1.0f);
+            ImGui::DragFloat("Restitution", &bc.Restitution, 0.01f, 0.0f, 1.0f);
+            ImGui::TreePop();
+        }
+    }
+
+    if (entity.HasComponent<Engine::CircleColliderComponent>())
+    {
+        if (ImGui::TreeNodeEx("Circle Collider", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            auto &cc = entity.GetComponent<Engine::CircleColliderComponent>();
+            ImGui::DragFloat2("Offset", &cc.Offset.x, 0.05f);
+            ImGui::DragFloat("Rayon", &cc.Radius, 0.05f, 0.01f, 100.0f);
+            ImGui::DragFloat("Densité", &cc.Density, 0.05f, 0.0f, 100.0f);
+            ImGui::DragFloat("Friction", &cc.Friction, 0.01f, 0.0f, 1.0f);
+            ImGui::DragFloat("Restitution", &cc.Restitution, 0.01f, 0.0f, 1.0f);
+            ImGui::TreePop();
+        }
+    }
 }

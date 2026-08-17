@@ -83,7 +83,7 @@ public:
         Engine::Renderer2D::Shutdown();
     }
 
-    void OnUpdate() override
+    void OnUpdate(Engine::Timestep ts) override
     {
         // Démo de l'Input System : déplace la caméra tant qu'une flèche est maintenue
         // (polling, à chaque frame — à comparer avec les KeyPressedEvent loggés en trace,

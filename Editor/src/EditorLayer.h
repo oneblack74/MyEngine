@@ -8,6 +8,7 @@
 #include <Renderer/Framebuffer.h>
 #include <Renderer/OrthographicCamera.h>
 #include <Scene/Scene.h>
+#include <Scene/PhysicsSystem.h>
 #include <memory>
 
 enum class SceneState
@@ -23,7 +24,7 @@ public:
 
     void OnAttach() override;
     void OnDetach() override;
-    void OnUpdate() override;
+    void OnUpdate(Engine::Timestep ts) override;
 
 private:
     void RenderImGui();
@@ -45,6 +46,8 @@ private:
     std::shared_ptr<Engine::Scene> m_RuntimeScene;
     SceneState m_SceneState = SceneState::Edit;
     bool m_ScenePaused = false;
+
+    Engine::PhysicsSystem m_PhysicsSystem;
 
     ViewportPanel m_ViewportPanel;
     SceneHierarchyPanel m_SceneHierarchyPanel;
