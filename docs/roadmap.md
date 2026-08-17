@@ -78,7 +78,7 @@
 - ✅ `Physics2D` — wrapper Box2D (monde, step)
 - ✅ `RigidBodyComponent` (`Static`, `Dynamic`, `Kinematic`)
 - ✅ `BoxColliderComponent`
-- ⬜ `CircleColliderComponent`
+- ✅ `CircleColliderComponent`
 - ✅ `PhysicsSystem` — synchronise Transform ↔ Box2D body
 - ⬜ Callbacks de collision
 
