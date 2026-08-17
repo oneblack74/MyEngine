@@ -76,8 +76,24 @@ void EditorLayer::OnAttach()
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    // Multi-viewport : permet à une fenêtre flottante (comme "Game") de devenir une vraie
+    // fenêtre OS. NoAutoMerge empêche ImGui de la refondre dans la fenêtre principale
+    // quand elle apparaît par-dessus/à côté — sans ça, "Game" ne deviendrait une fenêtre
+    // séparée que si on la faisait glisser assez loin manuellement.
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+    io.ConfigViewportsNoAutoMerge = true;
 
     ImGui::StyleColorsDark();
+
+    // Sans ça, les fenêtres OS détachées ont un fond transparent et des coins arrondis
+    // qui ne collent pas avec le style de la fenêtre principale (recette standard ImGui
+    // pour ImGuiConfigFlags_ViewportsEnable).
+    ImGuiStyle &style = ImGui::GetStyle();
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        style.WindowRounding = 0.0f;
+        style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+    }
 
     GLFWwindow *window = Engine::Application::Get().GetWindow().GetNativeWindow();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
@@ -135,6 +151,17 @@ void EditorLayer::OnUpdate(Engine::Timestep ts)
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+    // Dessine les fenêtres OS détachées (panels sortis de la fenêtre principale) — no-op
+    // tant qu'aucun panel n'a été glissé dehors. Doit rester le dernier appel ImGui de la
+    // frame, et on restaure le contexte GL courant après car ça en change pendant l'appel.
+    if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        GLFWwindow *backupContext = glfwGetCurrentContext();
+        ImGui::UpdatePlatformWindows();
+        ImGui::RenderPlatformWindowsDefault();
+        glfwMakeContextCurrent(backupContext);
+    }
 }
 
 void EditorLayer::RenderImGui()
@@ -224,6 +251,10 @@ void EditorLayer::RenderImGui()
                                    m_SceneHierarchyPanel.GetSelectedEntity(),
                                    [this](Engine::Entity picked)
                                    { m_SceneHierarchyPanel.SetSelectedEntity(picked); });
+    // Fermer la fenêtre "Game" avec sa croix arrête le Play, comme sur Godot.
+    bool gameStillOpen = m_GamePanel.OnImGuiRender(GetActiveScene(), m_SceneState == SceneState::Play);
+    if (m_SceneState == SceneState::Play && !gameStillOpen)
+        OnSceneStop();
     m_SceneHierarchyPanel.OnImGuiRender();
     m_InspectorPanel.OnImGuiRender(m_SceneHierarchyPanel.GetSelectedEntity());
     m_ContentBrowserPanel.OnImGuiRender();
@@ -251,6 +282,8 @@ void EditorLayer::SetupDefaultDockLayout()
     ImGuiID dockMiddleTop = dockMiddle;
 
     ImGui::DockBuilderDockWindow("Viewport", dockLeftTop);
+    // "Game" n'est pas dans le layout par défaut : elle n'existe (et ne se docke jamais)
+    // que pendant le Play, en fenêtre flottante détachée — voir GamePanel.
     ImGui::DockBuilderDockWindow("Console", dockLeftBottom);
     ImGui::DockBuilderDockWindow("Hiérarchie de la scène", dockMiddleTop);
     ImGui::DockBuilderDockWindow("Content Browser", dockMiddleBottom);

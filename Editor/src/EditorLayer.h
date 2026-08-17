@@ -1,5 +1,6 @@
 #pragma once
 #include "Panels/ViewportPanel.h"
+#include "Panels/GamePanel.h"
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/InspectorPanel.h"
 #include "Panels/ContentBrowserPanel.h"
@@ -51,6 +52,7 @@ private:
     Engine::PhysicsSystem m_PhysicsSystem;
 
     ViewportPanel m_ViewportPanel;
+    GamePanel m_GamePanel;
     SceneHierarchyPanel m_SceneHierarchyPanel;
     InspectorPanel m_InspectorPanel;
     ContentBrowserPanel m_ContentBrowserPanel;
