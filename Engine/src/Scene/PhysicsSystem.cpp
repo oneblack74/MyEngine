@@ -51,6 +51,25 @@ namespace Engine
 
                 bc.RuntimeShape = b2CreatePolygonShape(rb.RuntimeBody, &shapeDef, &box);
             }
+
+            if (entity.HasComponent<CircleColliderComponent>())
+            {
+                auto &cc = entity.GetComponent<CircleColliderComponent>();
+
+                // Box2D n'a qu'un seul rayon par cercle : en cas d'échelle non-uniforme
+                // (Scale.x != Scale.y), on prend la moyenne — pas de vrai support d'ellipse.
+                float scale = (transform.Scale.x + transform.Scale.y) * 0.5f;
+                b2Circle circle;
+                circle.center = {cc.Offset.x, cc.Offset.y};
+                circle.radius = cc.Radius * scale;
+
+                b2ShapeDef shapeDef = b2DefaultShapeDef();
+                shapeDef.density = cc.Density;
+                shapeDef.material.friction = cc.Friction;
+                shapeDef.material.restitution = cc.Restitution;
+
+                cc.RuntimeShape = b2CreateCircleShape(rb.RuntimeBody, &shapeDef, &circle);
+            }
         }
     }
 

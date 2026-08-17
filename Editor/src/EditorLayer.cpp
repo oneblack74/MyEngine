@@ -40,6 +40,19 @@ void EditorLayer::OnAttach()
     squareBody.Type = Engine::RigidBodyComponent::BodyType::Dynamic;
     square.AddComponent<Engine::BoxColliderComponent>();
 
+    // Même démo, avec un CircleColliderComponent cette fois — le rendu est identique
+    // (Renderer2D ne dessine que des quads pour l'instant, pas de vrai rendu de cercle),
+    // donc ça ne se verra pas à l'écran : sert juste à vérifier que la shape circulaire
+    // se crée et simule sans crash.
+    auto circle = m_EditorScene->CreateEntity("Circle");
+    auto &circleTransform = circle.GetComponent<Engine::TransformComponent>();
+    circleTransform.Position = {0.7f, 0.3f, 0.0f};
+    circleTransform.Scale = {0.4f, 0.4f, 1.0f};
+    circle.AddComponent<Engine::SpriteRendererComponent>(glm::vec4(0.9f, 0.5f, 0.2f, 1.0f));
+    auto &circleBody = circle.AddComponent<Engine::RigidBodyComponent>();
+    circleBody.Type = Engine::RigidBodyComponent::BodyType::Dynamic;
+    circle.AddComponent<Engine::CircleColliderComponent>();
+
     auto ground = m_EditorScene->CreateEntity("Ground");
     auto &groundTransform = ground.GetComponent<Engine::TransformComponent>();
     groundTransform.Position = {0.0f, -0.7f, 0.0f};

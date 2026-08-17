@@ -80,4 +80,18 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
             ImGui::TreePop();
         }
     }
+
+    if (entity.HasComponent<Engine::CircleColliderComponent>())
+    {
+        if (ImGui::TreeNodeEx("Circle Collider", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            auto &cc = entity.GetComponent<Engine::CircleColliderComponent>();
+            ImGui::DragFloat2("Offset", &cc.Offset.x, 0.05f);
+            ImGui::DragFloat("Rayon", &cc.Radius, 0.05f, 0.01f, 100.0f);
+            ImGui::DragFloat("Densité", &cc.Density, 0.05f, 0.0f, 100.0f);
+            ImGui::DragFloat("Friction", &cc.Friction, 0.01f, 0.0f, 1.0f);
+            ImGui::DragFloat("Restitution", &cc.Restitution, 0.01f, 0.0f, 1.0f);
+            ImGui::TreePop();
+        }
+    }
 }

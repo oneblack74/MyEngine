@@ -46,6 +46,9 @@ namespace Engine
 
             if (srcEntity.HasComponent<BoxColliderComponent>())
                 newEntity.AddComponent<BoxColliderComponent>(srcEntity.GetComponent<BoxColliderComponent>());
+
+            if (srcEntity.HasComponent<CircleColliderComponent>())
+                newEntity.AddComponent<CircleColliderComponent>(srcEntity.GetComponent<CircleColliderComponent>());
         }
 
         return newScene;

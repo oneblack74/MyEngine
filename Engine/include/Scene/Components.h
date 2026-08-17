@@ -90,4 +90,20 @@ namespace Engine
         BoxColliderComponent() = default;
         BoxColliderComponent(const BoxColliderComponent &) = default;
     };
+
+    struct CircleColliderComponent
+    {
+        glm::vec2 Offset = {0.0f, 0.0f};
+        float Radius = 0.5f;
+
+        float Density = 1.0f;
+        float Friction = 0.5f;
+        float Restitution = 0.0f;
+
+        // Même cycle de vie que BoxColliderComponent::RuntimeShape.
+        b2ShapeId RuntimeShape = b2_nullShapeId;
+
+        CircleColliderComponent() = default;
+        CircleColliderComponent(const CircleColliderComponent &) = default;
+    };
 }

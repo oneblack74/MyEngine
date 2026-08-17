@@ -66,6 +66,16 @@ namespace Engine
                 entityJson["BoxColliderComponent"]["Restitution"] = bc.Restitution;
             }
 
+            if (entity.HasComponent<CircleColliderComponent>())
+            {
+                auto &cc = entity.GetComponent<CircleColliderComponent>();
+                entityJson["CircleColliderComponent"]["Offset"] = {cc.Offset.x, cc.Offset.y};
+                entityJson["CircleColliderComponent"]["Radius"] = cc.Radius;
+                entityJson["CircleColliderComponent"]["Density"] = cc.Density;
+                entityJson["CircleColliderComponent"]["Friction"] = cc.Friction;
+                entityJson["CircleColliderComponent"]["Restitution"] = cc.Restitution;
+            }
+
             root["Entities"].push_back(entityJson);
         }
 
@@ -136,6 +146,17 @@ namespace Engine
                 bc.Density = entityJson["BoxColliderComponent"]["Density"].get<float>();
                 bc.Friction = entityJson["BoxColliderComponent"]["Friction"].get<float>();
                 bc.Restitution = entityJson["BoxColliderComponent"]["Restitution"].get<float>();
+            }
+
+            if (entityJson.contains("CircleColliderComponent"))
+            {
+                auto &cc = entity.AddComponent<CircleColliderComponent>();
+                auto offset = entityJson["CircleColliderComponent"]["Offset"];
+                cc.Offset = {offset[0], offset[1]};
+                cc.Radius = entityJson["CircleColliderComponent"]["Radius"].get<float>();
+                cc.Density = entityJson["CircleColliderComponent"]["Density"].get<float>();
+                cc.Friction = entityJson["CircleColliderComponent"]["Friction"].get<float>();
+                cc.Restitution = entityJson["CircleColliderComponent"]["Restitution"].get<float>();
             }
         }
 
