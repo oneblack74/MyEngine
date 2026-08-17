@@ -38,6 +38,14 @@ namespace Engine
 
             if (srcEntity.HasComponent<SpriteRendererComponent>())
                 newEntity.AddComponent<SpriteRendererComponent>(srcEntity.GetComponent<SpriteRendererComponent>());
+
+            // RuntimeBody/RuntimeShape restent null dans la copie : c'est PhysicsSystem qui
+            // les recrée pour la scène runtime au moment du Play, jamais partagés avec l'édition.
+            if (srcEntity.HasComponent<RigidBodyComponent>())
+                newEntity.AddComponent<RigidBodyComponent>(srcEntity.GetComponent<RigidBodyComponent>());
+
+            if (srcEntity.HasComponent<BoxColliderComponent>())
+                newEntity.AddComponent<BoxColliderComponent>(srcEntity.GetComponent<BoxColliderComponent>());
         }
 
         return newScene;
