@@ -408,6 +408,36 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK_EQ(console.GetVisibleLineCountForTests(), withEverything);
     };
 
+    // Régression : le regroupement compare le message brut et non la ligne formatée.
+    // Deux occurrences émises à des secondes différentes n'ont pas le même horodatage,
+    // donc pas la même ligne — et ne fusionnaient pas.
+    t = IM_REGISTER_TEST(engine, "console", "collapse_ignores_timestamp");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        ConsolePanel &console = editor.GetConsolePanelForTests();
+        if (!console.IsCollapsedForTests())
+        {
+            ctx->SetRef("Console");
+            ctx->ItemClick("Grouper");
+        }
+        ctx->Yield(2);
+        const size_t before = console.GetVisibleLineCountForTests();
+
+        LOG_WARN("Message répété à cheval sur deux secondes");
+        // L'horodatage a une précision d'une seconde : il faut vraiment franchir un
+        // tic d'horloge pour que les deux lignes formatées diffèrent.
+        ctx->SleepNoSkip(1.2f, 0.1f);
+        LOG_WARN("Message répété à cheval sur deux secondes");
+        ctx->Yield(3);
+
+        // Une seule ligne de plus, portant deux occurrences.
+        IM_CHECK_EQ(console.GetVisibleLineCountForTests(), before + 1);
+
+        ctx->SetRef("Console");
+        ctx->ItemClick("Grouper");
+        IM_CHECK(!console.IsCollapsedForTests());
+    };
+
     // --- Captures -----------------------------------------------------------
 
     // Ce test existe surtout pour produire une image à regarder, mais il vérifie que
