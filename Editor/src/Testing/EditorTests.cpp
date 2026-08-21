@@ -733,6 +733,28 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         ctx->SetRef("Save Scene As");
         ctx->ItemClick("Cancel");
     };
+    // Un message plus large que le panel, répété : à regarder pour vérifier qu'il
+    // revient à la ligne et que son compteur d'occurrences reste lisible à droite.
+    t = IM_REGISTER_TEST(engine, "capture", "console_long_collapsed_line");
+    t->TestFunc = [](ImGuiTestContext *ctx)
+    {
+        const char *longMessage = "Message volontairement très long pour vérifier le retour à la ligne "
+                                  "de la console, qui doit replier le texte sans jamais recouvrir le "
+                                  "compteur d'occurrences aligné sur le bord droit du panel";
+        for (int i = 0; i < 3; ++i)
+            LOG_WARN(longMessage);
+
+        ctx->SetRef("Console");
+        ctx->ItemCheck("Collapse");
+        ctx->Yield(2);
+
+        const char *outputFile = "output/captures/console_long_line.png";
+        ctx->CaptureReset();
+        ImStrncpy(ctx->CaptureArgs->InOutputFile, outputFile, IM_ARRAYSIZE(ctx->CaptureArgs->InOutputFile));
+        IM_CHECK(ctx->CaptureAddWindow("//Console"));
+        IM_CHECK(ctx->CaptureScreenshot());
+        IM_CHECK(std::filesystem::exists(outputFile));
+    };
     // Le Viewport avec les contours de colliders activés : sert de vérification
     // visuelle qu'ils épousent bien la géométrie envoyée à Box2D.
     t = IM_REGISTER_TEST(engine, "capture", "collider_outlines");

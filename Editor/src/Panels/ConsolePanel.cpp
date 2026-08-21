@@ -65,21 +65,43 @@ void ConsolePanel::OnImGuiRender()
     // Zone défilante séparée : la barre d'outils doit rester visible quand la liste défile.
     if (ImGui::BeginChild("##lignes"))
     {
-        for (const DisplayLine &line : m_VisibleLines)
+        // Table à deux colonnes : le message à gauche, son nombre d'occurrences à
+        // droite. C'est ce qui garantit que le compteur garde sa place quelle que soit
+        // la longueur du message — avant, un message plus large que le panel passait
+        // par-dessus et le rendait illisible.
+        const float countColumnWidth = ImGui::CalcTextSize("99999").x;
+        if (ImGui::BeginTable("##messages", 2, ImGuiTableFlags_NoSavedSettings))
         {
-            ImGui::PushStyleColor(ImGuiCol_Text, ColorFor(line.Level));
-            ImGui::TextUnformatted(line.Text->c_str());
-            ImGui::PopStyleColor();
+            ImGui::TableSetupColumn("##texte", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("##compte", ImGuiTableColumnFlags_WidthFixed, countColumnWidth);
 
-            if (line.Count > 1)
+            for (const DisplayLine &line : m_VisibleLines)
             {
-                // Le compteur d'occurrences est aligné à droite, comme dans Unity.
-                char badge[16];
-                snprintf(badge, sizeof(badge), "%d", line.Count);
-                const float badgeWidth = ImGui::CalcTextSize(badge).x + ImGui::GetStyle().FramePadding.x * 2.0f;
-                ImGui::SameLine(ImGui::GetContentRegionAvail().x - badgeWidth);
-                ImGui::TextDisabled("%s", badge);
+                ImGui::TableNextRow();
+
+                if (ImGui::TableNextColumn())
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ColorFor(line.Level));
+                    // 0.0f = replier au bord de la cellule. La console n'a pas de
+                    // défilement horizontal : sans ça un message long serait coupé net.
+                    ImGui::PushTextWrapPos(0.0f);
+                    ImGui::TextUnformatted(line.Text->c_str());
+                    ImGui::PopTextWrapPos();
+                    ImGui::PopStyleColor();
+                }
+
+                if (ImGui::TableNextColumn() && line.Count > 1)
+                {
+                    // Aligné à droite dans sa colonne, comme dans Unity.
+                    char badge[16];
+                    snprintf(badge, sizeof(badge), "%d", line.Count);
+                    const float badgeWidth = ImGui::CalcTextSize(badge).x;
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + countColumnWidth - badgeWidth);
+                    ImGui::TextDisabled("%s", badge);
+                }
             }
+
+            ImGui::EndTable();
         }
 
         // Auto-scroll : ne suit le bas que si l'utilisateur n'a pas remonté manuellement
