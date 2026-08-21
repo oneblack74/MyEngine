@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 #include "Commands/EditorCommand.h"
 #include "Commands/EditorContext.h"
 #include <Core/UUID.h>
@@ -113,12 +114,26 @@ private:
     Engine::UUID m_EntityID;
     std::string m_EntityName;
 
-    // Position dans la hiérarchie au moment de la suppression : l'annulation doit
-    // remettre l'entité là où elle était, pas l'ajouter en bas de la liste.
-    size_t m_OrderIndex = 0;
+    // Supprimer un parent supprime ses enfants : la sauvegarde porte donc sur toute
+    // la branche, qui doit revenir d'un bloc.
+    struct BackedUpEntity
+    {
+        Engine::UUID ID;
+        std::string Name;
 
-    // Copie hors scène des components de l'entité supprimée, seule chose qui permette
-    // de la faire revenir intacte.
+        // Position dans la hiérarchie au moment de la suppression : l'annulation doit
+        // remettre l'entité là où elle était, pas l'ajouter en bas de la liste.
+        size_t OrderIndex = 0;
+
+        Engine::Entity Copy;
+    };
+
+    // Le parent de la racine de la branche vit en dehors de celle-ci : il n'est donc
+    // pas reproduit dans la scène de sauvegarde et doit être retenu à part.
+    Engine::UUID m_RootParent{0};
+
+    // Copie hors scène des components des entités supprimées, seule chose qui permette
+    // de les faire revenir intactes.
     std::shared_ptr<Engine::Scene> m_Backup;
-    Engine::Entity m_BackupEntity;
+    std::vector<BackedUpEntity> m_BackedUp;
 };
