@@ -620,6 +620,79 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         sprite.Texture = previous;
     };
 
+    // --- Menu Fichier -------------------------------------------------------
+
+    // Cycle complet : enregistrer sous, repartir d'une scène vide, rouvrir le fichier.
+    // Le test se termine sur la scène de démo relue depuis son propre enregistrement,
+    // donc les tests suivants y retrouvent bien leurs entités.
+    t = IM_REGISTER_TEST(engine, "scene", "save_new_and_open_from_file_menu");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        const std::filesystem::path scenePath =
+            Engine::AssetManager::GetAssetRoot() / "scenes" / "test_file_menu.scene";
+        std::filesystem::remove(scenePath);
+
+        // Une valeur reconnaissable : elle prouve que c'est bien ce fichier-là qui revient.
+        Engine::Entity square = SelectEntity(ctx, editor, "Square");
+        IM_CHECK(square);
+        const Engine::TransformComponent savedTransform = square.GetComponent<Engine::TransformComponent>();
+        square.GetComponent<Engine::TransformComponent>().Position.x = 3.25f;
+        const int entityCount = CountEntities(editor);
+        IM_CHECK_GT(entityCount, 0);
+
+        ctx->SetRef("DockSpace");
+        ctx->MenuClick("Fichier/Enregistrer sous...");
+        ctx->Yield();
+
+        ctx->SetRef("Enregistrer la scène sous");
+        // KeyCharsReplace et pas ItemInputValue : ce dernier valide avec Entrée, ce qui
+        // fermerait la boîte avant qu'on ait pu cliquer le bouton qu'on veut tester.
+        ctx->ItemClick("##Nom");
+        ctx->KeyCharsReplace("test_file_menu");
+        ctx->ItemClick("Enregistrer");
+        ctx->Yield(2);
+
+        IM_CHECK(std::filesystem::exists(scenePath));
+        IM_CHECK_STR_EQ(editor.GetCurrentScenePathForTests().filename().string().c_str(),
+                        "test_file_menu.scene");
+
+        // Une nouvelle scène repart de zéro et oublie le chemin : sans ça, le Ctrl+S
+        // suivant écraserait le fichier de la scène précédente.
+        ctx->SetRef("DockSpace");
+        ctx->MenuClick("Fichier/Nouvelle scène");
+        ctx->Yield(2);
+        IM_CHECK_EQ(CountEntities(editor), 0);
+        IM_CHECK(editor.GetCurrentScenePathForTests().empty());
+
+        ctx->MenuClick("Fichier/Ouvrir...");
+        ctx->Yield();
+
+        // La liste vit dans une fenêtre enfant ImGui, dont le vrai nom est mangled
+        // ("Popup/Fichiers_XXXXXXXX") : WindowInfo est le seul moyen de la désigner,
+        // un chemin "Ouvrir une scène/Fichiers" ne se résoudrait pas.
+        ctx->SetRef(ctx->WindowInfo("//Ouvrir une scène/Fichiers").Window);
+        ctx->ItemClick("test_file_menu.scene");
+        ctx->SetRef("Ouvrir une scène");
+        ctx->ItemClick("Ouvrir");
+        ctx->Yield(2);
+
+        IM_CHECK_EQ(CountEntities(editor), entityCount);
+        Engine::Entity reloaded = SelectEntity(ctx, editor, "Square");
+        IM_CHECK(reloaded);
+        IM_CHECK(NearlyEqual(reloaded.GetComponent<Engine::TransformComponent>().Position.x, 3.25f));
+
+        // Ctrl+S sur une scène qui a déjà un chemin : réécrit au même endroit, sans
+        // rouvrir la moindre boîte de dialogue.
+        std::filesystem::remove(scenePath);
+        ctx->SetRef("DockSpace");
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_S);
+        ctx->Yield(2);
+        IM_CHECK(std::filesystem::exists(scenePath));
+
+        reloaded.GetComponent<Engine::TransformComponent>() = savedTransform;
+        std::filesystem::remove(scenePath);
+    };
+
     // --- Captures -----------------------------------------------------------
 
     // Ce test existe surtout pour produire une image à regarder, mais il vérifie que
@@ -636,6 +709,29 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK(ctx->CaptureAddWindow("//Inspecteur"));
         IM_CHECK(ctx->CaptureScreenshot());
         IM_CHECK(std::filesystem::exists(outputFile));
+    };
+    // La boîte de dialogue de scène, à regarder : elle est dessinée en ImGui, donc
+    // c'est la seule façon de vérifier qu'elle est lisible et bien proportionnée.
+    t = IM_REGISTER_TEST(engine, "capture", "scene_file_dialog");
+    t->TestFunc = [](ImGuiTestContext *ctx)
+    {
+        ctx->SetRef("DockSpace");
+        ctx->MenuClick("Fichier/Enregistrer sous...");
+        ctx->Yield(2);
+
+        const char *outputFile = "output/captures/scene_file_dialog.png";
+        ctx->CaptureReset();
+        ImStrncpy(ctx->CaptureArgs->InOutputFile, outputFile, IM_ARRAYSIZE(ctx->CaptureArgs->InOutputFile));
+        IM_CHECK(ctx->CaptureAddWindow("//Enregistrer la scène sous"));
+        // Sans IncludeOtherWindows, le Test Engine masque toutes les autres fenêtres
+        // pendant la capture — y compris celle qui a ouvert la modale, ce qui referme
+        // la modale et ne laisse que le décor derrière sur l'image.
+        ctx->CaptureArgs->InFlags |= ImGuiCaptureFlags_IncludeOtherWindows;
+        IM_CHECK(ctx->CaptureScreenshot());
+        IM_CHECK(std::filesystem::exists(outputFile));
+
+        ctx->SetRef("Enregistrer la scène sous");
+        ctx->ItemClick("Annuler");
     };
     // Le Viewport avec les contours de colliders activés : sert de vérification
     // visuelle qu'ils épousent bien la géométrie envoyée à Box2D.
