@@ -123,6 +123,14 @@ namespace Engine
         return handle;
     }
 
+    void AssetManager::Remove(AssetHandle handle)
+    {
+        s_Registry.erase((uint64_t)handle);
+        s_Cache.erase((uint64_t)handle);
+        s_SceneWriteTimes.erase((uint64_t)handle);
+        SaveRegistry();
+    }
+
     bool AssetManager::IsValid(AssetHandle handle)
     {
         return FindMetadata(handle) != nullptr;

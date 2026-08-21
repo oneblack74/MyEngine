@@ -32,6 +32,9 @@ namespace Engine
         // chemin déjà connu ne change jamais : c'est ce que garantit le registre.
         static AssetHandle Import(const std::string &path);
 
+        // Retire un asset du registre et du cache. Le fichier lui-même n'est pas touché.
+        static void Remove(AssetHandle handle);
+
         static bool IsValid(AssetHandle handle);
         static AssetType GetType(AssetHandle handle);
         static std::string GetPath(AssetHandle handle);
