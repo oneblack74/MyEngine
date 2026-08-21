@@ -9,6 +9,7 @@
 #include "Panels/ContentBrowserPanel.h"
 #include "Panels/ConsolePanel.h"
 #include "Panels/SceneFileDialog.h"
+#include "SceneInstanceSync.h"
 #include <Core/Layer.h>
 #include <Renderer/Framebuffer.h>
 #include <Renderer/OrthographicCamera.h>
@@ -137,6 +138,10 @@ private:
     // repoussé après le dessin de tous les panels : changer de scène au milieu d'une
     // frame remplacerait celle que les panels déjà dessinés viennent d'utiliser.
     std::filesystem::path m_SceneToOpen;
+
+    // Retient l'état des scènes sources, pour savoir ce qui a changé dedans et ce que
+    // l'utilisateur a changé sur les instances.
+    SceneInstanceSync m_SceneInstanceSync;
 
     ViewportPanel m_ViewportPanel;
     GamePanel m_GamePanel;

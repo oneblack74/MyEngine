@@ -12,6 +12,7 @@
 #include <Scene/SceneManager.h>
 #include <Scene/SceneSerializer.h>
 #include <filesystem>
+#include <fstream>
 #include <imgui.h>
 #include <imgui_internal.h> // DockBuilder* : API "interne" ImGui, mais c'est le seul moyen de définir un layout par défaut
 #include <backends/imgui_impl_glfw.h>
@@ -753,6 +754,16 @@ void EditorLayer::InstantiateScene(const SceneHierarchyPanel::SceneInstanceDrop 
         return;
 
     m_CommandHistory.Execute(std::move(command));
+
+    // Référence de départ pour les futures fusions : sans elle, la première
+    // modification de la source serait prise pour une surcharge de l'instance.
+    std::ifstream file(scenePath);
+    if (file.is_open())
+    {
+        nlohmann::json sourceJson;
+        file >> sourceJson;
+        m_SceneInstanceSync.RememberSource(Engine::AssetManager::Import(drop.AssetPath), sourceJson);
+    }
 }
 
 void EditorLayer::RefreshSceneInstances(Engine::AssetHandle source)
@@ -760,67 +771,32 @@ void EditorLayer::RefreshSceneInstances(Engine::AssetHandle source)
     const std::filesystem::path scenePath =
         Engine::AssetManager::GetAssetRoot() / Engine::AssetManager::GetPath(source);
 
-    auto loaded = std::make_shared<Engine::Scene>();
-    if (!Engine::SceneSerializer(loaded).Deserialize(scenePath.string()))
+    std::ifstream file(scenePath);
+    if (!file.is_open())
         return;
 
-    Engine::Entity sourceRoot = loaded->GetRootEntity();
-    if (!sourceRoot)
-        return;
+    nlohmann::json sourceJson;
+    file >> sourceJson;
 
-    // Les instances sont relevées avant d'en toucher une seule : le rafraîchissement
-    // détruit et recrée des entités, ce qui invaliderait un parcours en cours.
-    std::vector<Engine::UUID> instances;
-    for (auto entityHandle : m_EditorScene->GetAllEntitiesWith<Engine::SceneInstanceComponent>())
-    {
-        Engine::Entity entity{entityHandle, m_EditorScene.get()};
-        if (entity.GetComponent<Engine::SceneInstanceComponent>().Source == source)
-            instances.push_back(entity.GetUUID());
-    }
-
-    if (instances.empty())
-        return;
-
-    // La sélection peut porter sur une entité qui va disparaître : elle est retrouvée
-    // par UUID après coup, ou abandonnée si elle n'existe plus.
+    // La sélection est retrouvée par UUID : la fusion reconstruit la scène, donc les
+    // handles EnTT changent, mais pas les identités.
     Engine::Entity selected = m_SceneHierarchyPanel.GetSelectedEntity();
     const Engine::UUID selectedID = selected ? selected.GetUUID() : Engine::UUID(0);
 
-    for (Engine::UUID uuid : instances)
-    {
-        Engine::Entity instance = m_EditorScene->FindEntityByUUID(uuid);
-        if (!instance)
-            continue;
+    const bool refreshed = m_SceneInstanceSync.Refresh(m_EditorScene, source, sourceJson);
 
-        // Ce que le niveau possède et que la source ne doit pas écraser : où l'instance
-        // est posée, comment elle s'appelle, et où elle se range dans la hiérarchie.
-        // Tout le reste est refait à l'identique de la source.
-        const Engine::TransformComponent placement = instance.GetComponent<Engine::TransformComponent>();
-        const std::string name = instance.GetName();
-        const Engine::UUID parent = instance.GetComponent<Engine::ParentComponent>().Parent;
+    // La nouvelle version devient la référence des prochaines fusions, qu'il y ait eu
+    // des instances à mettre à jour ou non.
+    m_SceneInstanceSync.RememberSource(source, sourceJson);
 
-        for (Engine::Entity child : m_EditorScene->GetChildren(instance))
-            m_EditorScene->DestroyEntity(child);
+    if (!refreshed)
+        return;
 
-        Engine::Scene::CopyComponents(sourceRoot, instance);
-        instance.GetComponent<Engine::TransformComponent>() = placement;
-        instance.GetComponent<Engine::TagComponent>().Tag = name;
-        instance.GetComponent<Engine::ParentComponent>().Parent = parent;
-
-        // La racine de la source n'a pas de SceneInstanceComponent : la copie vient de
-        // retirer celui de l'instance, il faut le reposer.
-        if (!instance.HasComponent<Engine::SceneInstanceComponent>())
-            instance.AddComponent<Engine::SceneInstanceComponent>();
-        instance.GetComponent<Engine::SceneInstanceComponent>().Source = source;
-
-        for (Engine::Entity child : loaded->GetChildren(sourceRoot))
-            m_EditorScene->InstantiateBranch(child, instance);
-    }
-
+    // Les entités ont été recréées : la sélection doit être retrouvée par UUID.
     m_SceneHierarchyPanel.SetSelectedEntity(
         (uint64_t)selectedID != 0 ? m_EditorScene->FindEntityByUUID(selectedID) : Engine::Entity{});
 
-    LOG_INFO("Refreshed {0} instance(s) of {1}", instances.size(), Engine::AssetManager::GetPath(source));
+    LOG_INFO("Instances refreshed from {0}", Engine::AssetManager::GetPath(source));
 }
 
 void EditorLayer::SetupDefaultDockLayout()

@@ -1,6 +1,7 @@
 add_executable(Editor
     src/main.cpp
     src/EditorLayer.cpp
+    src/SceneInstanceSync.cpp
     src/Panels/ViewportPanel.cpp
     src/Panels/GamePanel.cpp
     src/Panels/SceneHierarchyPanel.cpp
