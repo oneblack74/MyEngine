@@ -7,8 +7,8 @@ namespace Engine
 {
     Application *Application::s_Instance = nullptr;
 
-    Application::Application()
-        : m_Window(WindowProps())
+    Application::Application(const WindowProps &props)
+        : m_Window(props)
     {
         assert(!s_Instance && "Une Application existe déjà !");
         s_Instance = this;

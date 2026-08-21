@@ -28,6 +28,9 @@ namespace Engine
             throw std::runtime_error("Failed to initialize GLFW");
         }
 
+        glfwDefaultWindowHints();
+        glfwWindowHint(GLFW_VISIBLE, props.Visible ? GLFW_TRUE : GLFW_FALSE);
+
         m_Window = glfwCreateWindow(m_Data.Width, m_Data.Height,
                                     m_Data.Title.c_str(), nullptr, nullptr);
 

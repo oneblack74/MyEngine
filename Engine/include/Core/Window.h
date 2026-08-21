@@ -14,11 +14,16 @@ namespace Engine
         std::string Title;
         unsigned int Width;
         unsigned int Height;
+        // Une fenêtre invisible rend quand même normalement (le contexte GL et le back
+        // buffer existent) : c'est ce qui permet de lancer l'éditeur en mode test sans
+        // faire clignoter une fenêtre à l'écran, tout en pouvant capturer son rendu.
+        bool Visible;
 
         WindowProps(const std::string &title = "MyEngine",
                     unsigned int width = 1280,
-                    unsigned int height = 720)
-            : Title(title), Width(width), Height(height) {}
+                    unsigned int height = 720,
+                    bool visible = true)
+            : Title(title), Width(width), Height(height), Visible(visible) {}
     };
 
     class Window
