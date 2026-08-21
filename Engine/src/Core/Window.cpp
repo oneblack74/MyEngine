@@ -16,6 +16,12 @@ namespace Engine
         Shutdown();
     }
 
+    void Window::SetTitle(const std::string &title)
+    {
+        m_Data.Title = title;
+        glfwSetWindowTitle(m_Window, m_Data.Title.c_str());
+    }
+
     void Window::Init(const WindowProps &props)
     {
         m_Data.Title = props.Title;

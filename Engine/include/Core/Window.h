@@ -38,6 +38,10 @@ namespace Engine
         unsigned int GetHeight() const { return m_Data.Height; }
         bool ShouldClose() const;
 
+        // Le titre n'est plus figé à la création : l'éditeur y affiche la scène ouverte,
+        // comme n'importe quel logiciel qui édite un document.
+        void SetTitle(const std::string &title);
+
         GLFWwindow *GetNativeWindow() const { return m_Window; }
 
         void SetEventCallback(const std::function<void(Event &)> &callback)
