@@ -10,6 +10,7 @@
 #include <Scene/Components.h>
 #include <Scene/RenderSystem.h>
 #include <Scene/SceneManager.h>
+#include <filesystem>
 #include <imgui.h>
 #include <imgui_internal.h> // DockBuilder* : API "interne" ImGui, mais c'est le seul moyen de définir un layout par défaut
 #include <backends/imgui_impl_glfw.h>
@@ -87,6 +88,7 @@ void EditorLayer::OnAttach()
     { ENGINE_LOG_INFO(Engine::LogCategories::Collision, "fin : {0} <-> {1}", a.GetName(), b.GetName()); };
 
     m_SceneHierarchyPanel.SetContext(m_EditorScene);
+    UpdateWindowTitle();
 
     // Init ImGui (contexte + backends GLFW/OpenGL3), avec le docking activé
     IMGUI_CHECKVERSION();
@@ -285,11 +287,7 @@ void EditorLayer::RenderImGui()
 
     if (ImGui::BeginMenuBar())
     {
-        if (ImGui::BeginMenu("Fichier"))
-        {
-            ImGui::MenuItem("Quitter (bientôt)", nullptr, false, false);
-            ImGui::EndMenu();
-        }
+        RenderFileMenu();
         RenderEditMenu();
         RenderViewMenu();
         if (ImGui::BeginMenu("Fenêtre"))
@@ -346,6 +344,17 @@ void EditorLayer::RenderImGui()
     m_ContentBrowserPanel.OnImGuiRender();
     m_ConsolePanel.OnImGuiRender();
 
+    // La boîte de dialogue est rendue après les panels : c'est une modale, elle doit
+    // passer par-dessus tout le reste.
+    std::filesystem::path chosenPath;
+    if (m_SceneFileDialog.OnImGuiRender(chosenPath))
+    {
+        if (m_SceneFileDialog.GetMode() == SceneFileDialog::Mode::Open)
+            OpenScene(chosenPath);
+        else
+            SaveSceneTo(chosenPath);
+    }
+
     // Fenêtres du Test Engine (liste des tests, log) : hors dockspace, et seulement
     // en mode interactif.
     m_TestEngine.RenderUI();
@@ -389,6 +398,17 @@ void EditorLayer::HandleShortcuts()
     // traduit les touches selon la disposition clavier (donc Ctrl+Z tombe bien sur le
     // Z d'un AZERTY, contrairement aux raccourcis de gizmo qui lisent la touche physique).
     const ImGuiInputFlags route = ImGuiInputFlags_RouteGlobal;
+
+    if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_N, route))
+        NewScene();
+    if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_O, route))
+        ShowSceneDialog(SceneFileDialog::Mode::Open);
+    // Ctrl+Maj+S ne déclenche pas Ctrl+S : ImGui::Shortcut compare l'accord de touches
+    // en entier, modificateurs compris.
+    if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_S, route))
+        SaveScene();
+    if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_S, route))
+        SaveSceneAs();
 
     if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Z, route))
         m_CommandHistory.Undo();
@@ -455,6 +475,129 @@ void EditorLayer::RenderViewMenu()
     ImGui::MenuItem("Contours de tous les colliders", nullptr, &m_ShowColliderOutlines);
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Celui de l'entité sélectionnée est affiché en permanence");
+
+    ImGui::EndMenu();
+}
+
+std::filesystem::path EditorLayer::GetSceneDirectory()
+{
+    // Les scènes vivent avec les assets du projet : c'est ce que le runtime de la
+    // Phase 8 embarquera, et ce que le Content Browser montre déjà.
+    return Engine::AssetManager::GetAssetRoot() / "scenes";
+}
+
+void EditorLayer::UpdateWindowTitle()
+{
+    const std::string sceneName =
+        m_CurrentScenePath.empty() ? "Sans titre" : m_CurrentScenePath.filename().string();
+    Engine::Application::Get().GetWindow().SetTitle("MyEngine Editor - " + sceneName);
+}
+
+void EditorLayer::SetEditorScene(const std::shared_ptr<Engine::Scene> &scene,
+                                 const std::filesystem::path &path)
+{
+    m_EditorScene = scene;
+    m_CurrentScenePath = path;
+    Engine::SceneManager::SetActiveScene(scene);
+
+    m_SceneHierarchyPanel.SetContext(m_EditorScene);
+    // La sélection et l'historique portent sur des entités de l'ancienne scène : les
+    // garder ferait pointer l'Inspecteur, et surtout les annulations, dans le vide.
+    m_SceneHierarchyPanel.SetSelectedEntity({});
+    m_CommandHistory.Clear();
+
+    UpdateWindowTitle();
+}
+
+void EditorLayer::NewScene()
+{
+    SetEditorScene(Engine::SceneManager::NewScene(), {});
+    LOG_INFO("Nouvelle scène");
+}
+
+void EditorLayer::OpenScene(const std::filesystem::path &path)
+{
+    auto scene = Engine::SceneManager::LoadScene(path.string());
+    if (!scene)
+    {
+        // SceneManager a déjà logué la cause ; la scène courante reste en place plutôt
+        // que de laisser l'éditeur sans scène.
+        LOG_ERROR("Ouverture annulée : {0} n'a pas pu être chargée", path.string());
+        return;
+    }
+
+    SetEditorScene(scene, path);
+    LOG_INFO("Scène ouverte : {0}", path.string());
+}
+
+void EditorLayer::SaveScene()
+{
+    if (m_CurrentScenePath.empty())
+    {
+        SaveSceneAs();
+        return;
+    }
+
+    SaveSceneTo(m_CurrentScenePath);
+}
+
+void EditorLayer::SaveSceneAs()
+{
+    ShowSceneDialog(SceneFileDialog::Mode::Save);
+}
+
+void EditorLayer::SaveSceneTo(const std::filesystem::path &path)
+{
+    // Le dossier des scènes n'existe pas dans un projet tout neuf : le créer ici évite
+    // un échec d'ouverture de flux au premier enregistrement.
+    std::error_code ec;
+    std::filesystem::create_directories(path.parent_path(), ec);
+    if (ec)
+    {
+        LOG_ERROR("Impossible de créer {0} : {1}", path.parent_path().string(), ec.message());
+        return;
+    }
+
+    Engine::SceneManager::SetActiveScene(m_EditorScene);
+    Engine::SceneManager::SaveActiveScene(path.string());
+
+    m_CurrentScenePath = path;
+    UpdateWindowTitle();
+    LOG_INFO("Scène enregistrée : {0}", path.string());
+}
+
+void EditorLayer::ShowSceneDialog(SceneFileDialog::Mode mode)
+{
+    const std::string suggested =
+        m_CurrentScenePath.empty() ? std::string() : m_CurrentScenePath.filename().string();
+    m_SceneFileDialog.OpenDialog(mode, GetSceneDirectory(), suggested);
+}
+
+void EditorLayer::RenderFileMenu()
+{
+    if (!ImGui::BeginMenu("Fichier"))
+        return;
+
+    // Tout est grisé pendant le Play : la scène éditée n'est pas celle qui tourne, et
+    // enregistrer la copie runtime (jetée au Stop) n'aurait aucun sens.
+    const bool editing = m_SceneState == SceneState::Edit;
+
+    if (ImGui::MenuItem("Nouvelle scène", "Ctrl+N", false, editing))
+        NewScene();
+    if (ImGui::MenuItem("Ouvrir...", "Ctrl+O", false, editing))
+        ShowSceneDialog(SceneFileDialog::Mode::Open);
+
+    ImGui::Separator();
+
+    if (ImGui::MenuItem("Enregistrer", "Ctrl+S", false, editing))
+        SaveScene();
+    if (ImGui::MenuItem("Enregistrer sous...", "Ctrl+Maj+S", false, editing))
+        SaveSceneAs();
+
+    ImGui::Separator();
+
+    if (ImGui::MenuItem("Quitter"))
+        Engine::Application::Get().Close();
 
     ImGui::EndMenu();
 }

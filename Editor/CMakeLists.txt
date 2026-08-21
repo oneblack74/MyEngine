@@ -6,6 +6,7 @@ add_executable(Editor
     src/Panels/SceneHierarchyPanel.cpp
     src/Panels/InspectorPanel.cpp
     src/Panels/ContentBrowserPanel.cpp
+    src/Panels/SceneFileDialog.cpp
     src/Panels/ConsolePanel.cpp
     src/Commands/CommandHistory.cpp
     src/Commands/SceneCommands.cpp

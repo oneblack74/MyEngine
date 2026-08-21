@@ -8,12 +8,14 @@
 #include "Panels/InspectorPanel.h"
 #include "Panels/ContentBrowserPanel.h"
 #include "Panels/ConsolePanel.h"
+#include "Panels/SceneFileDialog.h"
 #include <Core/Layer.h>
 #include <Renderer/Framebuffer.h>
 #include <Renderer/OrthographicCamera.h>
 #include <Scene/Scene.h>
 #include <Scene/AudioSystem.h>
 #include <Scene/PhysicsSystem.h>
+#include <filesystem>
 #include <memory>
 
 enum class SceneState
@@ -46,14 +48,32 @@ public:
     // puis vérifient l'état réel de l'éditeur derrière.
     Engine::Entity GetSelectedEntityForTests() const { return m_SceneHierarchyPanel.GetSelectedEntity(); }
     bool IsPlayingForTests() const { return m_SceneState == SceneState::Play; }
+    const std::filesystem::path &GetCurrentScenePathForTests() const { return m_CurrentScenePath; }
 
 private:
     void RenderImGui();
     void RunTestModeStep();
     void HandleShortcuts();
     void TrackGizmoEdit();
+    void RenderFileMenu();
     void RenderEditMenu();
     void RenderViewMenu();
+
+    // Actions du menu Fichier.
+    void NewScene();
+    void OpenScene(const std::filesystem::path &path);
+    void SaveScene();   // Ctrl+S : réécrit la scène courante, ou demande où la mettre
+    void SaveSceneAs(); // ouvre la boîte de dialogue, même si la scène a déjà un chemin
+    void SaveSceneTo(const std::filesystem::path &path);
+    void ShowSceneDialog(SceneFileDialog::Mode mode);
+
+    // Installe une scène comme scène d'édition et note d'où elle vient (chemin vide
+    // pour une scène jamais enregistrée).
+    void SetEditorScene(const std::shared_ptr<Engine::Scene> &scene, const std::filesystem::path &path);
+    void UpdateWindowTitle();
+
+    // Dossier des scènes du projet, sous la racine des assets.
+    static std::filesystem::path GetSceneDirectory();
 
     // Actions du menu Édition, chacune passant par une commande annulable.
     void CopySelectedEntity();
@@ -95,6 +115,11 @@ private:
     bool m_GizmoWasUsing = false;
     Engine::UUID m_GizmoEntityID{0};
     Engine::TransformComponent m_TransformBeforeGizmo;
+
+    // Chemin de la scène ouverte, vide tant qu'elle n'a jamais été enregistrée :
+    // c'est ce qui permet à Ctrl+S de réécrire au même endroit sans rien demander.
+    std::filesystem::path m_CurrentScenePath;
+    SceneFileDialog m_SceneFileDialog;
 
     ViewportPanel m_ViewportPanel;
     GamePanel m_GamePanel;
