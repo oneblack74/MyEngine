@@ -48,6 +48,17 @@ namespace Engine
         // seules dès qu'on en supprime une.
         const std::vector<UUID> &GetEntityOrder() const { return m_EntityOrder; }
 
+        // Une scène de jeu a exactement une entité racine — c'est ce qui permet de
+        // l'instancier ailleurs comme un objet, façon Godot. La classe Scene elle-même
+        // n'impose rien : elle sert aussi de conteneur détaché (presse-papiers,
+        // sauvegarde d'annulation), où cette notion n'a pas de sens. L'invariant est
+        // tenu par SceneManager, SceneSerializer et l'éditeur.
+        Entity GetRootEntity();
+
+        // Regroupe toutes les entités racine sous une nouvelle entité, et renvoie
+        // celle-ci. Sans effet s'il y a déjà exactement une racine.
+        Entity EnsureSingleRoot(const std::string &rootName);
+
         // Entités sans parent, dans l'ordre d'affichage.
         std::vector<Entity> GetRootEntities();
         std::vector<Entity> GetChildren(Entity entity);

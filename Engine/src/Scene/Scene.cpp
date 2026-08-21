@@ -156,6 +156,28 @@ namespace Engine
         return children;
     }
 
+    Entity Scene::GetRootEntity()
+    {
+        std::vector<Entity> roots = GetRootEntities();
+        return roots.empty() ? Entity{} : roots.front();
+    }
+
+    Entity Scene::EnsureSingleRoot(const std::string &rootName)
+    {
+        std::vector<Entity> roots = GetRootEntities();
+        if (roots.size() == 1)
+            return roots.front();
+
+        // La nouvelle racine est créée puis remontée en tête de l'ordre d'affichage :
+        // elle doit apparaître avant les entités qu'elle coiffe.
+        Entity root = CreateEntity(rootName);
+        for (Entity previousRoot : roots)
+            SetParent(previousRoot, root);
+
+        MoveEntityBefore(root.GetComponent<IDComponent>().ID, m_EntityOrder.front());
+        return root;
+    }
+
     std::vector<Entity> Scene::GetRootEntities()
     {
         std::vector<Entity> roots;

@@ -5,6 +5,10 @@
 
 namespace Engine
 {
+    // Nom donné à la racine d'une scène neuve, faute de mieux : elle se renomme comme
+    // n'importe quelle entité.
+    inline constexpr const char *k_DefaultRootName = "Scene";
+
     // Centralise la notion de "scène active" et les opérations load/save/switch dessus.
     class SceneManager
     {

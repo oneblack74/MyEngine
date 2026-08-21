@@ -3,6 +3,7 @@
 #include "Scene/Components.h"
 #include "Core/Log.h"
 #include <nlohmann/json.hpp>
+#include <filesystem>
 #include <fstream>
 
 using json = nlohmann::json;
@@ -128,6 +129,7 @@ namespace Engine
         if (!root.contains("Entities"))
             return false;
 
+
         for (auto &entityJson : root["Entities"])
         {
             std::string name;
@@ -212,6 +214,11 @@ namespace Engine
                 cc.Primary = entityJson["CameraComponent"]["Primary"].get<bool>();
             }
         }
+
+        // Une scène a exactement une racine. Un fichier écrit avant cette règle en a
+        // plusieurs : elles sont regroupées sous une nouvelle entité portant le nom du
+        // fichier, plutôt que de refuser de charger la scène.
+        m_Scene->EnsureSingleRoot(std::filesystem::path(filepath).stem().string());
 
         return true;
     }

@@ -42,9 +42,14 @@ void EditorLayer::OnAttach()
 
     m_Camera = std::make_shared<Engine::OrthographicCamera>(-1.6f, 1.6f, -0.9f, 0.9f);
 
-    // Scène de démo, le temps que SceneHierarchyPanel/ContentBrowserPanel existent
+    // Scène de démo, le temps que SceneHierarchyPanel/ContentBrowserPanel existent.
+    // NewScene() fournit déjà la racine unique de la scène : tout le reste se range
+    // dessous.
     m_EditorScene = Engine::SceneManager::NewScene();
+    Engine::Entity sceneRoot = m_EditorScene->GetRootEntity();
+
     auto square = m_EditorScene->CreateEntity("Square");
+    m_EditorScene->SetParent(square, sceneRoot);
     auto &transform = square.GetComponent<Engine::TransformComponent>();
     transform.Scale = {0.5f, 0.5f, 1.0f};
     square.AddComponent<Engine::SpriteRendererComponent>(glm::vec4(0.2f, 0.6f, 0.9f, 1.0f));
@@ -60,6 +65,7 @@ void EditorLayer::OnAttach()
     // donc ça ne se verra pas à l'écran : sert juste à vérifier que la shape circulaire
     // se crée et simule sans crash.
     auto circle = m_EditorScene->CreateEntity("Circle");
+    m_EditorScene->SetParent(circle, sceneRoot);
     auto &circleTransform = circle.GetComponent<Engine::TransformComponent>();
     circleTransform.Position = {0.7f, 0.3f, 0.0f};
     circleTransform.Scale = {0.4f, 0.4f, 1.0f};
@@ -69,6 +75,7 @@ void EditorLayer::OnAttach()
     circle.AddComponent<Engine::CircleColliderComponent>();
 
     auto ground = m_EditorScene->CreateEntity("Ground");
+    m_EditorScene->SetParent(ground, sceneRoot);
     auto &groundTransform = ground.GetComponent<Engine::TransformComponent>();
     groundTransform.Position = {0.0f, -0.7f, 0.0f};
     groundTransform.Scale = {2.5f, 0.2f, 1.0f};
@@ -79,12 +86,14 @@ void EditorLayer::OnAttach()
     // Démo CameraComponent : sans ça, GamePanel n'a aucune caméra "Primary" à utiliser
     // et affiche juste son avertissement à la place d'un rendu.
     auto mainCamera = m_EditorScene->CreateEntity("Main Camera");
+    m_EditorScene->SetParent(mainCamera, sceneRoot);
     mainCamera.AddComponent<Engine::CameraComponent>();
 
     // Démo Phase 6 : de quoi tester l'audio, mais volontairement muet au lancement du
     // Play — un bip à chaque exécution est vite pénible quand on travaille. Il s'écoute
     // au bouton "Play" de l'Inspecteur, ou en cochant "Play On Start".
     auto sound = m_EditorScene->CreateEntity("Bip");
+    m_EditorScene->SetParent(sound, sceneRoot);
     auto &soundAudio = sound.AddComponent<Engine::AudioComponent>();
     soundAudio.Sound = Engine::AssetManager::Import("audio/bip.wav");
     soundAudio.PlayOnStart = false;
@@ -497,6 +506,14 @@ void EditorLayer::DeleteSelectedEntity()
     if (!selected)
         return;
 
+    // Supprimer la racine viderait la scène et lui retirerait ce qui la rend
+    // instanciable ailleurs. Godot ne le permet pas non plus.
+    if (selected == m_EditorScene->GetRootEntity())
+    {
+        LOG_WARN("The scene root cannot be deleted");
+        return;
+    }
+
     m_CommandHistory.Execute(std::make_unique<DeleteEntityCommand>(*this, selected));
 }
 
@@ -683,6 +700,13 @@ void EditorLayer::ApplyHierarchyDrop(const SceneHierarchyPanel::HierarchyDrop &d
     // Insérer avant une entité, c'est la rejoindre au même niveau : le nouveau parent
     // est alors celui de l'entité de référence, et non elle-même.
     Engine::Entity newParent = drop.InsertBefore ? m_EditorScene->GetParent(target) : target;
+
+    // Déposer sur la scène rattache à son entité racine : une scène n'a qu'une racine,
+    // il n'est pas question d'en créer une seconde.
+    if (!newParent)
+        newParent = m_EditorScene->GetRootEntity();
+    if (dragged == newParent)
+        return;
     if (!m_EditorScene->CanSetParent(dragged, newParent))
         return;
 
