@@ -3,6 +3,7 @@
 #include <Scene/Entity.h>
 #include <Scene/SceneSerializer.h>
 #include <functional>
+#include <set>
 #include <vector>
 
 using json = nlohmann::json;
@@ -60,9 +61,26 @@ namespace
         return merged;
     }
 
+    // Components que l'instance a explicitement perdus : la fusion ne doit pas les
+    // faire revenir.
+    std::set<std::string> RemovedComponentsOf(const json &entityJson)
+    {
+        std::set<std::string> removed;
+        if (!entityJson.contains("SceneInstanceMemberComponent") ||
+            !entityJson["SceneInstanceMemberComponent"].contains("RemovedComponents"))
+        {
+            return removed;
+        }
+
+        for (const json &name : entityJson["SceneInstanceMemberComponent"]["RemovedComponents"])
+            removed.insert(name.get<std::string>());
+        return removed;
+    }
+
     json MergeEntity(const json &current, const json *base, const json &updated)
     {
         json merged = current;
+        const std::set<std::string> removedOnInstance = RemovedComponentsOf(current);
 
         // Ce que la source apporte ou met à jour.
         for (auto it = updated.begin(); it != updated.end(); ++it)
@@ -73,10 +91,10 @@ namespace
 
             if (!current.contains(key))
             {
-                // Component absent de l'instance : ajouté par la source (ou retiré sur
-                // l'instance, auquel cas il revient — le distinguer demanderait de
-                // retenir les suppressions, ce qui n'est pas fait).
-                merged[key] = it.value();
+                // Absent de l'instance : soit la source vient de l'ajouter, soit
+                // l'instance l'a explicitement retiré — d'où la liste des retraits.
+                if (removedOnInstance.find(key) == removedOnInstance.end())
+                    merged[key] = it.value();
                 continue;
             }
 
@@ -105,6 +123,96 @@ namespace
 
         return merged;
     }
+}
+
+const json *SceneInstanceSync::BaseEntityJsonOf(Engine::Entity entity) const
+{
+    if (!entity || !entity.GetScene() || !entity.HasComponent<Engine::SceneInstanceMemberComponent>())
+        return nullptr;
+
+    Engine::Scene &scene = *entity.GetScene();
+
+    // Remonter jusqu'à la racine d'instance : c'est elle qui sait de quelle scène la
+    // branche est issue.
+    Engine::Entity root = entity;
+    while (root && !root.HasComponent<Engine::SceneInstanceComponent>())
+        root = scene.GetParent(root);
+    if (!root)
+        return nullptr;
+
+    auto base = m_Bases.find((uint64_t)root.GetComponent<Engine::SceneInstanceComponent>().Source);
+    if (base == m_Bases.end())
+        return nullptr;
+
+    const uint64_t sourceEntity =
+        (uint64_t)entity.GetComponent<Engine::SceneInstanceMemberComponent>().SourceEntity;
+
+    const auto index = IndexByUUID(base->second);
+    auto found = index.find(sourceEntity);
+    return found != index.end() ? found->second : nullptr;
+}
+
+std::set<std::string> SceneInstanceSync::OverriddenPropertiesOf(Engine::Entity entity) const
+{
+    const json *base = BaseEntityJsonOf(entity);
+    if (!base)
+        return {};
+
+    const json current = Engine::SceneSerializer::EntityToJson(entity);
+
+    std::set<std::string> overridden;
+    for (auto component = current.begin(); component != current.end(); ++component)
+    {
+        const std::string &componentName = component.key();
+        if (IsInstanceOwnedKey(componentName) || !component.value().is_object())
+            continue;
+
+        const bool inBase = base->contains(componentName);
+        for (auto field = component.value().begin(); field != component.value().end(); ++field)
+        {
+            // Component ajouté sur l'instance : tout ce qu'il contient est une surcharge.
+            if (!inBase || !(*base)[componentName].contains(field.key()) ||
+                (*base)[componentName][field.key()] != field.value())
+            {
+                overridden.insert(componentName + "/" + field.key());
+            }
+        }
+    }
+    return overridden;
+}
+
+void SceneInstanceSync::RevertProperty(Engine::Entity entity, const std::string &component,
+                                       const std::string &field) const
+{
+    const json *base = BaseEntityJsonOf(entity);
+    if (!base || !base->contains(component) || !(*base)[component].contains(field))
+        return;
+
+    // Le component est réécrit en entier, avec la seule valeur d'origine remise en
+    // place : ApplyJsonToEntity lit tous les champs d'un component qu'on lui donne.
+    json patch;
+    patch[component] = Engine::SceneSerializer::EntityToJson(entity)[component];
+    patch[component][field] = (*base)[component][field];
+    Engine::SceneSerializer::ApplyJsonToEntity(patch, entity);
+}
+
+void SceneInstanceSync::RevertComponent(Engine::Entity entity, const std::string &component) const
+{
+    const json *base = BaseEntityJsonOf(entity);
+    if (!base)
+        return;
+
+    if (!base->contains(component))
+    {
+        // Absent de la source : le component a été ajouté sur l'instance, revenir à la
+        // source revient à l'enlever.
+        Engine::Scene::RemoveComponentByName(entity, component);
+        return;
+    }
+
+    json patch;
+    patch[component] = (*base)[component];
+    Engine::SceneSerializer::ApplyJsonToEntity(patch, entity);
 }
 
 void SceneInstanceSync::RememberSource(Engine::AssetHandle source, const json &sourceJson)
