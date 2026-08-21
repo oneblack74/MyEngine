@@ -521,7 +521,7 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         auto &sprite = square.GetComponent<Engine::SpriteRendererComponent>();
         const Engine::AssetHandle previous = sprite.Texture;
 
-        const Engine::AssetHandle texture = Engine::AssetManager::Import("assets/textures/axololt.jpg");
+        const Engine::AssetHandle texture = Engine::AssetManager::Import("textures/axololt.jpg");
         IM_CHECK((uint64_t)texture != Engine::k_InvalidAssetHandle);
         IM_CHECK(Engine::AssetManager::GetType(texture) == Engine::AssetType::Texture);
         sprite.Texture = texture;
@@ -565,13 +565,13 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
 
         // Assigner la texture suffit à la faire charger : RenderSystem la résout à la
         // frame suivante, sur le thread de rendu.
-        sprite.Texture = Engine::AssetManager::Import("assets/textures/axololt.jpg");
+        sprite.Texture = Engine::AssetManager::Import("textures/axololt.jpg");
         ctx->Yield(3);
 
         const uint64_t reloadsBefore = Engine::AssetManager::GetReloadCount();
 
         // Rien à modifier dans l'image : seule sa date compte pour la détection.
-        std::filesystem::last_write_time("assets/textures/axololt.jpg",
+        std::filesystem::last_write_time(Engine::AssetManager::GetAssetRoot() / "textures/axololt.jpg",
                                          std::filesystem::file_time_type::clock::now());
 
         // L'éditeur ne consulte le disque que quelques fois par seconde, et son minuteur
@@ -583,6 +583,39 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
             reloadsAfter = Engine::AssetManager::GetReloadCount();
         }
         IM_CHECK_GT(reloadsAfter, reloadsBefore);
+
+        sprite.Texture = previous;
+    };
+
+    // Glisser un fichier du Content Browser sur un champ d'asset de l'Inspecteur.
+    t = IM_REGISTER_TEST(engine, "assets", "drag_and_drop_texture_onto_sprite");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        Engine::Entity square = SelectEntity(ctx, editor, "Square");
+        IM_CHECK(square);
+        auto &sprite = square.GetComponent<Engine::SpriteRendererComponent>();
+        const Engine::AssetHandle previous = sprite.Texture;
+        sprite.Texture = Engine::AssetHandle(Engine::k_InvalidAssetHandle);
+
+        ctx->SetRef("Content Browser");
+        ctx->ItemOpen("textures");
+        ctx->Yield();
+
+        ctx->ItemDragAndDrop("textures/axololt.jpg", "//Inspecteur/Sprite Renderer/Texture");
+        ctx->Yield(2);
+
+        IM_CHECK((uint64_t)sprite.Texture != Engine::k_InvalidAssetHandle);
+        IM_CHECK_STR_EQ(Engine::AssetManager::GetPath(sprite.Texture).c_str(), "textures/axololt.jpg");
+
+        // Un dépôt du mauvais type doit être refusé plutôt que d'installer une
+        // référence invalide.
+        const Engine::AssetHandle texture = sprite.Texture;
+        ctx->SetRef("Content Browser");
+        ctx->ItemOpen("audio");
+        ctx->Yield();
+        ctx->ItemDragAndDrop("audio/bip.wav", "//Inspecteur/Sprite Renderer/Texture");
+        ctx->Yield(2);
+        IM_CHECK_EQ((uint64_t)sprite.Texture, (uint64_t)texture);
 
         sprite.Texture = previous;
     };
