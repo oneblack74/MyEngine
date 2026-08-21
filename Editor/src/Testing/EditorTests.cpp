@@ -1157,6 +1157,128 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         std::filesystem::remove(scenePath);
     };
 
+    // Une propriété modifiée sur une instance est signalée comme surchargée, et peut
+    // être rendue à sa valeur d'origine.
+    t = IM_REGISTER_TEST(engine, "scene", "instance_overrides_are_listed_and_revertible");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        const std::filesystem::path scenePath =
+            Engine::AssetManager::GetAssetRoot() / "scenes" / "test_overrides.scene";
+        std::error_code ec;
+        std::filesystem::create_directories(scenePath.parent_path(), ec);
+        {
+            auto source = std::make_shared<Engine::Scene>();
+            Engine::Entity crate = source->CreateEntity("Crate");
+            auto &sprite = crate.AddComponent<Engine::SpriteRendererComponent>();
+            sprite.Color = {1.0f, 1.0f, 1.0f, 1.0f};
+            sprite.TilingFactor = 1.0f;
+            Engine::SceneSerializer(source).Serialize(scenePath.string());
+        }
+
+        Engine::Scene &scene = editor.GetEditorScene();
+        Engine::Entity square = SelectEntity(ctx, editor, "Square");
+        ImGuiTestItemInfo target = FindHierarchyItem(ctx, "Square");
+        IM_CHECK(square && target.ID != 0);
+
+        ctx->SetRef("Content Browser");
+        ctx->ItemOpen("scenes");
+        ctx->Yield();
+        ctx->ItemDragAndDrop("scenes/test_overrides.scene", target.ID);
+        ctx->Yield(3);
+
+        Engine::Entity instance = scene.GetChildren(square)[0];
+        SceneInstanceSync &sync = editor.GetInstanceSyncForTests();
+
+        // Fraîchement instanciée : rien ne s'écarte de la source.
+        IM_CHECK(sync.OverriddenPropertiesOf(instance).empty());
+
+        instance.GetComponent<Engine::SpriteRendererComponent>().Color = {0.0f, 0.0f, 1.0f, 1.0f};
+        std::set<std::string> overrides = sync.OverriddenPropertiesOf(instance);
+        IM_CHECK_EQ((int)overrides.size(), 1);
+        IM_CHECK(overrides.count("SpriteRendererComponent/Color") == 1);
+
+        // Révoquée, la propriété retrouve la valeur de la source.
+        sync.RevertProperty(instance, "SpriteRendererComponent", "Color");
+        IM_CHECK(NearlyEqual(instance.GetComponent<Engine::SpriteRendererComponent>().Color.b, 1.0f));
+        IM_CHECK(sync.OverriddenPropertiesOf(instance).empty());
+
+        scene.DestroyEntity(instance);
+        Engine::AssetManager::Remove(Engine::AssetManager::Import("scenes/test_overrides.scene"));
+        std::filesystem::remove(scenePath);
+    };
+
+    // Un component retiré d'une instance ne doit pas revenir à la fusion suivante.
+    t = IM_REGISTER_TEST(engine, "scene", "component_removed_from_instance_stays_removed");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        const std::filesystem::path scenePath =
+            Engine::AssetManager::GetAssetRoot() / "scenes" / "test_removal.scene";
+        std::error_code ec;
+        std::filesystem::create_directories(scenePath.parent_path(), ec);
+
+        auto source = std::make_shared<Engine::Scene>();
+        Engine::Entity crate = source->CreateEntity("Crate");
+        auto &sprite = crate.AddComponent<Engine::SpriteRendererComponent>();
+        sprite.TilingFactor = 1.0f;
+        Engine::SceneSerializer(source).Serialize(scenePath.string());
+
+        Engine::Scene &scene = editor.GetEditorScene();
+        Engine::Entity square = SelectEntity(ctx, editor, "Square");
+        ImGuiTestItemInfo target = FindHierarchyItem(ctx, "Square");
+        IM_CHECK(square && target.ID != 0);
+
+        ctx->SetRef("Content Browser");
+        ctx->ItemOpen("scenes");
+        ctx->Yield();
+        ctx->ItemDragAndDrop("scenes/test_removal.scene", target.ID);
+        ctx->Yield(3);
+
+        Engine::Entity instance = scene.GetChildren(square)[0];
+        const Engine::UUID instanceID = instance.GetUUID();
+        IM_CHECK(instance.HasComponent<Engine::SpriteRendererComponent>());
+
+        // Retrait par le menu contextuel de la section, comme le ferait l'utilisateur.
+        ctx->SetRef("Scene Hierarchy");
+        ImGuiTestItemInfo instanceItem = FindHierarchyItem(ctx, "Crate");
+        IM_CHECK(instanceItem.ID != 0);
+        ctx->ItemClick(instanceItem.ID);
+        ctx->Yield(2);
+
+        ctx->SetRef("Inspector");
+        ctx->ItemClick("Sprite Renderer", ImGuiMouseButton_Right);
+        ctx->Yield();
+        ctx->SetRef("//$FOCUSED");
+        ctx->ItemClick("Remove Component");
+        ctx->Yield(2);
+
+        Engine::Entity afterRemoval = scene.FindEntityByUUID(instanceID);
+        IM_CHECK(afterRemoval);
+        IM_CHECK(!afterRemoval.HasComponent<Engine::SpriteRendererComponent>());
+
+        // La source change ailleurs : la fusion ne doit pas ramener le component retiré.
+        const uint64_t reloadsBefore = Engine::AssetManager::GetReloadCount();
+        sprite.TilingFactor = 5.0f;
+        Engine::SceneSerializer(source).Serialize(scenePath.string());
+        std::filesystem::last_write_time(scenePath, std::filesystem::file_time_type::clock::now());
+
+        uint64_t reloadsAfter = reloadsBefore;
+        for (int attempt = 0; attempt < 20 && reloadsAfter == reloadsBefore; ++attempt)
+        {
+            ctx->SleepNoSkip(0.1f, 0.02f);
+            reloadsAfter = Engine::AssetManager::GetReloadCount();
+        }
+        IM_CHECK_GT(reloadsAfter, reloadsBefore);
+        ctx->Yield(2);
+
+        Engine::Entity refreshed = scene.FindEntityByUUID(instanceID);
+        IM_CHECK(refreshed);
+        IM_CHECK(!refreshed.HasComponent<Engine::SpriteRendererComponent>());
+
+        scene.DestroyEntity(refreshed);
+        Engine::AssetManager::Remove(Engine::AssetManager::Import("scenes/test_removal.scene"));
+        std::filesystem::remove(scenePath);
+    };
+
     // --- Captures -----------------------------------------------------------
 
     // Ce test existe surtout pour produire une image à regarder, mais il vérifie que
@@ -1197,6 +1319,53 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         ctx->SetRef("Save Scene As");
         ctx->ItemClick("Cancel");
     };
+    // L'Inspecteur d'une instance dont deux propriétés ont été surchargées : à regarder
+    // pour vérifier que les liserés tombent bien en face des bonnes lignes.
+    t = IM_REGISTER_TEST(engine, "capture", "instance_override_markers");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        const std::filesystem::path scenePath =
+            Engine::AssetManager::GetAssetRoot() / "scenes" / "capture_overrides.scene";
+        std::error_code ec;
+        std::filesystem::create_directories(scenePath.parent_path(), ec);
+        {
+            auto source = std::make_shared<Engine::Scene>();
+            Engine::Entity crate = source->CreateEntity("Crate");
+            crate.AddComponent<Engine::SpriteRendererComponent>();
+            Engine::SceneSerializer(source).Serialize(scenePath.string());
+        }
+
+        Engine::Scene &scene = editor.GetEditorScene();
+        Engine::Entity square = SelectEntity(ctx, editor, "Square");
+        ImGuiTestItemInfo target = FindHierarchyItem(ctx, "Square");
+        IM_CHECK(square && target.ID != 0);
+
+        ctx->SetRef("Content Browser");
+        ctx->ItemOpen("scenes");
+        ctx->Yield();
+        ctx->ItemDragAndDrop("scenes/capture_overrides.scene", target.ID);
+        ctx->Yield(3);
+
+        Engine::Entity instance = scene.GetChildren(square)[0];
+        instance.GetComponent<Engine::SpriteRendererComponent>().Color = {0.2f, 0.8f, 0.4f, 1.0f};
+        instance.GetComponent<Engine::TransformComponent>().Position = {1.5f, 0.0f, 0.0f};
+
+        ctx->SetRef("Scene Hierarchy");
+        ImGuiTestItemInfo node = FindHierarchyItem(ctx, "Crate");
+        ctx->ItemClick(node.ID);
+        ctx->Yield(3);
+
+        const char *outputFile = "output/captures/instance_override_markers.png";
+        ctx->CaptureReset();
+        ImStrncpy(ctx->CaptureArgs->InOutputFile, outputFile, IM_ARRAYSIZE(ctx->CaptureArgs->InOutputFile));
+        IM_CHECK(ctx->CaptureAddWindow("//Inspector"));
+        IM_CHECK(ctx->CaptureScreenshot());
+
+        scene.DestroyEntity(instance);
+        Engine::AssetManager::Remove(Engine::AssetManager::Import("scenes/capture_overrides.scene"));
+        std::filesystem::remove(scenePath);
+    };
+
     // Une hiérarchie à deux niveaux, à regarder : l'enfant doit être indenté sous son
     // parent, et la scène coiffer le tout.
     t = IM_REGISTER_TEST(engine, "capture", "nested_hierarchy");
