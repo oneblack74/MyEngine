@@ -22,6 +22,11 @@ namespace Engine
         static void Init(const std::filesystem::path &assetRoot);
         static void Shutdown();
 
+        static const std::filesystem::path &GetAssetRoot();
+
+        // Le chemin est de préférence relatif à la racine des assets ("textures/x.png") ;
+        // un chemin absolu ou relatif au dossier de travail est ramené à la racine.
+        //
         // Enregistre le fichier s'il est inconnu, et renvoie son handle. Le handle d'un
         // chemin déjà connu ne change jamais : c'est ce que garantit le registre.
         static AssetHandle Import(const std::string &path);

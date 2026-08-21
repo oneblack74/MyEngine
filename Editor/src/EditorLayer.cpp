@@ -75,7 +75,7 @@ void EditorLayer::OnAttach()
     // au bouton "Écouter" de l'Inspecteur, ou en cochant "Jouer au démarrage".
     auto sound = m_EditorScene->CreateEntity("Bip");
     auto &soundAudio = sound.AddComponent<Engine::AudioComponent>();
-    soundAudio.Sound = Engine::AssetManager::Import("assets/audio/bip.wav");
+    soundAudio.Sound = Engine::AssetManager::Import("audio/bip.wav");
     soundAudio.PlayOnStart = false;
 
     // Démo Phase 5 : logue chaque début/fin de collision dans la Console pour vérifier

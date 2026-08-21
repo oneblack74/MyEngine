@@ -1,8 +1,10 @@
 #include "Panels/ContentBrowserPanel.h"
+#include <Assets/AssetManager.h>
+#include <string>
 #include <imgui.h>
 
 ContentBrowserPanel::ContentBrowserPanel()
-    : m_RootDirectory("assets")
+    : m_RootDirectory(Engine::AssetManager::GetAssetRoot())
 {
 }
 
@@ -13,7 +15,7 @@ void ContentBrowserPanel::OnImGuiRender()
     if (std::filesystem::exists(m_RootDirectory))
         DrawDirectory(m_RootDirectory);
     else
-        ImGui::TextDisabled("Dossier assets/ introuvable (cwd attendu : build/)");
+        ImGui::TextDisabled("Dossier d'assets introuvable : %s", m_RootDirectory.string().c_str());
 
     ImGui::End();
 }
@@ -27,7 +29,10 @@ void ContentBrowserPanel::DrawDirectory(const std::filesystem::path &directory)
 
         if (entry.is_directory())
         {
-            ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+            // Sans OpenOnArrow, toute la ligne ouvre le dossier et pas seulement la
+            // flèche — c'est le comportement de VS Code, et ça évite de viser un
+            // triangle de quelques pixels.
+            ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_SpanAvailWidth;
             bool open = ImGui::TreeNodeEx(filename.c_str(), flags);
             if (open)
             {
@@ -40,6 +45,20 @@ void ContentBrowserPanel::DrawDirectory(const std::filesystem::path &directory)
             ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen |
                                         ImGuiTreeNodeFlags_Bullet | ImGuiTreeNodeFlags_SpanAvailWidth;
             ImGui::TreeNodeEx(filename.c_str(), flags);
+
+            // Le fichier peut être déposé sur un champ d'asset de l'Inspecteur. La charge
+            // utile est le chemin relatif à la racine des assets, c'est-à-dire exactement
+            // ce qu'AssetManager::Import attend.
+            if (ImGui::BeginDragDropSource())
+            {
+                const std::string relative =
+                    std::filesystem::relative(path, m_RootDirectory).generic_string();
+
+                // La taille inclut le zéro terminal : la cible reçoit une chaîne C utilisable telle quelle.
+                ImGui::SetDragDropPayload(k_AssetPayloadType, relative.c_str(), relative.size() + 1);
+                ImGui::TextUnformatted(filename.c_str());
+                ImGui::EndDragDropSource();
+            }
         }
     }
 }

@@ -9,7 +9,7 @@ namespace Engine
 {
     Application *Application::s_Instance = nullptr;
 
-    Application::Application(const WindowProps &props)
+    Application::Application(const WindowProps &props, const std::filesystem::path &assetRoot)
         : m_Window(props)
     {
         assert(!s_Instance && "Une Application existe déjà !");
@@ -19,7 +19,7 @@ namespace Engine
                                   { OnEvent(e); });
 
         AudioEngine::Init();
-        AssetManager::Init("assets");
+        AssetManager::Init(assetRoot);
     }
 
     Application::~Application()

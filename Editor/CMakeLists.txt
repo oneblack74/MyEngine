@@ -18,6 +18,12 @@ target_include_directories(Editor
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
+# L'éditeur travaille directement sur les assets sources : le registre y est écrit et
+# donc versionné avec eux (les handles survivent à un clone), et modifier une image se
+# voit tout de suite sans attendre une recopie.
+target_compile_definitions(Editor PRIVATE
+    MYENGINE_EDITOR_ASSET_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/assets")
+
 target_link_libraries(Editor
     PRIVATE
         Engine

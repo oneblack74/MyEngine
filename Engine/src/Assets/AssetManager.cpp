@@ -37,7 +37,13 @@ namespace Engine
         {
             std::filesystem::path candidate(path);
 
+            // Déjà exprimé par rapport à la racine : rien à faire.
             std::error_code ec;
+            if (std::filesystem::exists(s_AssetRoot / candidate, ec))
+                return candidate.generic_string();
+
+            // Sinon (chemin absolu, ou relatif au dossier de travail), on tente de le
+            // ramener à la racine ; s'il tombe en dehors, on le garde tel quel.
             std::filesystem::path relative = std::filesystem::relative(candidate, s_AssetRoot, ec);
             if (!ec && !relative.empty() && relative.native().rfind("..", 0) != 0)
                 candidate = relative;
@@ -56,6 +62,11 @@ namespace Engine
     {
         s_AssetRoot = assetRoot;
         LoadRegistry();
+    }
+
+    const std::filesystem::path &AssetManager::GetAssetRoot()
+    {
+        return s_AssetRoot;
     }
 
     void AssetManager::Shutdown()

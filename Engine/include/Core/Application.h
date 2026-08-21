@@ -1,13 +1,18 @@
 #pragma once
 #include "Core/Window.h"
 #include "Core/LayerStack.h"
+#include <filesystem>
 
 namespace Engine
 {
     class Application
     {
     public:
-        Application(const WindowProps &props = WindowProps());
+        // assetRoot est la racine des assets du projet. Un build de développement la fait
+        // pointer sur les sources, pour que le registre soit versionné avec elles et
+        // qu'éditer une image se voie sans passer par une recopie.
+        Application(const WindowProps &props = WindowProps(),
+                    const std::filesystem::path &assetRoot = "assets");
         ~Application();
 
         void Run();

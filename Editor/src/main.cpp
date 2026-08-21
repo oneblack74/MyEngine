@@ -3,6 +3,7 @@
 #include <Core/Application.h>
 #include <Core/Log.h>
 #include <cstring>
+#include <filesystem>
 #include <iostream>
 
 namespace
@@ -108,7 +109,15 @@ int main(int argc, char **argv)
     Engine::WindowProps props;
     props.Visible = !options.Headless;
 
-    Engine::Application app(props);
+    // Un build packagé (Phase 8) n'aura pas cette définition et retombera sur le dossier
+    // assets/ posé à côté de l'exécutable.
+#ifdef MYENGINE_EDITOR_ASSET_ROOT
+    const std::filesystem::path assetRoot = MYENGINE_EDITOR_ASSET_ROOT;
+#else
+    const std::filesystem::path assetRoot = "assets";
+#endif
+
+    Engine::Application app(props, assetRoot);
     // Le layer appartient à l'Application, mais le pointeur reste valide jusqu'à sa
     // destruction — donc après l'évaluation du code de sortie ci-dessous.
     EditorLayer *editor = new EditorLayer(options);
