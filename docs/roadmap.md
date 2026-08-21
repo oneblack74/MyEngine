@@ -73,7 +73,7 @@
 - ✅ Tests automatisés de l'éditeur — mode sans fenêtre, captures PNG et suite de tests qui pilotent l'UI (Dear ImGui Test Engine), voir [tests.md](tests.md)
 - ✅ Saisie des valeurs de l'Inspecteur directement au clavier (taper un chiffre plutôt que de devoir drag-slider)
 - ✅ Bouton "Réinitialiser aux valeurs par défaut" dans l'Inspecteur (un par section de component)
-- ⬜ Sauvegarde de la scène depuis l'éditeur (`Ctrl+S`) — `SceneManager` sait déjà sérialiser, mais l'éditeur ne l'expose nulle part : demande un menu Fichier complet (Nouvelle scène, Ouvrir, Enregistrer, Enregistrer sous) et la mémorisation du chemin de la scène courante
+- ✅ Sauvegarde de la scène depuis l'éditeur (`Ctrl+S`) — menu Fichier complet (Nouvelle scène `Ctrl+N`, Ouvrir `Ctrl+O`, Enregistrer `Ctrl+S`, Enregistrer sous `Ctrl+Maj+S`, Quitter) ; l'éditeur retient le chemin de la scène ouverte et l'affiche dans le titre de la fenêtre. Sélecteur de fichier dessiné en ImGui (pas de dialogue natif : aucune dépendance système, et pilotable par les tests), scènes rangées dans `assets/scenes` avec l'extension `.scene`
 - ✅ `GamePanel` — vue de jeu séparée du Viewport d'édition, ouvrable dans une fenêtre à part (façon Godot) ; l'Inspecteur reste éditable en direct pendant le Play (façon Unity)
 - ✅ Console — regroupement des messages identiques ("Collapse" façon Unity), avec un compteur sur la ligne
 - ✅ Console — trois boutons de filtre Log / Warning / Error, affichant le nombre de messages de chaque type (+ coloration par niveau)
