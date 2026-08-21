@@ -1,4 +1,5 @@
 #pragma once
+#include "Scene/Entity.h"
 #include "Scene/Scene.h"
 #include <nlohmann/json_fwd.hpp>
 #include <memory>
@@ -25,6 +26,12 @@ namespace Engine
         // comparer et fusionner sans avoir à réénumérer les champs des components.
         nlohmann::json ToJson() const;
         bool FromJson(const nlohmann::json &root);
+
+        // Une entité seule, dans les deux sens. L'éditeur s'en sert pour comparer une
+        // instance à sa scène source propriété par propriété, et pour révoquer une
+        // surcharge en réécrivant la valeur d'origine.
+        static nlohmann::json EntityToJson(Entity entity);
+        static void ApplyJsonToEntity(const nlohmann::json &entityJson, Entity entity);
 
     private:
         std::shared_ptr<Scene> m_Scene;
