@@ -38,7 +38,8 @@ namespace Engine
         // Pré-enregistrées pour que le menu "Moteur" de la console soit complet dès le
         // départ, au lieu de se remplir au fur et à mesure des premiers messages.
         for (const std::string *category : {&LogCategories::General, &LogCategories::Collision,
-                                            &LogCategories::Input, &LogCategories::Renderer,
+                                            &LogCategories::Input, &LogCategories::Window,
+                                            &LogCategories::Renderer,
                                             &LogCategories::Physics, &LogCategories::Assets})
         {
             GetCategoryLogger(LogSource::Engine, *category);

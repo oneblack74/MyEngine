@@ -17,6 +17,7 @@ namespace Engine
         inline const std::string General = "Général";
         inline const std::string Collision = "Collision";
         inline const std::string Input = "Input";
+        inline const std::string Window = "Fenêtre";
         inline const std::string Renderer = "Renderer";
         inline const std::string Physics = "Physique";
         inline const std::string Assets = "Assets";

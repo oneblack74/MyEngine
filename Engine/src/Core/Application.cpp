@@ -21,7 +21,12 @@ namespace Engine
 
     void Application::OnEvent(Event &event)
     {
-        LOG_TRACE(event.ToString());
+        // Les événements sont catégorisés par leur nature : le clavier et la souris
+        // sous Input, le reste sous Fenêtre. Sans ça ils tombaient tous dans "Général"
+        // et noyaient la console sans pouvoir être filtrés.
+        const bool isInput = event.GetType() != EventType::WindowClose &&
+                             event.GetType() != EventType::WindowResize;
+        ENGINE_LOG_TRACE(isInput ? LogCategories::Input : LogCategories::Window, event.ToString());
 
         if (event.GetType() == EventType::WindowClose)
             m_Running = false;
