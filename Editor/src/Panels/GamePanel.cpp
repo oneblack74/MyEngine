@@ -58,7 +58,8 @@ bool GamePanel::OnImGuiRender(const std::shared_ptr<Engine::Scene> &scene, bool 
     }
 
     auto &cameraComponent = primaryCamera.GetComponent<Engine::CameraComponent>();
-    auto &transform = primaryCamera.GetComponent<Engine::TransformComponent>();
+    // Transform monde : une caméra enfant d'une autre entité doit suivre son parent.
+    const Engine::TransformComponent transform = scene->GetWorldTransform(primaryCamera);
 
     // La projection suit toujours le ratio de la résolution cible (jamais celui de la
     // fenêtre ImGui, qui n'affiche l'image qu'à l'échelle du slider) ; la position/

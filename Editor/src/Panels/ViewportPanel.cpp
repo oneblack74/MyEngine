@@ -79,8 +79,11 @@ void ViewportPanel::DrawGizmo(const Engine::OrthographicCamera &camera, Engine::
     ImVec2 imageScreenPos = ImGui::GetItemRectMin();
     ImGuizmo::SetRect(imageScreenPos.x, imageScreenPos.y, m_Size.x, m_Size.y);
 
-    auto &transformComponent = selectedEntity.GetComponent<Engine::TransformComponent>();
-    glm::mat4 transform = transformComponent.GetTransform();
+    // Le gizmo manipule une pose monde : une entité enfant doit donc être convertie
+    // à l'aller comme au retour, sinon la manipuler l'enverrait à la position que son
+    // transform local désigne dans le repère du monde.
+    Engine::Scene *scene = selectedEntity.GetScene();
+    glm::mat4 transform = scene->GetWorldTransform(selectedEntity).GetTransform();
 
     ImGuizmo::Manipulate(glm::value_ptr(camera.GetViewMatrix()), glm::value_ptr(camera.GetProjectionMatrix()),
                           m_GizmoOperation, ImGuizmo::LOCAL, glm::value_ptr(transform));
@@ -91,9 +94,11 @@ void ViewportPanel::DrawGizmo(const Engine::OrthographicCamera &camera, Engine::
         if (DecomposeTransform(transform, translation, rotation, scale))
         {
             // Moteur 2D : seule la rotation Z du TransformComponent est utilisée.
-            transformComponent.Position = translation;
-            transformComponent.Rotation = glm::degrees(rotation.z);
-            transformComponent.Scale = scale;
+            Engine::TransformComponent world;
+            world.Position = translation;
+            world.Rotation = glm::degrees(rotation.z);
+            world.Scale = scale;
+            scene->SetWorldTransform(selectedEntity, world);
         }
     }
 }
@@ -153,10 +158,10 @@ void ViewportPanel::HandlePicking(const std::shared_ptr<Engine::Scene> &scene, c
     for (auto entityHandle : view)
     {
         Engine::Entity entity{entityHandle, scene.get()};
-        auto &transform = entity.GetComponent<Engine::TransformComponent>();
+        const glm::mat4 worldTransform = scene->GetWorldTransform(entity).GetTransform();
 
         // Point testé en espace local du quad (qui s'étend de -0.5 à 0.5 avant transform)
-        glm::vec4 localPoint = glm::inverse(transform.GetTransform()) * glm::vec4(worldPoint.x, worldPoint.y, 0.0f, 1.0f);
+        glm::vec4 localPoint = glm::inverse(worldTransform) * glm::vec4(worldPoint.x, worldPoint.y, 0.0f, 1.0f);
 
         if (localPoint.x >= -0.5f && localPoint.x <= 0.5f && localPoint.y >= -0.5f && localPoint.y <= 0.5f)
             picked = entity; // le dernier hit gagne (dessiné par-dessus les précédents)

@@ -44,6 +44,10 @@ namespace Engine
         UUID GetUUID() { return GetComponent<IDComponent>().ID; }
         const std::string &GetName() { return GetComponent<TagComponent>().Tag; }
 
+        // La scène propriétaire — nécessaire dès qu'on veut interroger la hiérarchie
+        // (parent, enfants, transform monde) à partir d'une entité seule.
+        Scene *GetScene() const { return m_Scene; }
+
         operator bool() const { return m_EntityHandle != entt::null; }
         operator entt::entity() const { return m_EntityHandle; }
         operator uint32_t() const { return (uint32_t)m_EntityHandle; }

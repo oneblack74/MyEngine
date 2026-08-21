@@ -30,6 +30,15 @@ namespace Engine
             if (entity.HasComponent<TagComponent>())
                 entityJson["TagComponent"]["Tag"] = entity.GetComponent<TagComponent>().Tag;
 
+            // Le parent n'est écrit que s'il y en a un : une entité racine reste un
+            // objet JSON propre, sans champ "Parent": 0 partout.
+            if (entity.HasComponent<ParentComponent>())
+            {
+                const UUID parent = entity.GetComponent<ParentComponent>().Parent;
+                if ((uint64_t)parent != 0)
+                    entityJson["Parent"] = (uint64_t)parent;
+            }
+
             if (entity.HasComponent<TransformComponent>())
             {
                 auto &tc = entity.GetComponent<TransformComponent>();
@@ -130,6 +139,11 @@ namespace Engine
             // crée, un remplacement tardif lui laisserait une clé périmée.
             const uint64_t uuid = entityJson["UUID"].get<uint64_t>();
             Entity entity = m_Scene->CreateEntityWithUUID(UUID(uuid), name);
+
+            // Le parent est référencé par UUID, donc l'ordre du fichier n'a pas
+            // d'importance : il sera résolu à la première consultation de la hiérarchie.
+            if (entityJson.contains("Parent"))
+                entity.GetComponent<ParentComponent>().Parent = UUID(entityJson["Parent"].get<uint64_t>());
 
             if (entityJson.contains("TransformComponent"))
             {

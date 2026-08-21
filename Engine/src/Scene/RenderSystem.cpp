@@ -13,7 +13,11 @@ namespace Engine
         auto view = scene.GetAllEntitiesWith<TransformComponent, SpriteRendererComponent>();
         for (auto entityHandle : view)
         {
-            auto [transform, sprite] = view.get<TransformComponent, SpriteRendererComponent>(entityHandle);
+            auto &sprite = view.get<SpriteRendererComponent>(entityHandle);
+
+            // Transform monde et non local : une entité enfant est placée dans le repère
+            // de son parent, le rendu ne connaît que le monde.
+            const TransformComponent transform = scene.GetWorldTransform(Entity{entityHandle, &scene});
 
             // Résolu à chaque frame plutôt que gardé dans le component : un asset
             // rechargé à chaud est ainsi pris en compte sans rien réassigner.
@@ -52,7 +56,8 @@ namespace Engine
             if (!entity.HasComponent<TransformComponent>())
                 return;
 
-            const auto &transform = entity.GetComponent<TransformComponent>();
+            // Même règle que pour les sprites : le contour se dessine dans le monde.
+            const TransformComponent transform = entity.GetScene()->GetWorldTransform(entity);
 
             if (entity.HasComponent<BoxColliderComponent>())
             {

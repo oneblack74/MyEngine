@@ -1,5 +1,7 @@
 #pragma once
 #include "Core/UUID.h"
+// Pour TransformComponent, renvoyé par valeur par GetWorldTransform().
+#include "Scene/Components.h"
 #include <entt/entt.hpp>
 #include <memory>
 #include <string>
@@ -46,9 +48,32 @@ namespace Engine
         // seules dès qu'on en supprime une.
         const std::vector<UUID> &GetEntityOrder() const { return m_EntityOrder; }
 
+        // Entités sans parent, dans l'ordre d'affichage.
+        std::vector<Entity> GetRootEntities();
+        std::vector<Entity> GetChildren(Entity entity);
+        Entity GetParent(Entity entity);
+        bool IsDescendantOf(Entity entity, Entity possibleAncestor);
+
+        // Rattache child à parent (parent nul = racine). La position dans le monde est
+        // conservée : c'est le transform local qui est recalculé. Renvoie false si le
+        // rattachement créerait un cycle, auquel cas rien n'est modifié.
+        bool SetParent(Entity child, Entity parent);
+
+        // Le TransformComponent est exprimé dans le repère du parent. Ces deux fonctions
+        // font le passage avec le repère du monde — le seul que comprennent le rendu, la
+        // physique et les gizmos.
+        TransformComponent GetWorldTransform(Entity entity);
+        void SetWorldTransform(Entity entity, const TransformComponent &world);
+
         // Position d'une entité dans cet ordre, ou la taille de la liste si elle est
         // inconnue.
         size_t GetEntityOrderIndex(UUID uuid) const;
+
+        // Déplacent une entité dans l'ordre d'affichage : juste avant une autre, ou en
+        // dernier. L'ordre est global et plat ; seule compte la position relative des
+        // entités qui partagent un même parent.
+        void MoveEntityBefore(UUID moved, UUID reference);
+        void MoveEntityToEnd(UUID moved);
 
         // Replace une entité à une position donnée — sert à annuler une suppression
         // sans que l'entité ressorte tout en bas de la hiérarchie.

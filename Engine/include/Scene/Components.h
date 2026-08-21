@@ -29,6 +29,21 @@ namespace Engine
         TagComponent(const std::string &tag) : Tag(tag) {}
     };
 
+    // Lien vers l'entité parente, présent sur toutes les entités : un Parent nul veut
+    // dire "à la racine de la scène". La liste des enfants n'est pas stockée ici — Scene
+    // les retrouve dans son ordre d'affichage, ce qui évite deux listes à tenir d'accord.
+    struct ParentComponent
+    {
+        UUID Parent{0};
+
+        ParentComponent() = default;
+        ParentComponent(const ParentComponent &) = default;
+    };
+
+    // Attention : les valeurs sont exprimées dans le repère du parent, pas dans celui du
+    // monde. Passer de l'un à l'autre est le rôle de Scene::GetWorldTransform() /
+    // SetWorldTransform(), qui sont ce que doivent utiliser le rendu, la physique et les
+    // gizmos.
     struct TransformComponent
     {
         glm::vec3 Position = {0.0f, 0.0f, 0.0f};

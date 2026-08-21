@@ -36,7 +36,9 @@ namespace Engine
         for (auto entityHandle : view)
         {
             Entity entity{entityHandle, &scene};
-            auto &transform = entity.GetComponent<TransformComponent>();
+            // Box2D raisonne en coordonnées monde : une entité enfant doit y entrer avec
+            // son transform monde, pas avec sa position relative au parent.
+            const TransformComponent transform = scene.GetWorldTransform(entity);
             auto &rb = entity.GetComponent<RigidBodyComponent>();
 
             b2BodyDef bodyDef = b2DefaultBodyDef();
@@ -102,7 +104,7 @@ namespace Engine
         {
             Entity entity{entityHandle, &scene};
             auto &rb = entity.GetComponent<RigidBodyComponent>();
-            auto &transform = entity.GetComponent<TransformComponent>();
+            const TransformComponent transform = scene.GetWorldTransform(entity);
 
             // b2Body_SetType déplace le body entre solver sets côté Box2D (plus coûteux
             // qu'un simple write, et peut le réveiller) : on ne l'appelle que si le type a
@@ -163,14 +165,17 @@ namespace Engine
         {
             Entity entity{entityHandle, &scene};
             auto &rb = entity.GetComponent<RigidBodyComponent>();
-            auto &transform = entity.GetComponent<TransformComponent>();
 
             b2Vec2 position = b2Body_GetPosition(rb.RuntimeBody);
             b2Rot rotation = b2Body_GetRotation(rb.RuntimeBody);
 
-            transform.Position.x = position.x;
-            transform.Position.y = position.y;
-            transform.Rotation = glm::degrees(b2Rot_GetAngle(rotation));
+            // Box2D rend une pose monde : SetWorldTransform la reconvertit dans le
+            // repère du parent avant de l'écrire dans le component.
+            TransformComponent world = scene.GetWorldTransform(entity);
+            world.Position.x = position.x;
+            world.Position.y = position.y;
+            world.Rotation = glm::degrees(b2Rot_GetAngle(rotation));
+            scene.SetWorldTransform(entity, world);
         }
 
         // Les contact events sont bufferisés par Box2D pendant le Step() et lus ici,
