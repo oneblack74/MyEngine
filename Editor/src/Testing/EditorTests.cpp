@@ -1060,6 +1060,88 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         std::filesystem::remove(scenePath);
     };
 
+    // Modifier la scène source se répercute sur ses instances, sans effacer ce que le
+    // niveau a décidé : le placement de l'instance et son nom.
+    t = IM_REGISTER_TEST(engine, "scene", "source_change_propagates_to_instances");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        const std::filesystem::path scenePath =
+            Engine::AssetManager::GetAssetRoot() / "scenes" / "test_link.scene";
+        std::error_code ec;
+        std::filesystem::create_directories(scenePath.parent_path(), ec);
+
+        // Source initiale : "Crate" avec un seul enfant.
+        auto writeSource = [&](bool withExtra)
+        {
+            auto source = std::make_shared<Engine::Scene>();
+            Engine::Entity crate = source->CreateEntity("Crate");
+            Engine::Entity label = source->CreateEntity("Label");
+            IM_CHECK(source->SetParent(label, crate));
+            if (withExtra)
+            {
+                Engine::Entity extra = source->CreateEntity("Extra");
+                IM_CHECK(source->SetParent(extra, crate));
+            }
+            Engine::SceneSerializer(source).Serialize(scenePath.string());
+        };
+        writeSource(false);
+
+        Engine::Scene &scene = editor.GetEditorScene();
+        Engine::Entity square = SelectEntity(ctx, editor, "Square");
+        ImGuiTestItemInfo target = FindHierarchyItem(ctx, "Square");
+        IM_CHECK(square && target.ID != 0);
+
+        ctx->SetRef("Content Browser");
+        ctx->ItemOpen("scenes");
+        ctx->Yield();
+        ctx->ItemDragAndDrop("scenes/test_link.scene", target.ID);
+        ctx->Yield(3);
+
+        std::vector<Engine::Entity> children = scene.GetChildren(square);
+        IM_CHECK_EQ((int)children.size(), 1);
+        Engine::Entity instance = children[0];
+        const Engine::UUID instanceID = instance.GetUUID();
+
+        // L'instance retient d'où elle vient.
+        IM_CHECK(instance.HasComponent<Engine::SceneInstanceComponent>());
+        IM_CHECK_EQ((int)scene.GetChildren(instance).size(), 1);
+
+        // Ce que le niveau décide : où elle est posée, et comment elle s'appelle.
+        instance.GetComponent<Engine::TransformComponent>().Position = {4.25f, 0.0f, 0.0f};
+        instance.GetComponent<Engine::TagComponent>().Tag = "Crate placée";
+
+        // La source gagne un enfant. Seule sa date compte pour la détection.
+        const uint64_t reloadsBefore = Engine::AssetManager::GetReloadCount();
+        writeSource(true);
+        std::filesystem::last_write_time(scenePath, std::filesystem::file_time_type::clock::now());
+
+        // L'éditeur ne consulte le disque que quelques fois par seconde, et son minuteur
+        // avance au temps réel : on attend le rechargement plutôt que de parier.
+        uint64_t reloadsAfter = reloadsBefore;
+        for (int attempt = 0; attempt < 20 && reloadsAfter == reloadsBefore; ++attempt)
+        {
+            ctx->SleepNoSkip(0.1f, 0.02f);
+            reloadsAfter = Engine::AssetManager::GetReloadCount();
+        }
+        IM_CHECK_GT(reloadsAfter, reloadsBefore);
+        ctx->Yield(2);
+
+        Engine::Entity refreshed = scene.FindEntityByUUID(instanceID);
+        IM_CHECK(refreshed);
+
+        // L'ajout de la source est arrivé...
+        IM_CHECK_EQ((int)scene.GetChildren(refreshed).size(), 2);
+
+        // ...sans écraser ce que le niveau possède.
+        IM_CHECK(NearlyEqual(refreshed.GetComponent<Engine::TransformComponent>().Position.x, 4.25f));
+        IM_CHECK_STR_EQ(refreshed.GetName().c_str(), "Crate placée");
+        IM_CHECK(scene.GetParent(refreshed) == square);
+        IM_CHECK(refreshed.HasComponent<Engine::SceneInstanceComponent>());
+
+        scene.DestroyEntity(refreshed);
+        std::filesystem::remove(scenePath);
+    };
+
     // --- Captures -----------------------------------------------------------
 
     // Ce test existe surtout pour produire une image à regarder, mais il vérifie que
