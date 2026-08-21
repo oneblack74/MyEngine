@@ -4,6 +4,12 @@ project(MyEngine)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Les sources sont en UTF-8 (commentaires accentués) : sans ce flag, MSVC les lit dans
+# la page de codes locale et se plaint, là où GCC et Clang supposent déjà l'UTF-8.
+if(MSVC)
+    add_compile_options(/utf-8)
+endif()
+
 include(FetchContent)
 
 FetchContent_Declare(
