@@ -365,6 +365,49 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK(!console.IsCollapsedForTests());
     };
 
+    // Les catégories permettent de filtrer par provenance : deux menus déroulants,
+    // l'un pour le moteur, l'autre pour le jeu.
+    t = IM_REGISTER_TEST(engine, "console", "category_filters");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        ENGINE_LOG_INFO(Engine::LogCategories::Collision, "collision de test");
+        GAME_LOG_INFO("Gameplay", "message de jeu de test");
+        ctx->Yield(3);
+
+        ConsolePanel &console = editor.GetConsolePanelForTests();
+        const size_t withEverything = console.GetVisibleLineCountForTests();
+
+        ctx->SetRef("Console");
+        // Le menu "Moteur" liste les catégories du moteur, pré-enregistrées à l'Init.
+        ctx->ItemClick("Moteur");
+        ctx->ItemUncheck("//$FOCUSED/Collision");
+        // Fermer explicitement : tant que le popup est ouvert il recouvre le menu
+        // voisin, qui devient impossible à survoler.
+        ctx->PopupCloseAll();
+        ctx->Yield(2);
+
+        const size_t withoutCollisions = console.GetVisibleLineCountForTests();
+        IM_CHECK_LT(withoutCollisions, withEverything);
+
+        // Une catégorie du jeu n'a rien à faire dans le menu du moteur, et inversement.
+        ctx->ItemClick("Jeu");
+        IM_CHECK(ctx->ItemExists("//$FOCUSED/Gameplay"));
+        IM_CHECK(!ctx->ItemExists("//$FOCUSED/Collision"));
+        ctx->PopupCloseAll();
+
+        const char *outputFile = "output/captures/console_categories.png";
+        ctx->CaptureReset();
+        ImStrncpy(ctx->CaptureArgs->InOutputFile, outputFile, IM_ARRAYSIZE(ctx->CaptureArgs->InOutputFile));
+        IM_CHECK(ctx->CaptureAddWindow("//Console"));
+        IM_CHECK(ctx->CaptureScreenshot());
+
+        ctx->ItemClick("Moteur");
+        ctx->ItemCheck("//$FOCUSED/Collision");
+        ctx->PopupCloseAll();
+        ctx->Yield(2);
+        IM_CHECK_EQ(console.GetVisibleLineCountForTests(), withEverything);
+    };
+
     // --- Captures -----------------------------------------------------------
 
     // Ce test existe surtout pour produire une image à regarder, mais il vérifie que
