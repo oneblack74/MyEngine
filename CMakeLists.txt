@@ -66,6 +66,18 @@ set(BOX2D_PROFILE OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(box2d)
 
 FetchContent_Declare(
+    miniaudio
+    GIT_REPOSITORY https://github.com/mackron/miniaudio.git
+    GIT_TAG        0.11.25
+)
+# Contrairement à ImGui, miniaudio fournit son propre CMakeLists définissant une cible
+# "miniaudio" qui compile déjà l'implémentation — rien à ajouter de notre côté. Ses
+# exemples et ses tests sont écartés, on ne veut que la bibliothèque.
+set(MINIAUDIO_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(MINIAUDIO_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(miniaudio)
+
+FetchContent_Declare(
     imgui
     GIT_REPOSITORY https://github.com/ocornut/imgui.git
     GIT_TAG        docking
