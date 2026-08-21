@@ -24,7 +24,7 @@ namespace Engine
 
         if (!glfwInit())
         {
-            LOG_ERROR("Failed to initialize GLFW!");
+            ENGINE_LOG_ERROR(LogCategories::Renderer, "Failed to initialize GLFW!");
             throw std::runtime_error("Failed to initialize GLFW");
         }
 
@@ -36,14 +36,14 @@ namespace Engine
 
         if (!m_Window)
         {
-            LOG_ERROR("Failed to create window!");
+            ENGINE_LOG_ERROR(LogCategories::Renderer, "Failed to create window!");
             throw std::runtime_error("Failed to create window");
         }
 
         glfwMakeContextCurrent(m_Window);
         if (!gladLoadGL((GLADloadfunc)glfwGetProcAddress))
         {
-            LOG_ERROR("Failed to initialize Glad!");
+            ENGINE_LOG_ERROR(LogCategories::Renderer, "Failed to initialize Glad!");
             throw std::runtime_error("Failed to initialize Glad");
         }
 

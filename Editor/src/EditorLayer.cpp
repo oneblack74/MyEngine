@@ -73,9 +73,9 @@ void EditorLayer::OnAttach()
     // que les contact events Box2D remontent bien jusqu'à l'ECS (via Entity, pas juste
     // des b2ShapeId bruts).
     m_PhysicsSystem.OnCollisionBegin = [](Engine::Entity a, Engine::Entity b)
-    { LOG_INFO("Collision : {0} <-> {1}", a.GetName(), b.GetName()); };
+    { ENGINE_LOG_INFO(Engine::LogCategories::Collision, "{0} <-> {1}", a.GetName(), b.GetName()); };
     m_PhysicsSystem.OnCollisionEnd = [](Engine::Entity a, Engine::Entity b)
-    { LOG_INFO("Fin de collision : {0} <-> {1}", a.GetName(), b.GetName()); };
+    { ENGINE_LOG_INFO(Engine::LogCategories::Collision, "fin : {0} <-> {1}", a.GetName(), b.GetName()); };
 
     m_SceneHierarchyPanel.SetContext(m_EditorScene);
 

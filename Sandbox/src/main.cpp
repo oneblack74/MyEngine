@@ -21,8 +21,8 @@ public:
 
     void OnAttach() override
     {
-        LOG_INFO("GameLayer attached!");
-        LOG_INFO("Working dir: {0}", std::filesystem::current_path().string());
+        GAME_LOG_INFO("Gameplay", "GameLayer attached!");
+        GAME_LOG_INFO("Gameplay", "Working dir: {0}", std::filesystem::current_path().string());
 
         Engine::Renderer2D::Init();
 
@@ -52,9 +52,9 @@ public:
         axoSprite.Texture = m_Texture;
 
         // Vérification manuelle : chaque entité doit avoir un UUID distinct
-        LOG_INFO("{0} UUID: {1}", redSquare.GetName(), (uint64_t)redSquare.GetUUID());
-        LOG_INFO("{0} UUID: {1}", greenSquare.GetName(), (uint64_t)greenSquare.GetUUID());
-        LOG_INFO("{0} UUID: {1}", axolotl.GetName(), (uint64_t)axolotl.GetUUID());
+        GAME_LOG_INFO("Scène", "{0} UUID: {1}", redSquare.GetName(), (uint64_t)redSquare.GetUUID());
+        GAME_LOG_INFO("Scène", "{0} UUID: {1}", greenSquare.GetName(), (uint64_t)greenSquare.GetUUID());
+        GAME_LOG_INFO("Scène", "{0} UUID: {1}", axolotl.GetName(), (uint64_t)axolotl.GetUUID());
 
         // Test save/load/switch via SceneManager : on sauvegarde la scène active, on la
         // recharge (ce qui bascule le SceneManager dessus - "switch de scènes"), puis on
@@ -71,7 +71,7 @@ public:
             for (auto entityHandle : view)
             {
                 Engine::Entity entity{entityHandle, reloadedScene.get()};
-                LOG_INFO("Reloaded: {0} UUID: {1}", entity.GetName(), (uint64_t)entity.GetUUID());
+                GAME_LOG_INFO("Scène", "Reloaded: {0} UUID: {1}", entity.GetName(), (uint64_t)entity.GetUUID());
             }
         }
 
@@ -108,7 +108,7 @@ public:
 
     void OnEvent(Engine::Event &event) override
     {
-        LOG_TRACE("GameLayer received: {0}", event.ToString());
+        GAME_LOG_TRACE("Gameplay", "GameLayer received: {0}", event.ToString());
     }
 
 private:

@@ -19,7 +19,7 @@ namespace Engine
         {
             char log[512];
             glGetShaderInfoLog(vertexShader, 512, nullptr, log);
-            LOG_ERROR("Vertex shader error: {0}", log);
+            ENGINE_LOG_ERROR(LogCategories::Renderer, "Vertex shader error: {0}", log);
         }
 
         // Fragment
@@ -33,7 +33,7 @@ namespace Engine
         {
             char log[512];
             glGetShaderInfoLog(fragmentShader, 512, nullptr, log);
-            LOG_ERROR("Fragment shader error: {0}", log);
+            ENGINE_LOG_ERROR(LogCategories::Renderer, "Fragment shader error: {0}", log);
         }
 
         // Link
@@ -47,7 +47,7 @@ namespace Engine
         {
             char log[512];
             glGetProgramInfoLog(m_RendererID, 512, nullptr, log);
-            LOG_ERROR("Shader link error: {0}", log);
+            ENGINE_LOG_ERROR(LogCategories::Renderer, "Shader link error: {0}", log);
         }
 
         glDeleteShader(vertexShader);

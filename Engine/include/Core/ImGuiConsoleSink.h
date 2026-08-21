@@ -36,7 +36,11 @@ namespace Engine
             spdlog::sinks::base_sink<Mutex>::formatter_->format(msg, formatted);
 
             auto &messages = GetMessages();
-            messages.push_back({ToLogLevel(msg.level), fmt::to_string(formatted)});
+            // La catégorie voyage dans le nom du logger (voir Log::GetCategoryLogger).
+            // Sa provenance, elle, n'est pas dupliquée par message : la console la
+            // retrouve à partir du nom via Log::GetCategories().
+            std::string category(msg.logger_name.data(), msg.logger_name.size());
+            messages.push_back({ToLogLevel(msg.level), std::move(category), fmt::to_string(formatted)});
             ++GetReceivedCount();
 
             constexpr size_t maxMessages = 500;
