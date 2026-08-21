@@ -46,6 +46,7 @@
 - ✅ `UUID` (identifiants uniques pour les entités)
 - ✅ Sérialisation de scène en JSON ou YAML
 - ✅ `SceneManager` (load / save / switch de scènes)
+- ✅ Hiérarchie parent/enfant (`ParentComponent`) — le `TransformComponent` devient local au parent, `Scene::GetWorldTransform()`/`SetWorldTransform()` font le passage avec le repère du monde (rendu, physique, gizmo, picking, caméra) ; rattacher conserve la position dans le monde, les cycles sont refusés, supprimer un parent supprime ses enfants
 
 ---
 
@@ -63,7 +64,7 @@
 - ✅ `EditorLayer` — layer principal de l'éditeur
 - ✅ `ViewportPanel` — rendu dans un Framebuffer affiché comme texture ImGui
 - ✅ `Framebuffer` — abstraction OpenGL
-- ✅ `SceneHierarchyPanel` — liste des entités de la scène
+- ✅ `SceneHierarchyPanel` — arbre des entités de la scène, coiffé par le nom de la scène ; glisser-déposer pour réordonner (bande du haut d'un nœud) ou rattacher (reste du nœud), retour à la racine en déposant sur la scène, le tout annulable
 - ✅ `InspectorPanel` — édition des components d'une entité
 - ✅ `ContentBrowserPanel` — navigation dans les assets
 - ✅ `ConsolePanel` — affichage des logs spdlog dans l'UI
