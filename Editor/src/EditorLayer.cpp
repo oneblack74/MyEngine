@@ -162,8 +162,12 @@ void EditorLayer::OnUpdate(Engine::Timestep ts)
     Engine::Renderer::SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     Engine::Renderer::Clear();
     Engine::RenderSystem::Render(*GetActiveScene(), *m_Camera);
+    // Le collider de l'entité sélectionnée est toujours visible ; la case du menu
+    // Affichage sert à voir ceux de toute la scène d'un coup.
     if (m_ShowColliderOutlines)
         Engine::RenderSystem::RenderColliderOutlines(*GetActiveScene(), *m_Camera);
+    else
+        Engine::RenderSystem::RenderColliderOutline(m_SceneHierarchyPanel.GetSelectedEntity(), *m_Camera);
     m_Framebuffer->Unbind();
 
     // Rendu de l'UI ImGui (dockspace + panels) par-dessus
@@ -427,7 +431,9 @@ void EditorLayer::RenderViewMenu()
     if (!ImGui::BeginMenu("Affichage"))
         return;
 
-    ImGui::MenuItem("Contours des colliders", nullptr, &m_ShowColliderOutlines);
+    ImGui::MenuItem("Contours de tous les colliders", nullptr, &m_ShowColliderOutlines);
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Celui de l'entité sélectionnée est affiché en permanence");
 
     ImGui::EndMenu();
 }

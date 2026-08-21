@@ -41,36 +41,58 @@ namespace Engine
         }
     }
 
+    namespace
+    {
+        void DrawColliderOutlinesOf(Entity entity)
+        {
+            if (!entity.HasComponent<TransformComponent>())
+                return;
+
+            const auto &transform = entity.GetComponent<TransformComponent>();
+
+            if (entity.HasComponent<BoxColliderComponent>())
+            {
+                const auto &collider = entity.GetComponent<BoxColliderComponent>();
+
+                // Size est une demi-extension (convention Box2D) et DrawRect attend une
+                // taille complète, d'où le facteur 2.
+                glm::mat4 outline = EntityFrame(transform) *
+                                    glm::translate(glm::mat4(1.0f), glm::vec3(collider.Offset, 0.0f)) *
+                                    glm::scale(glm::mat4(1.0f),
+                                               {collider.Size.x * transform.Scale.x * 2.0f,
+                                                collider.Size.y * transform.Scale.y * 2.0f, 1.0f});
+                Renderer2D::DrawRect(outline, k_ColliderColor);
+            }
+
+            if (entity.HasComponent<CircleColliderComponent>())
+            {
+                const auto &collider = entity.GetComponent<CircleColliderComponent>();
+
+                // Même moyenne des échelles que PhysicsSystem : Box2D n'a qu'un rayon, pas d'ellipse.
+                const float scale = (transform.Scale.x + transform.Scale.y) * 0.5f;
+                const glm::vec3 center = EntityFrame(transform) * glm::vec4(collider.Offset, 0.0f, 1.0f);
+                Renderer2D::DrawCircle(center, collider.Radius * scale, k_ColliderColor);
+            }
+        }
+    }
+
     void RenderSystem::RenderColliderOutlines(Scene &scene, const OrthographicCamera &camera)
     {
         Renderer2D::BeginScene(camera);
 
-        auto boxes = scene.GetAllEntitiesWith<TransformComponent, BoxColliderComponent>();
-        for (auto entityHandle : boxes)
-        {
-            auto [transform, collider] = boxes.get<TransformComponent, BoxColliderComponent>(entityHandle);
+        for (auto entityHandle : scene.GetAllEntitiesWith<TransformComponent>())
+            DrawColliderOutlinesOf(Entity{entityHandle, &scene});
 
-            // Size est une demi-extension (convention Box2D) et DrawRect attend une
-            // taille complète, d'où le facteur 2.
-            glm::mat4 outline = EntityFrame(transform) *
-                                glm::translate(glm::mat4(1.0f), glm::vec3(collider.Offset, 0.0f)) *
-                                glm::scale(glm::mat4(1.0f),
-                                           {collider.Size.x * transform.Scale.x * 2.0f,
-                                            collider.Size.y * transform.Scale.y * 2.0f, 1.0f});
-            Renderer2D::DrawRect(outline, k_ColliderColor);
-        }
+        Renderer2D::EndScene();
+    }
 
-        auto circles = scene.GetAllEntitiesWith<TransformComponent, CircleColliderComponent>();
-        for (auto entityHandle : circles)
-        {
-            auto [transform, collider] = circles.get<TransformComponent, CircleColliderComponent>(entityHandle);
+    void RenderSystem::RenderColliderOutline(Entity entity, const OrthographicCamera &camera)
+    {
+        if (!entity)
+            return;
 
-            // Même moyenne des échelles que PhysicsSystem : Box2D n'a qu'un rayon, pas d'ellipse.
-            const float scale = (transform.Scale.x + transform.Scale.y) * 0.5f;
-            const glm::vec3 center = EntityFrame(transform) * glm::vec4(collider.Offset, 0.0f, 1.0f);
-            Renderer2D::DrawCircle(center, collider.Radius * scale, k_ColliderColor);
-        }
-
+        Renderer2D::BeginScene(camera);
+        DrawColliderOutlinesOf(entity);
         Renderer2D::EndScene();
     }
 }

@@ -461,7 +461,7 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
     t->TestFunc = [&editor](ImGuiTestContext *ctx)
     {
         ctx->SetRef("DockSpace");
-        ctx->MenuCheck("Affichage/Contours des colliders");
+        ctx->MenuCheck("Affichage/Contours de tous les colliders");
         IM_CHECK(editor.AreColliderOutlinesVisibleForTests());
         ctx->Yield(2);
 
@@ -472,8 +472,29 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK(ctx->CaptureScreenshot());
         IM_CHECK(std::filesystem::exists(outputFile));
 
-        ctx->MenuUncheck("Affichage/Contours des colliders");
+        ctx->MenuUncheck("Affichage/Contours de tous les colliders");
         IM_CHECK(!editor.AreColliderOutlinesVisibleForTests());
+    };
+    // Sans la case globale, seule l'entité sélectionnée montre son collider.
+    t = IM_REGISTER_TEST(engine, "capture", "selected_collider_outline");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        ctx->SetRef("DockSpace");
+        ctx->MenuUncheck("Affichage/Contours de tous les colliders");
+        IM_CHECK(!editor.AreColliderOutlinesVisibleForTests());
+        // Le menu resté ouvert recouvre la hiérarchie et empêche d'y cliquer.
+        ctx->PopupCloseAll();
+        ctx->Yield(2);
+
+        Engine::Entity circle = SelectEntity(ctx, editor, "Circle");
+        IM_CHECK(circle);
+        ctx->Yield(2);
+
+        const char *outputFile = "output/captures/selected_collider.png";
+        ctx->CaptureReset();
+        ImStrncpy(ctx->CaptureArgs->InOutputFile, outputFile, IM_ARRAYSIZE(ctx->CaptureArgs->InOutputFile));
+        IM_CHECK(ctx->CaptureAddWindow("//Viewport"));
+        IM_CHECK(ctx->CaptureScreenshot());
     };
 }
 
