@@ -167,7 +167,10 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         Engine::Entity circle = SelectEntity(ctx, editor, "Circle");
         Engine::Entity square = SelectEntity(ctx, editor, "Square");
         IM_CHECK(circle && square);
-        IM_CHECK(!scene.GetParent(circle));
+
+        // Toutes les entités de la scène pendent de sa racine unique.
+        Engine::Entity root = scene.GetRootEntity();
+        IM_CHECK(scene.GetParent(circle) == root);
 
         ImGuiTestItemInfo source = FindHierarchyItem(ctx, "Circle");
         ImGuiTestItemInfo target = FindHierarchyItem(ctx, "Square");
@@ -181,7 +184,7 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
 
         ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
         ctx->Yield(2);
-        IM_CHECK(!scene.GetParent(circle));
+        IM_CHECK(scene.GetParent(circle) == root);
     };
 
     // Déposer sur la bande du haut d'un nœud réordonne au lieu de rattacher.
@@ -192,12 +195,15 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         const std::vector<std::string> before = HierarchyOrder(editor);
 
         Engine::Entity ground = SelectEntity(ctx, editor, "Ground");
-        IM_CHECK(ground);
-        IM_CHECK_GT((int)scene.GetEntityOrderIndex(ground.GetUUID()), 0);
+        Engine::Entity square = SelectEntity(ctx, editor, "Square");
+        IM_CHECK(ground && square);
+        IM_CHECK_GT((int)scene.GetEntityOrderIndex(ground.GetUUID()),
+                    (int)scene.GetEntityOrderIndex(square.GetUUID()));
 
         ImGuiTestItemInfo source = FindHierarchyItem(ctx, "Ground");
         ImGuiTestItemInfo target = FindHierarchyItem(ctx, "Square");
         IM_CHECK(source.ID != 0 && target.ID != 0);
+        Engine::Entity groundParent = scene.GetParent(ground);
 
         // ItemDragAndDrop viserait le centre du nœud, donc la zone de rattachement :
         // le dépôt est piloté à la main pour tomber sur la bande du haut.
@@ -208,9 +214,10 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         ctx->MouseUp(ImGuiMouseButton_Left);
         ctx->Yield(2);
 
-        // Ground passe juste avant Square, et reste à la racine.
-        IM_CHECK(!scene.GetParent(ground));
-        IM_CHECK_EQ((int)scene.GetEntityOrderIndex(ground.GetUUID()), 0);
+        // Ground passe juste avant Square, sans changer de parent.
+        IM_CHECK(scene.GetParent(ground) == groundParent);
+        IM_CHECK_EQ((int)scene.GetEntityOrderIndex(ground.GetUUID()) + 1,
+                    (int)scene.GetEntityOrderIndex(square.GetUUID()));
 
         ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
         ctx->Yield(2);
@@ -249,7 +256,7 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK(!scene.SetParent(square, circle));
         IM_CHECK(scene.GetParent(circle) == square);
 
-        IM_CHECK(scene.SetParent(circle, {}));
+        IM_CHECK(scene.SetParent(circle, scene.GetRootEntity()));
         square.GetComponent<Engine::TransformComponent>() = squareSaved;
         circle.GetComponent<Engine::TransformComponent>() = circleSaved;
     };
@@ -286,6 +293,67 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK(NearlyEqual(reloadedChild.GetComponent<Engine::TransformComponent>().Position.x, 2.0f));
 
         std::filesystem::remove(file);
+    };
+
+    // Une scène a exactement une racine — c'est ce qui permettra de l'instancier dans
+    // une autre, façon Godot.
+    t = IM_REGISTER_TEST(engine, "hierarchy", "scene_has_a_single_root");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        IM_UNUSED(ctx);
+        Engine::Scene &scene = editor.GetEditorScene();
+        IM_CHECK_EQ((int)scene.GetRootEntities().size(), 1);
+        IM_CHECK(scene.GetRootEntity());
+    };
+
+    // Un fichier écrit avant la règle de la racine unique doit se charger quand même :
+    // ses racines sont regroupées sous une nouvelle entité, rien n'est perdu.
+    t = IM_REGISTER_TEST(engine, "hierarchy", "multi_root_scene_file_is_wrapped");
+    t->TestFunc = [](ImGuiTestContext *ctx)
+    {
+        IM_UNUSED(ctx);
+        const std::string file = "output/legacy_multi_root.scene";
+        std::error_code ec;
+        std::filesystem::create_directories("output", ec);
+
+        // Scène volontairement à deux racines, comme en produisait l'ancien format.
+        auto legacy = std::make_shared<Engine::Scene>();
+        Engine::Entity first = legacy->CreateEntity("First");
+        Engine::Entity second = legacy->CreateEntity("Second");
+        IM_CHECK_EQ((int)legacy->GetRootEntities().size(), 2);
+        Engine::SceneSerializer(legacy).Serialize(file);
+
+        auto reloaded = std::make_shared<Engine::Scene>();
+        IM_CHECK(Engine::SceneSerializer(reloaded).Deserialize(file));
+
+        IM_CHECK_EQ((int)reloaded->GetRootEntities().size(), 1);
+        Engine::Entity root = reloaded->GetRootEntity();
+        IM_CHECK(root);
+        // La racine créée porte le nom du fichier, et les anciennes racines pendent d'elle.
+        IM_CHECK_STR_EQ(root.GetName().c_str(), "legacy_multi_root");
+        IM_CHECK(reloaded->GetParent(reloaded->FindEntityByUUID(first.GetUUID())) == root);
+        IM_CHECK(reloaded->GetParent(reloaded->FindEntityByUUID(second.GetUUID())) == root);
+
+        std::filesystem::remove(file);
+    };
+
+    // Supprimer la racine viderait la scène : l'éditeur refuse.
+    t = IM_REGISTER_TEST(engine, "hierarchy", "scene_root_cannot_be_deleted");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        Engine::Scene &scene = editor.GetEditorScene();
+        Engine::Entity root = scene.GetRootEntity();
+        IM_CHECK(root);
+
+        const int before = CountEntities(editor);
+        SelectEntity(ctx, editor, root.GetName().c_str());
+
+        ctx->SetRef("DockSpace");
+        ctx->MenuClick("Edit/Delete");
+        ctx->Yield(2);
+
+        IM_CHECK_EQ(CountEntities(editor), before);
+        IM_CHECK(scene.GetRootEntity() == root);
     };
 
     // --- Inspecteur ---------------------------------------------------------
@@ -866,7 +934,9 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         ctx->SetRef("DockSpace");
         ctx->MenuClick("File/New Scene");
         ctx->Yield(2);
-        IM_CHECK_EQ(CountEntities(editor), 0);
+        // Une scène neuve n'est pas vide : elle contient sa racine, et rien d'autre.
+        IM_CHECK_EQ(CountEntities(editor), 1);
+        IM_CHECK(editor.GetEditorScene().GetRootEntity());
         IM_CHECK(editor.GetCurrentScenePathForTests().empty());
 
         ctx->MenuClick("File/Open...");
@@ -985,7 +1055,7 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK(ctx->CaptureScreenshot());
         IM_CHECK(std::filesystem::exists(outputFile));
 
-        IM_CHECK(scene.SetParent(circle, {}));
+        IM_CHECK(scene.SetParent(circle, scene.GetRootEntity()));
     };
 
     // Un message plus large que le panel, répété : à regarder pour vérifier qu'il
