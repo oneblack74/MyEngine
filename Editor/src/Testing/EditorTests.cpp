@@ -1057,6 +1057,9 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK_EQ(CountEntities(editor), before);
         IM_CHECK_EQ((int)scene.GetChildren(square).size(), 0);
 
+        // Le registre d'assets est versionné : sans ça, chaque exécution y laisserait
+        // une entrée pointant vers un fichier qui n'existe plus.
+        Engine::AssetManager::Remove(Engine::AssetManager::Import("scenes/test_instance.scene"));
         std::filesystem::remove(scenePath);
     };
 
@@ -1148,6 +1151,9 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK(refreshed.HasComponent<Engine::SceneInstanceComponent>());
 
         scene.DestroyEntity(refreshed);
+        // Le registre d'assets est versionné : sans ça, chaque exécution y laisserait
+        // une entrée pointant vers un fichier qui n'existe plus.
+        Engine::AssetManager::Remove(Engine::AssetManager::Import("scenes/test_link.scene"));
         std::filesystem::remove(scenePath);
     };
 
@@ -1247,6 +1253,9 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
 
         ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
         ctx->Yield(2);
+        // Le registre d'assets est versionné : sans ça, chaque exécution y laisserait
+        // une entrée pointant vers un fichier qui n'existe plus.
+        Engine::AssetManager::Remove(Engine::AssetManager::Import("scenes/capture_crate.scene"));
         std::filesystem::remove(scenePath);
     };
 
