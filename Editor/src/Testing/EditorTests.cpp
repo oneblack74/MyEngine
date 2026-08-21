@@ -339,6 +339,26 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK(ctx->CaptureScreenshot());
         IM_CHECK(std::filesystem::exists(outputFile));
     };
+    // Le Viewport avec les contours de colliders activés : sert de vérification
+    // visuelle qu'ils épousent bien la géométrie envoyée à Box2D.
+    t = IM_REGISTER_TEST(engine, "capture", "collider_outlines");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        ctx->SetRef("DockSpace");
+        ctx->MenuCheck("Affichage/Contours des colliders");
+        IM_CHECK(editor.AreColliderOutlinesVisibleForTests());
+        ctx->Yield(2);
+
+        const char *outputFile = "output/captures/collider_outlines.png";
+        ctx->CaptureReset();
+        ImStrncpy(ctx->CaptureArgs->InOutputFile, outputFile, IM_ARRAYSIZE(ctx->CaptureArgs->InOutputFile));
+        IM_CHECK(ctx->CaptureAddWindow("//Viewport"));
+        IM_CHECK(ctx->CaptureScreenshot());
+        IM_CHECK(std::filesystem::exists(outputFile));
+
+        ctx->MenuUncheck("Affichage/Contours des colliders");
+        IM_CHECK(!editor.AreColliderOutlinesVisibleForTests());
+    };
 }
 
 #else
