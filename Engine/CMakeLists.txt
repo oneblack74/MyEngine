@@ -13,6 +13,8 @@ add_library(Engine STATIC
     src/Renderer/SubTexture2D.cpp
     src/Renderer/Framebuffer.cpp
     vendor/stb/stb_image.cpp
+    vendor/stb/stb_image_write.cpp
+    src/Utils/ImageCapture.cpp
     src/Renderer/Texture.cpp
     src/Scene/Scene.cpp
     src/Scene/Entity.cpp
