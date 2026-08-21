@@ -1,5 +1,7 @@
 #include "Panels/SceneHierarchyPanel.h"
 #include <Scene/Components.h>
+#include <Scene/SceneSerializer.h>
+#include <filesystem>
 #include <imgui.h>
 #include <imgui_internal.h> // BeginDragDropTargetCustom : API "interne", mais c'est le seul moyen d'avoir plusieurs zones de dépôt sur une même ligne
 
@@ -16,6 +18,24 @@ namespace
         memcpy(&id, payload->Data, sizeof(id));
         return Engine::UUID(id);
     }
+}
+
+bool SceneHierarchyPanel::AcceptSceneDrop(Engine::UUID target)
+{
+    const ImGuiPayload *payload = ImGui::AcceptDragDropPayload(k_AssetPayloadType);
+    if (!payload)
+        return false;
+
+    // La charge utile est un chemin relatif, terminé par un zéro (ContentBrowserPanel).
+    const std::string path((const char *)payload->Data);
+
+    // Seules les scènes s'instancient : déposer une texture ici n'a pas de sens.
+    if (std::filesystem::path(path).extension() != Engine::k_SceneExtension)
+        return true;
+
+    m_PendingSceneInstance = {path, target};
+    m_HasPendingSceneInstance = true;
+    return true;
 }
 
 void SceneHierarchyPanel::OnImGuiRender()
@@ -39,6 +59,8 @@ void SceneHierarchyPanel::OnImGuiRender()
                 m_PendingDrop = {PayloadEntity(payload), Engine::UUID(0), false};
                 m_HasPendingDrop = true;
             }
+            // Une scène déposée sur la scène elle-même s'instancie sous sa racine.
+            AcceptSceneDrop(Engine::UUID(0));
             ImGui::EndDragDropTarget();
         }
 
@@ -110,6 +132,8 @@ void SceneHierarchyPanel::DrawEntityNode(Engine::Entity entity)
             m_PendingDrop = {PayloadEntity(payload), uuid, false};
             m_HasPendingDrop = true;
         }
+        // Déposer une scène sur une entité l'instancie comme son enfant.
+        AcceptSceneDrop(uuid);
         ImGui::EndDragDropTarget();
     }
 
@@ -120,6 +144,16 @@ void SceneHierarchyPanel::DrawEntityNode(Engine::Entity entity)
 
         ImGui::TreePop();
     }
+}
+
+bool SceneHierarchyPanel::TakePendingSceneInstance(SceneInstanceDrop &out)
+{
+    if (!m_HasPendingSceneInstance)
+        return false;
+
+    out = m_PendingSceneInstance;
+    m_HasPendingSceneInstance = false;
+    return true;
 }
 
 bool SceneHierarchyPanel::TakePendingDrop(HierarchyDrop &out)

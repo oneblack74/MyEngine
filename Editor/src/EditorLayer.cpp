@@ -368,6 +368,10 @@ void EditorLayer::RenderImGui()
     SceneHierarchyPanel::HierarchyDrop drop;
     if (m_SceneHierarchyPanel.TakePendingDrop(drop) && m_SceneState == SceneState::Edit)
         ApplyHierarchyDrop(drop);
+
+    SceneHierarchyPanel::SceneInstanceDrop instanceDrop;
+    if (m_SceneHierarchyPanel.TakePendingSceneInstance(instanceDrop) && m_SceneState == SceneState::Edit)
+        InstantiateScene(instanceDrop);
     // Historique nul pendant le Play : la scène runtime est jetée au Stop, y annuler
     // une édition n'aurait pas de sens.
     m_InspectorPanel.OnImGuiRender(m_SceneHierarchyPanel.GetSelectedEntity(),
@@ -713,6 +717,32 @@ void EditorLayer::ApplyHierarchyDrop(const SceneHierarchyPanel::HierarchyDrop &d
     m_CommandHistory.Execute(std::make_unique<ReparentEntityCommand>(
         *this, drop.Dragged, newParent ? newParent.GetUUID() : Engine::UUID(0),
         drop.InsertBefore ? drop.Target : Engine::UUID(0)));
+}
+
+void EditorLayer::InstantiateScene(const SceneHierarchyPanel::SceneInstanceDrop &drop)
+{
+    const std::filesystem::path scenePath = Engine::AssetManager::GetAssetRoot() / drop.AssetPath;
+
+    // Une scène ne peut pas s'instancier dans elle-même : la copie ne bouclerait pas
+    // (elle vient du fichier, pas de la mémoire), mais elle emporterait tout ce que la
+    // scène contenait au dernier enregistrement, à chaque dépôt.
+    std::error_code ec;
+    if (!m_CurrentScenePath.empty() && std::filesystem::equivalent(scenePath, m_CurrentScenePath, ec))
+    {
+        LOG_WARN("A scene cannot be instantiated into itself");
+        return;
+    }
+
+    Engine::Entity parent = m_EditorScene->FindEntityByUUID(drop.Target);
+    if (!parent)
+        parent = m_EditorScene->GetRootEntity();
+
+    auto command = std::make_unique<InstantiateSceneCommand>(
+        *this, scenePath, parent ? parent.GetUUID() : Engine::UUID(0));
+    if (!command->IsValid())
+        return;
+
+    m_CommandHistory.Execute(std::move(command));
 }
 
 void EditorLayer::SetupDefaultDockLayout()

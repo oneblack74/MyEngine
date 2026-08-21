@@ -89,6 +89,7 @@ private:
     // Applique un glisser-déposer de la hiérarchie, en passant par l'historique pour
     // que le déplacement soit annulable comme le reste.
     void ApplyHierarchyDrop(const SceneHierarchyPanel::HierarchyDrop &drop);
+    void InstantiateScene(const SceneHierarchyPanel::SceneInstanceDrop &drop);
 
     void OnScenePlay();
     void OnSceneStop();

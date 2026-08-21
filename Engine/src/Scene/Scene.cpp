@@ -275,6 +275,30 @@ namespace Engine
         return copy;
     }
 
+    Entity Scene::InstantiateBranch(Entity source, Entity parent)
+    {
+        if (!source)
+            return {};
+
+        Entity copy = CreateEntity(source.GetComponent<TagComponent>().Tag);
+        CopyComponents(source, copy);
+
+        // Le lien est écrit directement, sans passer par SetParent : celui-ci conserve
+        // la position dans le monde, alors qu'une instance doit garder le transform
+        // local tel qu'il a été composé dans sa scène d'origine.
+        copy.GetComponent<ParentComponent>().Parent =
+            parent ? parent.GetComponent<IDComponent>().ID : UUID(0);
+
+        Scene *sourceScene = source.GetScene();
+        if (sourceScene)
+        {
+            for (Entity child : sourceScene->GetChildren(source))
+                InstantiateBranch(child, copy);
+        }
+
+        return copy;
+    }
+
     void Scene::CopyComponents(Entity source, Entity destination)
     {
         destination.GetComponent<TagComponent>().Tag = source.GetComponent<TagComponent>().Tag;

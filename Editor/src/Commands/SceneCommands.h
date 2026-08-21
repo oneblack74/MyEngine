@@ -1,4 +1,5 @@
 #pragma once
+#include <filesystem>
 #include <vector>
 #include "Commands/EditorCommand.h"
 #include "Commands/EditorContext.h"
@@ -124,6 +125,34 @@ private:
     // État d'avant, capturé à la construction : de quoi revenir exactement en place.
     Engine::UUID m_OldParent;
     size_t m_OldIndex = 0;
+};
+
+// Instanciation d'une scène dans la scène courante : sa branche y est recopiée, sans
+// lien avec le fichier d'origine (première étape du modèle Godot — la propagation des
+// modifications de la source viendra ensuite).
+class InstantiateSceneCommand : public EditorCommand
+{
+public:
+    InstantiateSceneCommand(EditorContext &context, const std::filesystem::path &scenePath,
+                            Engine::UUID parent);
+
+    // Le fichier n'a pas pu être lu : la commande ne doit alors pas être exécutée.
+    bool IsValid() const { return m_Template != nullptr; }
+
+    void Redo() override;
+    void Undo() override;
+    std::string GetName() const override;
+
+private:
+    EditorContext &m_Context;
+    Engine::UUID m_Parent;
+    std::string m_SceneName;
+
+    // L'instance est fabriquée une fois pour toutes à la construction, dans une scène
+    // détachée : ses UUID sont ainsi figés, et un rétablissement fait revenir les mêmes
+    // entités plutôt que des nouvelles.
+    std::shared_ptr<Engine::Scene> m_Template;
+    Engine::Entity m_TemplateRoot;
 };
 
 class DeleteEntityCommand : public EditorCommand

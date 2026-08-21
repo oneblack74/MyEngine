@@ -32,6 +32,12 @@ namespace Engine
         // Copie l'entité dans cette même scène, avec un nouvel UUID (duplication éditeur).
         Entity DuplicateEntity(Entity source);
 
+        // Recopie une branche venue d'une autre scène sous `parent`, avec de nouveaux
+        // UUID : une instance est une copie indépendante, deux instances d'une même
+        // scène ne peuvent pas partager l'identité de leurs entités. Les transforms
+        // locaux sont conservés tels qu'ils ont été composés dans la source.
+        Entity InstantiateBranch(Entity source, Entity parent);
+
         // Copie tous les components de source vers destination, y compris entre deux
         // scènes différentes. L'IDComponent n'est pas touché : c'est l'identité de la
         // destination, pas une donnée à recopier.

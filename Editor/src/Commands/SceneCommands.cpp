@@ -1,7 +1,17 @@
 #include "Commands/SceneCommands.h"
+#include <Core/Log.h>
+#include <Scene/SceneSerializer.h>
 
 namespace
 {
+    // L'entité puis tous ses descendants, parents avant enfants.
+    void CollectBranch(Engine::Scene &scene, Engine::Entity entity, std::vector<Engine::Entity> &out)
+    {
+        out.push_back(entity);
+        for (Engine::Entity child : scene.GetChildren(entity))
+            CollectBranch(scene, child, out);
+    }
+
     // Scène détachée servant de presse-papiers / sauvegarde : elle n'est ni rendue ni
     // simulée, elle ne fait que garder une entité en vie hors de la scène d'édition.
     std::shared_ptr<Engine::Scene> MakeDetachedCopyOf(Engine::Entity entity, Engine::Entity &outCopy)
@@ -131,18 +141,81 @@ std::string ReparentEntityCommand::GetName() const
     return "move " + m_EntityName;
 }
 
-// --- Suppression ------------------------------------------------------------
+// --- Instanciation ----------------------------------------------------------
 
 namespace
 {
-    // L'entité puis tous ses descendants, parents avant enfants.
-    void CollectBranch(Engine::Scene &scene, Engine::Entity entity, std::vector<Engine::Entity> &out)
+    // Recopie une branche d'une scène à l'autre en conservant les UUID. Deux passes,
+    // comme partout ailleurs : toutes les entités existent avant qu'on copie le moindre
+    // component, sinon les liens de parenté internes à la branche pointeraient vers des
+    // entités encore absentes et seraient perdus.
+    void CopyBranchPreservingUUIDs(Engine::Scene &source, Engine::Entity sourceRoot,
+                                   Engine::Scene &destination, Engine::UUID parent)
     {
-        out.push_back(entity);
-        for (Engine::Entity child : scene.GetChildren(entity))
-            CollectBranch(scene, child, out);
+        std::vector<Engine::Entity> branch;
+        CollectBranch(source, sourceRoot, branch);
+
+        for (Engine::Entity entity : branch)
+            destination.CreateEntityWithUUID(entity.GetUUID(),
+                                             entity.GetComponent<Engine::TagComponent>().Tag);
+
+        for (Engine::Entity entity : branch)
+            Engine::Scene::CopyComponents(entity, destination.FindEntityByUUID(entity.GetUUID()));
+
+        // Le parent de la racine de la branche est extérieur à celle-ci : CopyComponents
+        // ne pouvait pas le rétablir.
+        destination.FindEntityByUUID(sourceRoot.GetUUID()).GetComponent<Engine::ParentComponent>().Parent = parent;
     }
 }
+
+InstantiateSceneCommand::InstantiateSceneCommand(EditorContext &context,
+                                                 const std::filesystem::path &scenePath,
+                                                 Engine::UUID parent)
+    : m_Context(context), m_Parent(parent), m_SceneName(scenePath.stem().string())
+{
+    auto loaded = std::make_shared<Engine::Scene>();
+    if (!Engine::SceneSerializer(loaded).Deserialize(scenePath.string()))
+        return;
+
+    Engine::Entity loadedRoot = loaded->GetRootEntity();
+    if (!loadedRoot)
+    {
+        LOG_ERROR("Instantiate: {0} has no root entity", scenePath.string());
+        return;
+    }
+
+    // L'instance est fabriquée tout de suite, avec ses UUID définitifs : la scène
+    // chargée, elle, peut être jetée derrière.
+    m_Template = std::make_shared<Engine::Scene>();
+    m_TemplateRoot = m_Template->InstantiateBranch(loadedRoot, {});
+}
+
+void InstantiateSceneCommand::Redo()
+{
+    if (!m_Template)
+        return;
+
+    CopyBranchPreservingUUIDs(*m_Template, m_TemplateRoot, m_Context.GetEditorScene(), m_Parent);
+    m_Context.SelectEntity(m_Context.GetEditorScene().FindEntityByUUID(m_TemplateRoot.GetUUID()));
+}
+
+void InstantiateSceneCommand::Undo()
+{
+    Engine::Entity instance = m_Context.GetEditorScene().FindEntityByUUID(m_TemplateRoot.GetUUID());
+    if (!instance)
+        return;
+
+    // DestroyEntity emporte les enfants : toute la branche instanciée s'en va.
+    m_Context.GetEditorScene().DestroyEntity(instance);
+    m_Context.SelectEntity({});
+}
+
+std::string InstantiateSceneCommand::GetName() const
+{
+    return "instantiate " + m_SceneName;
+}
+
+// --- Suppression ------------------------------------------------------------
 
 DeleteEntityCommand::DeleteEntityCommand(EditorContext &context, Engine::Entity entity)
     : m_Context(context), m_EntityID(entity.GetUUID()),

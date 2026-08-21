@@ -1,4 +1,5 @@
 #pragma once
+#include "Panels/ContentBrowserPanel.h" // k_AssetPayloadType : les scènes s'y glissent
 #include <Scene/Scene.h>
 #include <Scene/Entity.h>
 #include <memory>
@@ -48,6 +49,19 @@ public:
     // Renvoie true et consomme le dépôt s'il y en a eu un cette frame.
     bool TakePendingDrop(HierarchyDrop &out);
 
+    // Une scène déposée depuis le Content Browser, à instancier. Même principe : le
+    // panel constate, l'éditeur décide.
+    struct SceneInstanceDrop
+    {
+        // Chemin relatif à la racine des assets, tel que le donne le Content Browser.
+        std::string AssetPath;
+
+        // Entité qui accueillera l'instance. Nulle : la racine de la scène.
+        Engine::UUID Target{0};
+    };
+
+    bool TakePendingSceneInstance(SceneInstanceDrop &out);
+
 private:
     void DrawEntityNode(Engine::Entity entity);
 
@@ -55,6 +69,13 @@ private:
     std::string m_SceneName;
     Engine::Entity m_SelectionContext;
 
+    // Enregistre le dépôt d'un asset s'il s'agit d'une scène. Renvoie true si la
+    // charge utile a été consommée.
+    bool AcceptSceneDrop(Engine::UUID target);
+
     bool m_HasPendingDrop = false;
     HierarchyDrop m_PendingDrop;
+
+    bool m_HasPendingSceneInstance = false;
+    SceneInstanceDrop m_PendingSceneInstance;
 };
