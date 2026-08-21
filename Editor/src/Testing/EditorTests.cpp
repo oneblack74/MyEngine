@@ -6,6 +6,7 @@
 #include <Core/Log.h>
 #include <Assets/AssetManager.h>
 #include <Scene/Components.h>
+#include <Scene/SceneManager.h>
 #include <Scene/SceneSerializer.h>
 #include <box2d/box2d.h>
 #include <glm/glm.hpp>
@@ -745,6 +746,35 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK(std::filesystem::exists(scenePath));
 
         reloaded.GetComponent<Engine::TransformComponent>() = savedTransform;
+        std::filesystem::remove(scenePath);
+    };
+
+    // Double-clic sur une scène du Content Browser : elle s'ouvre.
+    t = IM_REGISTER_TEST(engine, "scene", "double_click_in_content_browser_opens_it");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        const std::filesystem::path scenePath =
+            Engine::AssetManager::GetAssetRoot() / "scenes" / "test_double_click.scene";
+
+        // Le fichier vient de la scène courante : la rouvrir ne change donc rien à ce
+        // que les tests suivants trouveront.
+        std::error_code ec;
+        std::filesystem::create_directories(scenePath.parent_path(), ec);
+        Engine::SceneSerializer(Engine::SceneManager::GetActiveScene()).Serialize(scenePath.string());
+        IM_CHECK(std::filesystem::exists(scenePath));
+
+        const int entityCount = CountEntities(editor);
+
+        ctx->SetRef("Content Browser");
+        ctx->ItemOpen("scenes");
+        ctx->Yield();
+        ctx->ItemDoubleClick("scenes/test_double_click.scene");
+        ctx->Yield(3);
+
+        IM_CHECK_STR_EQ(editor.GetCurrentScenePathForTests().filename().string().c_str(),
+                        "test_double_click.scene");
+        IM_CHECK_EQ(CountEntities(editor), entityCount);
+
         std::filesystem::remove(scenePath);
     };
 
