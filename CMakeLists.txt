@@ -90,6 +90,57 @@ target_include_directories(imgui PUBLIC
 target_compile_definitions(imgui PUBLIC IMGUI_IMPL_OPENGL_LOADER_GLAD2)
 target_link_libraries(imgui PUBLIC glfw glad_gl_core_46)
 
+# Dear ImGui Test Engine : automatisation de l'UI de l'éditeur (clic par label,
+# assertions, captures). Optionnel — sa licence est gratuite pour un usage personnel
+# ou open-source mais payante en usage commercial, donc on doit pouvoir construire
+# un éditeur qui ne l'embarque pas du tout.
+option(MYENGINE_EDITOR_TESTS "Compiler l'éditeur avec Dear ImGui Test Engine" ON)
+
+if(MYENGINE_EDITOR_TESTS)
+    enable_testing()
+
+    FetchContent_Declare(
+        imgui_test_engine
+        GIT_REPOSITORY https://github.com/ocornut/imgui_test_engine.git
+        GIT_TAG        main
+    )
+    FetchContent_MakeAvailable(imgui_test_engine)
+
+    # Le Test Engine s'accroche à ImGui via des hooks compilés dans imgui.cpp lui-même :
+    # sans cette définition sur la cible imgui, ItemClick & co. ne voient jamais aucun
+    # widget. PUBLIC pour que l'éditeur la reçoive aussi (ses en-têtes en dépendent).
+    target_compile_definitions(imgui PUBLIC IMGUI_ENABLE_TEST_ENGINE)
+
+    # Pas de CMakeLists exploitable non plus de ce côté : on définit la lib nous-mêmes.
+    add_library(imgui_test_engine STATIC
+        ${imgui_test_engine_SOURCE_DIR}/imgui_test_engine/imgui_capture_tool.cpp
+        ${imgui_test_engine_SOURCE_DIR}/imgui_test_engine/imgui_te_context.cpp
+        ${imgui_test_engine_SOURCE_DIR}/imgui_test_engine/imgui_te_coroutine.cpp
+        ${imgui_test_engine_SOURCE_DIR}/imgui_test_engine/imgui_te_engine.cpp
+        ${imgui_test_engine_SOURCE_DIR}/imgui_test_engine/imgui_te_exporters.cpp
+        ${imgui_test_engine_SOURCE_DIR}/imgui_test_engine/imgui_te_perftool.cpp
+        ${imgui_test_engine_SOURCE_DIR}/imgui_test_engine/imgui_te_ui.cpp
+        ${imgui_test_engine_SOURCE_DIR}/imgui_test_engine/imgui_te_utils.cpp
+    )
+    target_include_directories(imgui_test_engine PUBLIC
+        ${imgui_test_engine_SOURCE_DIR}
+        ${imgui_test_engine_SOURCE_DIR}/imgui_test_engine
+    )
+    # Permet d'écrire les tests comme des lambdas capturantes (elles reçoivent ainsi
+    # l'EditorLayer) plutôt que des pointeurs de fonction nus. PUBLIC : la définition
+    # change la signature des champs du Test Engine, elle doit être identique partout.
+    target_compile_definitions(imgui_test_engine PUBLIC IMGUI_TEST_ENGINE_ENABLE_STD_FUNCTION=1)
+    # Sans ça, ImGuiTestEngineIO::CoroutineFuncs reste nul et ImGuiTestEngine_Start()
+    # déréférence un pointeur nul (l'assert qui le signale est désactivé en Release).
+    target_compile_definitions(imgui_test_engine PUBLIC IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL=1)
+    # Même piège : sans cette définition les captures d'écran demandées par un test sont
+    # silencieusement ignorées ("Skipped screenshot capture").
+    target_compile_definitions(imgui_test_engine PUBLIC IMGUI_TEST_ENGINE_ENABLE_CAPTURE=1)
+    target_link_libraries(imgui_test_engine PUBLIC imgui)
+    find_package(Threads REQUIRED)
+    target_link_libraries(imgui_test_engine PUBLIC Threads::Threads)
+endif()
+
 FetchContent_Declare(
     imguizmo
     GIT_REPOSITORY https://github.com/CedricGuillemet/ImGuizmo.git

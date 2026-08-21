@@ -1,6 +1,11 @@
 #include "Utils/ImageCapture.h"
 #include "Core/Log.h"
 #include "glad/gl.h"
+// L'implémentation de stb_image_write est compilée ici, en symboles internes
+// (STB_IMAGE_WRITE_STATIC) : Dear ImGui Test Engine embarque sa propre copie de la
+// même bibliothèque, et sans ça l'éditeur ne se lie plus (définitions multiples).
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_STATIC
 #include <stb_image_write.h>
 #include <filesystem>
 #include <vector>
