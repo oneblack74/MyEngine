@@ -97,7 +97,7 @@ void EditorLayer::OnAttach()
     m_PhysicsSystem.OnCollisionEnd = [](Engine::Entity a, Engine::Entity b)
     { ENGINE_LOG_INFO(Engine::LogCategories::Collision, "end: {0} <-> {1}", a.GetName(), b.GetName()); };
 
-    m_SceneHierarchyPanel.SetContext(m_EditorScene);
+    m_SceneHierarchyPanel.SetContext(m_EditorScene, GetSceneDisplayName());
     UpdateWindowTitle();
 
     // Init ImGui (contexte + backends GLFW/OpenGL3), avec le docking activé
@@ -502,11 +502,15 @@ std::filesystem::path EditorLayer::GetSceneDirectory()
     return Engine::AssetManager::GetAssetRoot() / "scenes";
 }
 
+std::string EditorLayer::GetSceneDisplayName() const
+{
+    // Le nom du fichier sans extension, comme Unity affiche ses scènes.
+    return m_CurrentScenePath.empty() ? "Untitled" : m_CurrentScenePath.stem().string();
+}
+
 void EditorLayer::UpdateWindowTitle()
 {
-    const std::string sceneName =
-        m_CurrentScenePath.empty() ? "Untitled" : m_CurrentScenePath.filename().string();
-    Engine::Application::Get().GetWindow().SetTitle("MyEngine Editor - " + sceneName);
+    Engine::Application::Get().GetWindow().SetTitle("MyEngine Editor - " + GetSceneDisplayName());
 }
 
 void EditorLayer::SetEditorScene(const std::shared_ptr<Engine::Scene> &scene,
@@ -516,7 +520,7 @@ void EditorLayer::SetEditorScene(const std::shared_ptr<Engine::Scene> &scene,
     m_CurrentScenePath = path;
     Engine::SceneManager::SetActiveScene(scene);
 
-    m_SceneHierarchyPanel.SetContext(m_EditorScene);
+    m_SceneHierarchyPanel.SetContext(m_EditorScene, GetSceneDisplayName());
     // La sélection et l'historique portent sur des entités de l'ancienne scène : les
     // garder ferait pointer l'Inspecteur, et surtout les annulations, dans le vide.
     m_SceneHierarchyPanel.SetSelectedEntity({});
@@ -698,7 +702,7 @@ void EditorLayer::OnScenePlay()
     m_RuntimeScene = m_EditorScene->Copy();
     m_PhysicsSystem.OnRuntimeStart(*m_RuntimeScene);
     Engine::AudioSystem::OnRuntimeStart(*m_RuntimeScene);
-    m_SceneHierarchyPanel.SetContext(m_RuntimeScene);
+    m_SceneHierarchyPanel.SetContext(m_RuntimeScene, GetSceneDisplayName());
 
     Engine::Entity newSelection;
     if (hadSelection)
@@ -714,7 +718,7 @@ void EditorLayer::OnSceneStop()
     m_PhysicsSystem.OnRuntimeStop();
     Engine::AudioSystem::OnRuntimeStop(*m_RuntimeScene);
     m_RuntimeScene = nullptr;
-    m_SceneHierarchyPanel.SetContext(m_EditorScene);
+    m_SceneHierarchyPanel.SetContext(m_EditorScene, GetSceneDisplayName());
     // L'entité sélectionnée appartenait potentiellement à la scène runtime qu'on vient de jeter
     m_SceneHierarchyPanel.SetSelectedEntity({});
 }

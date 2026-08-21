@@ -97,6 +97,17 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK_STR_EQ(camera.GetName().c_str(), "Main Camera");
     };
 
+    // La scène coiffe ses entités, et porte le nom de son fichier.
+    t = IM_REGISTER_TEST(engine, "hierarchy", "scene_name_is_the_root_node");
+    t->TestFunc = [](ImGuiTestContext *ctx)
+    {
+        ctx->SetRef("Scene Hierarchy");
+        ImGuiTestItemInfo node = ctx->ItemInfo("##scene");
+        IM_CHECK(node.ID != 0);
+        // Aucun fichier ouvert au lancement de la suite : la scène de démo est anonyme.
+        IM_CHECK_STR_EQ(node.DebugLabel, "Untitled");
+    };
+
     // Régression : les entités ne doivent pas changer de place quand on en supprime
     // une autre. Une vue EnTT n'a pas d'ordre garanti et le registre rebouche le trou
     // laissé par une suppression avec sa dernière entité, ce qui les faisait sauter.

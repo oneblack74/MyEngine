@@ -17,6 +17,7 @@
 #include <Scene/PhysicsSystem.h>
 #include <filesystem>
 #include <memory>
+#include <string>
 
 enum class SceneState
 {
@@ -71,6 +72,9 @@ private:
     // pour une scène jamais enregistrée).
     void SetEditorScene(const std::shared_ptr<Engine::Scene> &scene, const std::filesystem::path &path);
     void UpdateWindowTitle();
+
+    // Nom de la scène tel qu'affiché (titre de la fenêtre, tête de la hiérarchie).
+    std::string GetSceneDisplayName() const;
 
     // Dossier des scènes du projet, sous la racine des assets.
     static std::filesystem::path GetSceneDirectory();

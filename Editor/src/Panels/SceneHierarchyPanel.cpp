@@ -8,14 +8,24 @@ void SceneHierarchyPanel::OnImGuiRender()
 
     if (m_Context)
     {
-        // Parcours de l'ordre de la scène et non d'une vue EnTT : c'est ce qui garantit
-        // qu'une entité ne change pas de place quand on en supprime une autre (le
-        // registre déplace alors sa dernière entité dans le trou laissé).
-        for (Engine::UUID uuid : m_Context->GetEntityOrder())
+        // La scène coiffe ses entités, comme dans Unity. SpanAvailWidth pour que la
+        // ligne entière réagisse, et pas seulement le texte.
+        const ImGuiTreeNodeFlags sceneFlags = ImGuiTreeNodeFlags_DefaultOpen |
+                                              ImGuiTreeNodeFlags_SpanAvailWidth |
+                                              ImGuiTreeNodeFlags_OpenOnArrow;
+        if (ImGui::TreeNodeEx("##scene", sceneFlags, "%s", m_SceneName.c_str()))
         {
-            Engine::Entity entity = m_Context->FindEntityByUUID(uuid);
-            if (entity)
-                DrawEntityNode(entity);
+            // Parcours de l'ordre de la scène et non d'une vue EnTT : c'est ce qui
+            // garantit qu'une entité ne change pas de place quand on en supprime une
+            // autre (le registre déplace alors sa dernière entité dans le trou laissé).
+            for (Engine::UUID uuid : m_Context->GetEntityOrder())
+            {
+                Engine::Entity entity = m_Context->FindEntityByUUID(uuid);
+                if (entity)
+                    DrawEntityNode(entity);
+            }
+
+            ImGui::TreePop();
         }
     }
 
