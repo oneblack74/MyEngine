@@ -76,9 +76,9 @@
 - ✅ `GamePanel` — vue de jeu séparée du Viewport d'édition, ouvrable dans une fenêtre à part (façon Godot) ; l'Inspecteur reste éditable en direct pendant le Play (façon Unity)
 - ✅ Console — regroupement des messages identiques ("Collapse" façon Unity), avec un compteur sur la ligne
 - ✅ Console — trois boutons de filtre Log / Warning / Error, affichant le nombre de messages de chaque type (+ coloration par niveau)
-- ⬜ Catégories de log dans le moteur (`Collision`, `Input`, `Renderer`, `Physique`…, plus des catégories côté jeu) — prérequis des deux filtres ci-dessous, le moteur ne distingue aujourd'hui que le niveau, pas la provenance
-- ⬜ Console — menu déroulant "Moteur" à cases à cocher, une par catégorie moteur
-- ⬜ Console — menu déroulant "Jeu" à cases à cocher, une par catégorie définie par le jeu
+- ✅ Catégories de log dans le moteur (`Collision`, `Input`, `Renderer`, `Physique`…, plus des catégories côté jeu) — macros `ENGINE_LOG_*` / `GAME_LOG_*`, un logger spdlog par catégorie
+- ✅ Console — menu déroulant "Moteur" à cases à cocher, une par catégorie moteur
+- ✅ Console — menu déroulant "Jeu" à cases à cocher, une par catégorie définie par le jeu
 - ✅ `CameraComponent` — caméra ECS (taille orthographique + flag Primary), utilisée par `GamePanel` pour rendre ce que voit la caméra principale de la scène (position/rotation via le `TransformComponent` de l'entité)
 
 ---
