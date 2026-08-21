@@ -36,6 +36,7 @@ public:
 
     CommandHistory &GetCommandHistoryForTests() { return m_CommandHistory; }
     bool AreColliderOutlinesVisibleForTests() const { return m_ShowColliderOutlines; }
+    ConsolePanel &GetConsolePanelForTests() { return m_ConsolePanel; }
 
     // Code de sortie du processus après une exécution de tests (0 si tout va bien).
     int GetTestExitCode() const { return m_TestEngine.ExitCode(); }
