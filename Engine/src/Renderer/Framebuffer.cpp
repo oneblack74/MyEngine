@@ -45,7 +45,7 @@ namespace Engine
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, m_DepthAttachment, 0);
 
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            ENGINE_LOG_ERROR(LogCategories::Renderer, "Framebuffer incomplet !");
+            ENGINE_LOG_ERROR(LogCategories::Renderer, "Incomplete framebuffer!");
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }

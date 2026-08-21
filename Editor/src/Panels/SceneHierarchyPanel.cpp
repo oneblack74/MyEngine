@@ -4,7 +4,7 @@
 
 void SceneHierarchyPanel::OnImGuiRender()
 {
-    ImGui::Begin("Hiérarchie de la scène");
+    ImGui::Begin("Scene Hierarchy");
 
     if (m_Context)
     {

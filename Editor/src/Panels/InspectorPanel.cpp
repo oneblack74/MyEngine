@@ -38,13 +38,13 @@ namespace
     }
 
     // En-tête d'une section de component : le TreeNode habituel plus un bouton
-    // "Réinit." aligné à droite de la même ligne. Renvoie true si la section est
+    // "Reset" aligné à droite de la même ligne. Renvoie true si la section est
     // ouverte ; resetRequested passe à true la frame où le bouton est cliqué.
     // À refermer avec EndComponentSection().
     bool BeginComponentSection(const char *label, bool &resetRequested)
     {
         const ImGuiStyle &style = ImGui::GetStyle();
-        const float buttonWidth = ImGui::CalcTextSize("Réinit.").x + style.FramePadding.x * 2.0f;
+        const float buttonWidth = ImGui::CalcTextSize("Reset").x + style.FramePadding.x * 2.0f;
         const float lineStartX = ImGui::GetCursorPosX();
         const float availWidth = ImGui::GetContentRegionAvail().x;
 
@@ -57,12 +57,12 @@ namespace
         // (Un PushID(label) autour de tout donnerait un ID en double, "Transform/Transform",
         // qui alourdirait les chemins utilisés par les tests automatisés.)
         char buttonId[64];
-        snprintf(buttonId, sizeof(buttonId), "Réinit.##%s", label);
+        snprintf(buttonId, sizeof(buttonId), "Reset##%s", label);
 
         ImGui::SameLine(lineStartX + availWidth - buttonWidth);
         resetRequested = ImGui::SmallButton(buttonId);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Réinitialiser %s aux valeurs par défaut", label);
+            ImGui::SetTooltip("Reset %s to its default values", label);
 
         return open;
     }
@@ -78,7 +78,7 @@ void InspectorPanel::OnImGuiRender(Engine::Entity selectedEntity, CommandHistory
 {
     m_History = history;
 
-    ImGui::Begin("Inspecteur");
+    ImGui::Begin("Inspector");
 
     if (selectedEntity)
         DrawComponents(selectedEntity);
@@ -121,17 +121,17 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
         {
             const Engine::TransformComponent before = transform;
             transform = Engine::TransformComponent{};
-            RecordEdit(entity, before, "réinitialiser le Transform de");
+            RecordEdit(entity, before, "reset Transform of");
         }
 
         if (open)
         {
             ImGui::DragFloat3("Position", &transform.Position.x, 0.05f);
-            TrackEdit<Engine::TransformComponent>(entity, "déplacer");
+            TrackEdit<Engine::TransformComponent>(entity, "move");
             ImGui::DragFloat("Rotation", &transform.Rotation, 0.5f);
-            TrackEdit<Engine::TransformComponent>(entity, "pivoter");
+            TrackEdit<Engine::TransformComponent>(entity, "rotate");
             ImGui::DragFloat3("Scale", &transform.Scale.x, 0.05f);
-            TrackEdit<Engine::TransformComponent>(entity, "redimensionner");
+            TrackEdit<Engine::TransformComponent>(entity, "scale");
         }
 
         EndComponentSection(open);
@@ -152,7 +152,7 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
             // Texture volontairement conservée : elle n'est pas éditable depuis
             // l'Inspecteur (pas d'asset system avant la Phase 7), la remettre à null
             // la perdrait sans aucun moyen de la retrouver.
-            RecordEdit(entity, before, "réinitialiser le Sprite Renderer de");
+            RecordEdit(entity, before, "reset Sprite Renderer of");
         }
 
         if (open)
@@ -173,13 +173,13 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
                                               : Engine::AssetManager::Import(path);
             }
             if (AcceptAssetDrop(Engine::AssetType::Texture, sprite.Texture))
-                RecordEdit(entity, spriteBeforeDrop, "changer la texture de");
-            TrackEdit<Engine::SpriteRendererComponent>(entity, "changer la texture de");
+                RecordEdit(entity, spriteBeforeDrop, "change texture of");
+            TrackEdit<Engine::SpriteRendererComponent>(entity, "change texture of");
 
-            ImGui::ColorEdit4("Couleur", &sprite.Color.x);
-            TrackEdit<Engine::SpriteRendererComponent>(entity, "changer la couleur de");
+            ImGui::ColorEdit4("Color", &sprite.Color.x);
+            TrackEdit<Engine::SpriteRendererComponent>(entity, "change color of");
             ImGui::DragFloat("Tiling", &sprite.TilingFactor, 0.05f, 0.0f, 100.0f, "%.3f", k_ClampedDrag);
-            TrackEdit<Engine::SpriteRendererComponent>(entity, "changer le tiling de");
+            TrackEdit<Engine::SpriteRendererComponent>(entity, "change tiling of");
         }
 
         EndComponentSection(open);
@@ -199,7 +199,7 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
             const Engine::RigidBodyComponent defaults;
             rb.Type = defaults.Type;
             rb.FixedRotation = defaults.FixedRotation;
-            RecordEdit(entity, before, "réinitialiser le Rigid Body de");
+            RecordEdit(entity, before, "reset Rigid Body of");
         }
 
         if (open)
@@ -212,11 +212,11 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
             if (ImGui::Combo("Type", &currentType, typeLabels, 3))
             {
                 rb.Type = (Engine::RigidBodyComponent::BodyType)currentType;
-                RecordEdit(entity, beforeType, "changer le type de");
+                RecordEdit(entity, beforeType, "change type of");
             }
 
-            ImGui::Checkbox("Rotation fixe", &rb.FixedRotation);
-            TrackEdit<Engine::RigidBodyComponent>(entity, "modifier le Rigid Body de");
+            ImGui::Checkbox("Fixed Rotation", &rb.FixedRotation);
+            TrackEdit<Engine::RigidBodyComponent>(entity, "edit Rigid Body of");
         }
 
         EndComponentSection(open);
@@ -238,21 +238,21 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
             bc.Density = defaults.Density;
             bc.Friction = defaults.Friction;
             bc.Restitution = defaults.Restitution;
-            RecordEdit(entity, before, "réinitialiser le Box Collider de");
+            RecordEdit(entity, before, "reset Box Collider of");
         }
 
         if (open)
         {
             ImGui::DragFloat2("Offset", &bc.Offset.x, 0.05f);
-            TrackEdit<Engine::BoxColliderComponent>(entity, "modifier le collider de");
+            TrackEdit<Engine::BoxColliderComponent>(entity, "edit collider of");
             ImGui::DragFloat2("Taille (demi)", &bc.Size.x, 0.05f, 0.01f, 100.0f, "%.3f", k_ClampedDrag);
-            TrackEdit<Engine::BoxColliderComponent>(entity, "modifier le collider de");
-            ImGui::DragFloat("Densité", &bc.Density, 0.05f, 0.0f, 100.0f, "%.3f", k_ClampedDrag);
-            TrackEdit<Engine::BoxColliderComponent>(entity, "modifier le collider de");
+            TrackEdit<Engine::BoxColliderComponent>(entity, "edit collider of");
+            ImGui::DragFloat("Density", &bc.Density, 0.05f, 0.0f, 100.0f, "%.3f", k_ClampedDrag);
+            TrackEdit<Engine::BoxColliderComponent>(entity, "edit collider of");
             ImGui::DragFloat("Friction", &bc.Friction, 0.01f, 0.0f, 1.0f, "%.3f", k_ClampedDrag);
-            TrackEdit<Engine::BoxColliderComponent>(entity, "modifier le collider de");
+            TrackEdit<Engine::BoxColliderComponent>(entity, "edit collider of");
             ImGui::DragFloat("Restitution", &bc.Restitution, 0.01f, 0.0f, 1.0f, "%.3f", k_ClampedDrag);
-            TrackEdit<Engine::BoxColliderComponent>(entity, "modifier le collider de");
+            TrackEdit<Engine::BoxColliderComponent>(entity, "edit collider of");
         }
 
         EndComponentSection(open);
@@ -273,21 +273,21 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
             cc.Density = defaults.Density;
             cc.Friction = defaults.Friction;
             cc.Restitution = defaults.Restitution;
-            RecordEdit(entity, before, "réinitialiser le Circle Collider de");
+            RecordEdit(entity, before, "reset Circle Collider of");
         }
 
         if (open)
         {
             ImGui::DragFloat2("Offset", &cc.Offset.x, 0.05f);
-            TrackEdit<Engine::CircleColliderComponent>(entity, "modifier le collider de");
-            ImGui::DragFloat("Rayon", &cc.Radius, 0.05f, 0.01f, 100.0f, "%.3f", k_ClampedDrag);
-            TrackEdit<Engine::CircleColliderComponent>(entity, "modifier le collider de");
-            ImGui::DragFloat("Densité", &cc.Density, 0.05f, 0.0f, 100.0f, "%.3f", k_ClampedDrag);
-            TrackEdit<Engine::CircleColliderComponent>(entity, "modifier le collider de");
+            TrackEdit<Engine::CircleColliderComponent>(entity, "edit collider of");
+            ImGui::DragFloat("Radius", &cc.Radius, 0.05f, 0.01f, 100.0f, "%.3f", k_ClampedDrag);
+            TrackEdit<Engine::CircleColliderComponent>(entity, "edit collider of");
+            ImGui::DragFloat("Density", &cc.Density, 0.05f, 0.0f, 100.0f, "%.3f", k_ClampedDrag);
+            TrackEdit<Engine::CircleColliderComponent>(entity, "edit collider of");
             ImGui::DragFloat("Friction", &cc.Friction, 0.01f, 0.0f, 1.0f, "%.3f", k_ClampedDrag);
-            TrackEdit<Engine::CircleColliderComponent>(entity, "modifier le collider de");
+            TrackEdit<Engine::CircleColliderComponent>(entity, "edit collider of");
             ImGui::DragFloat("Restitution", &cc.Restitution, 0.01f, 0.0f, 1.0f, "%.3f", k_ClampedDrag);
-            TrackEdit<Engine::CircleColliderComponent>(entity, "modifier le collider de");
+            TrackEdit<Engine::CircleColliderComponent>(entity, "edit collider of");
         }
 
         EndComponentSection(open);
@@ -308,7 +308,7 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
             audio.Loop = defaults.Loop;
             audio.PlayOnStart = defaults.PlayOnStart;
             // Source préservée, comme les handles Box2D : c'est la lecture en cours.
-            RecordEdit(entity, before, "réinitialiser l'Audio de");
+            RecordEdit(entity, before, "reset Audio of");
         }
 
         if (open)
@@ -318,7 +318,7 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
             char pathBuffer[512];
             memset(pathBuffer, 0, sizeof(pathBuffer));
             strncpy(pathBuffer, Engine::AssetManager::GetPath(audio.Sound).c_str(), sizeof(pathBuffer) - 1);
-            if (ImGui::InputText("Fichier", pathBuffer, sizeof(pathBuffer)))
+            if (ImGui::InputText("File", pathBuffer, sizeof(pathBuffer)))
             {
                 const std::string path(pathBuffer);
                 audio.Sound = path.empty() ? Engine::AssetHandle(Engine::k_InvalidAssetHandle)
@@ -329,23 +329,23 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
             if (AcceptAssetDrop(Engine::AssetType::Audio, audio.Sound))
             {
                 audio.Source.reset();
-                RecordEdit(entity, audioBeforeDrop, "changer le son de");
+                RecordEdit(entity, audioBeforeDrop, "change sound of");
             }
-            TrackEdit<Engine::AudioComponent>(entity, "changer le son de");
+            TrackEdit<Engine::AudioComponent>(entity, "change sound of");
 
             ImGui::DragFloat("Volume", &audio.Volume, 0.01f, 0.0f, 1.0f, "%.2f", k_ClampedDrag);
-            TrackEdit<Engine::AudioComponent>(entity, "changer le volume de");
+            TrackEdit<Engine::AudioComponent>(entity, "change volume of");
 
-            ImGui::Checkbox("Boucle", &audio.Loop);
-            TrackEdit<Engine::AudioComponent>(entity, "modifier l'Audio de");
+            ImGui::Checkbox("Loop", &audio.Loop);
+            TrackEdit<Engine::AudioComponent>(entity, "edit Audio of");
 
-            ImGui::Checkbox("Jouer au démarrage", &audio.PlayOnStart);
-            TrackEdit<Engine::AudioComponent>(entity, "modifier l'Audio de");
+            ImGui::Checkbox("Play On Start", &audio.PlayOnStart);
+            TrackEdit<Engine::AudioComponent>(entity, "edit Audio of");
 
             // Écoute depuis l'éditeur, sans passer par le Play : le son est chargé à la
             // demande au premier clic.
             const bool playing = audio.Source && audio.Source->IsPlaying();
-            if (ImGui::Button(playing ? "Arrêter" : "Écouter"))
+            if (ImGui::Button(playing ? "Stop" : "Play"))
             {
                 if (playing)
                 {
@@ -364,7 +364,7 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
             if (audio.Source && !audio.Source->IsLoaded())
             {
                 ImGui::SameLine();
-                ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "Fichier introuvable");
+                ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "File not found");
             }
         }
 
@@ -385,15 +385,15 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
             const Engine::CameraComponent defaults;
             cc.Primary = defaults.Primary;
             cc.OrthographicSize = defaults.OrthographicSize;
-            RecordEdit(entity, before, "réinitialiser la Camera de");
+            RecordEdit(entity, before, "reset Camera of");
         }
 
         if (open)
         {
-            ImGui::Checkbox("Principale (Primary)", &cc.Primary);
-            TrackEdit<Engine::CameraComponent>(entity, "modifier la Camera de");
-            ImGui::DragFloat("Taille orthographique", &cc.OrthographicSize, 0.05f, 0.05f, 100.0f, "%.3f", k_ClampedDrag);
-            TrackEdit<Engine::CameraComponent>(entity, "modifier la Camera de");
+            ImGui::Checkbox("Primary", &cc.Primary);
+            TrackEdit<Engine::CameraComponent>(entity, "edit Camera of");
+            ImGui::DragFloat("Orthographic Size", &cc.OrthographicSize, 0.05f, 0.05f, 100.0f, "%.3f", k_ClampedDrag);
+            TrackEdit<Engine::CameraComponent>(entity, "edit Camera of");
         }
 
         EndComponentSection(open);

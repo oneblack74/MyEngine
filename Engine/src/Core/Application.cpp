@@ -12,7 +12,7 @@ namespace Engine
     Application::Application(const WindowProps &props, const std::filesystem::path &assetRoot)
         : m_Window(props)
     {
-        assert(!s_Instance && "Une Application existe déjà !");
+        assert(!s_Instance && "An Application already exists!");
         s_Instance = this;
 
         m_Window.SetEventCallback([this](Event &e)
@@ -31,7 +31,7 @@ namespace Engine
     void Application::OnEvent(Event &event)
     {
         // Les événements sont catégorisés par leur nature : le clavier et la souris
-        // sous Input, le reste sous Fenêtre. Sans ça ils tombaient tous dans "Général"
+        // sous Input, le reste sous Window. Sans ça ils tombaient tous dans "General"
         // et noyaient la console sans pouvoir être filtrés.
         const bool isInput = event.GetType() != EventType::WindowClose &&
                              event.GetType() != EventType::WindowResize;

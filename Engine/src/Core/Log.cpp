@@ -46,7 +46,7 @@ namespace Engine
             GetCategoryLogger(LogSource::Engine, *category);
         }
 
-        // Les LOG_* sans catégorie sont ceux de la catégorie "Général" : sans ça leurs
+        // Les LOG_* sans catégorie sont ceux de la catégorie "General" : sans ça leurs
         // messages échapperaient aux filtres de la console, faute d'appartenir à une
         // catégorie connue.
         s_Logger = GetCategoryLogger(LogSource::Engine, LogCategories::General);

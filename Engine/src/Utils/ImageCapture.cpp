@@ -16,7 +16,7 @@ namespace Engine::ImageCapture
     {
         if (width == 0 || height == 0)
         {
-            LOG_ERROR("ImageCapture : taille invalide ({0}x{1})", width, height);
+            LOG_ERROR("ImageCapture: invalid size ({0}x{1})", width, height);
             return false;
         }
 
@@ -48,11 +48,11 @@ namespace Engine::ImageCapture
 
         if (!ok)
         {
-            LOG_ERROR("ImageCapture : échec de l'écriture de '{0}'", path);
+            LOG_ERROR("ImageCapture: failed to write '{0}'", path);
             return false;
         }
 
-        LOG_INFO("Capture écrite : {0} ({1}x{2})", path, width, height);
+        LOG_INFO("Screenshot written: {0} ({1}x{2})", path, width, height);
         return true;
     }
 }

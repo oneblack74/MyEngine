@@ -52,7 +52,7 @@ bool GamePanel::OnImGuiRender(const std::shared_ptr<Engine::Scene> &scene, bool 
     if (!primaryCamera)
     {
         ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.2f, 1.0f),
-                            "Aucune caméra principale (CameraComponent avec Primary) dans la scène");
+                            "No primary camera (a CameraComponent with Primary) in the scene");
         ImGui::End();
         return open;
     }

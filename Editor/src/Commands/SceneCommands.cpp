@@ -24,7 +24,7 @@ void RenameEntityCommand::Undo() { Apply(m_Before); }
 
 std::string RenameEntityCommand::GetName() const
 {
-    return "renommer " + m_Before;
+    return "rename " + m_Before;
 }
 
 void RenameEntityCommand::Apply(const std::string &name)
@@ -63,7 +63,7 @@ void CreateEntityCommand::Undo()
 
 std::string CreateEntityCommand::GetName() const
 {
-    return "créer " + m_EntityName;
+    return "create " + m_EntityName;
 }
 
 CreateEntityFromCommand::CreateEntityFromCommand(EditorContext &context, Engine::Entity source,
@@ -109,5 +109,5 @@ void DeleteEntityCommand::Undo()
 
 std::string DeleteEntityCommand::GetName() const
 {
-    return "supprimer " + m_EntityName;
+    return "delete " + m_EntityName;
 }

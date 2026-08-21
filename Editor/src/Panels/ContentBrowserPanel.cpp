@@ -15,7 +15,7 @@ void ContentBrowserPanel::OnImGuiRender()
     if (std::filesystem::exists(m_RootDirectory))
         DrawDirectory(m_RootDirectory);
     else
-        ImGui::TextDisabled("Dossier d'assets introuvable : %s", m_RootDirectory.string().c_str());
+        ImGui::TextDisabled("Asset folder not found: %s", m_RootDirectory.string().c_str());
 
     ImGui::End();
 }

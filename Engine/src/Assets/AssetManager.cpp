@@ -89,7 +89,7 @@ namespace Engine
         const AssetType type = AssetTypeFromExtension(std::filesystem::path(normalized).extension().string());
         if (type == AssetType::None)
         {
-            ENGINE_LOG_WARN(LogCategories::Assets, "Type d'asset inconnu, fichier ignoré : {0}", normalized);
+            ENGINE_LOG_WARN(LogCategories::Assets, "Unknown asset type, file ignored: {0}", normalized);
             return AssetHandle(k_InvalidAssetHandle);
         }
 
@@ -97,7 +97,7 @@ namespace Engine
         s_Registry[(uint64_t)handle] = {type, normalized};
         SaveRegistry();
 
-        ENGINE_LOG_INFO(LogCategories::Assets, "Asset importé : {0} ({1})", normalized, AssetTypeToString(type));
+        ENGINE_LOG_INFO(LogCategories::Assets, "Asset imported: {0} ({1})", normalized, AssetTypeToString(type));
         return handle;
     }
 
@@ -136,7 +136,7 @@ namespace Engine
         const std::filesystem::path file = FullPath(*metadata);
         if (!std::filesystem::exists(file))
         {
-            ENGINE_LOG_ERROR(LogCategories::Assets, "Texture introuvable : {0}", file.string());
+            ENGINE_LOG_ERROR(LogCategories::Assets, "Texture not found: {0}", file.string());
             return nullptr;
         }
 
@@ -179,7 +179,7 @@ namespace Engine
             entry.Texture = std::make_shared<Texture2D>(file.string());
             entry.LastWriteTime = writeTime;
             ++s_ReloadCount;
-            ENGINE_LOG_INFO(LogCategories::Assets, "Asset rechargé : {0}", metadata->Path);
+            ENGINE_LOG_INFO(LogCategories::Assets, "Asset reloaded: {0}", metadata->Path);
         }
     }
 
@@ -208,7 +208,7 @@ namespace Engine
         std::ofstream out(RegistryFile());
         if (!out)
         {
-            ENGINE_LOG_ERROR(LogCategories::Assets, "Impossible d'écrire {0}", RegistryFile().string());
+            ENGINE_LOG_ERROR(LogCategories::Assets, "Could not write {0}", RegistryFile().string());
             return;
         }
         out << json.dump(4);
@@ -233,6 +233,6 @@ namespace Engine
             s_Registry[std::stoull(it.key())] = metadata;
         }
 
-        ENGINE_LOG_INFO(LogCategories::Assets, "{0} asset(s) au registre", s_Registry.size());
+        ENGINE_LOG_INFO(LogCategories::Assets, "{0} asset(s) in registry", s_Registry.size());
     }
 }

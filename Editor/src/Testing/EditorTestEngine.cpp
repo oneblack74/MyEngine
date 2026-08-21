@@ -144,17 +144,17 @@ void EditorTestEngine::OnFrameStart()
     const int failed = summary.CountTested - summary.CountSuccess;
     if (summary.CountTested == 0)
     {
-        LOG_ERROR("Tests : aucun test exécuté (filtre '{0}' ?)", m_Options.TestFilter);
+        LOG_ERROR("Tests: no test ran (filter '{0}'?)", m_Options.TestFilter);
         m_ExitCode = 1;
     }
     else if (failed > 0)
     {
-        LOG_ERROR("Tests : {0} échec(s) sur {1}", failed, summary.CountTested);
+        LOG_ERROR("Tests: {0} failure(s) out of {1}", failed, summary.CountTested);
         m_ExitCode = 1;
     }
     else
     {
-        LOG_INFO("Tests : {0}/{1} OK", summary.CountSuccess, summary.CountTested);
+        LOG_INFO("Tests: {0}/{1} OK", summary.CountSuccess, summary.CountTested);
         m_ExitCode = 0;
     }
 

@@ -26,7 +26,7 @@ namespace Engine
         const ma_result result = ma_sound_init_from_file(engine, path.c_str(), 0, nullptr, nullptr, sound.get());
         if (result != MA_SUCCESS)
         {
-            ENGINE_LOG_ERROR(LogCategories::Audio, "Son introuvable ou illisible : {0}", path);
+            ENGINE_LOG_ERROR(LogCategories::Audio, "Sound not found or unreadable: {0}", path);
             return source;
         }
 

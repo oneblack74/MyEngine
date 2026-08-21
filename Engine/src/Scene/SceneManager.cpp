@@ -18,7 +18,7 @@ namespace Engine
         SceneSerializer serializer(scene);
         if (!serializer.Deserialize(filepath))
         {
-            LOG_ERROR("SceneManager: échec du chargement de {0}", filepath);
+            LOG_ERROR("SceneManager: failed to load {0}", filepath);
             return nullptr;
         }
 
@@ -30,7 +30,7 @@ namespace Engine
     {
         if (!s_ActiveScene)
         {
-            LOG_WARN("SceneManager: aucune scène active à sauvegarder");
+            LOG_WARN("SceneManager: no active scene to save");
             return;
         }
 

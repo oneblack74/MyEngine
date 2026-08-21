@@ -14,12 +14,12 @@ namespace Engine
     // pas de toucher au moteur.
     namespace LogCategories
     {
-        inline const std::string General = "Général";
+        inline const std::string General = "General";
         inline const std::string Collision = "Collision";
         inline const std::string Input = "Input";
-        inline const std::string Window = "Fenêtre";
+        inline const std::string Window = "Window";
         inline const std::string Renderer = "Renderer";
-        inline const std::string Physics = "Physique";
+        inline const std::string Physics = "Physics";
         inline const std::string Assets = "Assets";
         inline const std::string Audio = "Audio";
     }

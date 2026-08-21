@@ -25,7 +25,7 @@ namespace
     // (voir BeginComponentSection dans InspectorPanel.cpp).
     std::string ResetButtonOf(const char *section)
     {
-        return std::string(section) + "/Réinit.##" + section;
+        return std::string(section) + "/Reset##" + section;
     }
 
     // Les entités de la hiérarchie tirent leur ID ImGui de leur handle et non de leur
@@ -33,7 +33,7 @@ namespace
     // nom. On récupère donc la liste des items du panel pour retrouver le bon par label.
     Engine::Entity SelectEntity(ImGuiTestContext *ctx, EditorLayer &editor, const char *name)
     {
-        ctx->SetRef("Hiérarchie de la scène");
+        ctx->SetRef("Scene Hierarchy");
 
         ImGuiTestItemList items;
         ctx->GatherItems(&items, "");
@@ -47,7 +47,7 @@ namespace
             }
         }
 
-        ctx->LogError("Entité '%s' introuvable dans la hiérarchie", name);
+        ctx->LogError("Entity '%s' not found in the hierarchy", name);
         return {};
     }
 
@@ -95,7 +95,7 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         auto &transform = square.GetComponent<Engine::TransformComponent>();
         const Engine::TransformComponent saved = transform;
 
-        ctx->SetRef("Inspecteur");
+        ctx->SetRef("Inspector");
         ctx->ItemInputValue("Transform/Position/$$0", 2.5f);
         IM_CHECK(NearlyEqual(transform.Position.x, 2.5f));
 
@@ -115,8 +115,8 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         auto &collider = circle.GetComponent<Engine::CircleColliderComponent>();
         const Engine::CircleColliderComponent saved = collider;
 
-        ctx->SetRef("Inspecteur");
-        ctx->ItemInputValue("Circle Collider/Rayon", -5.0f);
+        ctx->SetRef("Inspector");
+        ctx->ItemInputValue("Circle Collider/Radius", -5.0f);
         IM_CHECK_GT(collider.Radius, 0.0f);
 
         ctx->ItemInputValue("Circle Collider/Friction", 999.0f);
@@ -137,7 +137,7 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         transform.Rotation = 30.0f;
         transform.Scale = {2.0f, 2.0f, 1.0f};
 
-        ctx->SetRef("Inspecteur");
+        ctx->SetRef("Inspector");
         ctx->ItemClick(ResetButtonOf("Transform").c_str());
 
         const Engine::TransformComponent defaults;
@@ -168,7 +168,7 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
 
         rb.FixedRotation = true;
 
-        ctx->SetRef("Inspecteur");
+        ctx->SetRef("Inspector");
         ctx->ItemClick(ResetButtonOf("Rigid Body").c_str());
 
         IM_CHECK_EQ(rb.FixedRotation, false);
@@ -296,7 +296,7 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK(square);
         const float startX = square.GetComponent<Engine::TransformComponent>().Position.x;
 
-        ctx->SetRef("Inspecteur");
+        ctx->SetRef("Inspector");
         ctx->ItemInputValue("Transform/Position/$$0", 4.0f);
         IM_CHECK(NearlyEqual(square.GetComponent<Engine::TransformComponent>().Position.x, 4.0f));
 
@@ -317,7 +317,7 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK(square);
         const glm::vec3 startScale = square.GetComponent<Engine::TransformComponent>().Scale;
 
-        ctx->SetRef("Inspecteur");
+        ctx->SetRef("Inspector");
         ctx->ItemClick(ResetButtonOf("Transform").c_str());
         IM_CHECK(NearlyEqual(square.GetComponent<Engine::TransformComponent>().Scale.x, 1.0f));
 
@@ -332,9 +332,9 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
     {
         // Deux avertissements strictement identiques : c'est ce que le regroupement
         // doit fusionner en une seule ligne.
-        LOG_WARN("Avertissement de test de la console");
-        LOG_WARN("Avertissement de test de la console");
-        LOG_ERROR("Erreur de test de la console");
+        LOG_WARN("Console test warning");
+        LOG_WARN("Console test warning");
+        LOG_ERROR("Console test error");
         ctx->Yield(3);
 
         ConsolePanel &console = editor.GetConsolePanelForTests();
@@ -351,7 +351,7 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         ctx->Yield(2);
         IM_CHECK_EQ(console.GetVisibleLineCountForTests(), withEverything);
 
-        ctx->ItemClick("Grouper");
+        ctx->ItemClick("Collapse");
         ctx->Yield(2);
         IM_CHECK(console.IsCollapsedForTests());
         // Au minimum, le doublon d'avertissement a fusionné.
@@ -363,7 +363,7 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK(ctx->CaptureAddWindow("//Console"));
         IM_CHECK(ctx->CaptureScreenshot());
 
-        ctx->ItemClick("Grouper");
+        ctx->ItemClick("Collapse");
         IM_CHECK(!console.IsCollapsedForTests());
     };
 
@@ -372,16 +372,16 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
     t = IM_REGISTER_TEST(engine, "console", "category_filters");
     t->TestFunc = [&editor](ImGuiTestContext *ctx)
     {
-        ENGINE_LOG_INFO(Engine::LogCategories::Collision, "collision de test");
-        GAME_LOG_INFO("Gameplay", "message de jeu de test");
+        ENGINE_LOG_INFO(Engine::LogCategories::Collision, "test collision");
+        GAME_LOG_INFO("Gameplay", "test game message");
         ctx->Yield(3);
 
         ConsolePanel &console = editor.GetConsolePanelForTests();
         const size_t withEverything = console.GetVisibleLineCountForTests();
 
         ctx->SetRef("Console");
-        // Le menu "Moteur" liste les catégories du moteur, pré-enregistrées à l'Init.
-        ctx->ItemClick("Moteur");
+        // Le menu "Engine" liste les catégories du moteur, pré-enregistrées à l'Init.
+        ctx->ItemClick("Engine");
         ctx->ItemUncheck("//$FOCUSED/Collision");
         // Fermer explicitement : tant que le popup est ouvert il recouvre le menu
         // voisin, qui devient impossible à survoler.
@@ -392,7 +392,7 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK_LT(withoutCollisions, withEverything);
 
         // Une catégorie du jeu n'a rien à faire dans le menu du moteur, et inversement.
-        ctx->ItemClick("Jeu");
+        ctx->ItemClick("Game");
         IM_CHECK(ctx->ItemExists("//$FOCUSED/Gameplay"));
         IM_CHECK(!ctx->ItemExists("//$FOCUSED/Collision"));
         ctx->PopupCloseAll();
@@ -403,7 +403,7 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK(ctx->CaptureAddWindow("//Console"));
         IM_CHECK(ctx->CaptureScreenshot());
 
-        ctx->ItemClick("Moteur");
+        ctx->ItemClick("Engine");
         ctx->ItemCheck("//$FOCUSED/Collision");
         ctx->PopupCloseAll();
         ctx->Yield(2);
@@ -420,23 +420,23 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         if (!console.IsCollapsedForTests())
         {
             ctx->SetRef("Console");
-            ctx->ItemClick("Grouper");
+            ctx->ItemClick("Collapse");
         }
         ctx->Yield(2);
         const size_t before = console.GetVisibleLineCountForTests();
 
-        LOG_WARN("Message répété à cheval sur deux secondes");
+        LOG_WARN("Message repeated across two seconds");
         // L'horodatage a une précision d'une seconde : il faut vraiment franchir un
         // tic d'horloge pour que les deux lignes formatées diffèrent.
         ctx->SleepNoSkip(1.2f, 0.1f);
-        LOG_WARN("Message répété à cheval sur deux secondes");
+        LOG_WARN("Message repeated across two seconds");
         ctx->Yield(3);
 
         // Une seule ligne de plus, portant deux occurrences.
         IM_CHECK_EQ(console.GetVisibleLineCountForTests(), before + 1);
 
         ctx->SetRef("Console");
-        ctx->ItemClick("Grouper");
+        ctx->ItemClick("Collapse");
         IM_CHECK(!console.IsCollapsedForTests());
     };
 
@@ -481,15 +481,15 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         editorBip.GetComponent<Engine::AudioComponent>().PlayOnStart = previousPlayOnStart;
     };
 
-    // "Lecture depuis l'éditeur" : écouter un son sans passer par le Play.
+    // "Playback from the editor" : écouter un son sans passer par le Play.
     t = IM_REGISTER_TEST(engine, "audio", "preview_from_inspector");
     t->TestFunc = [&editor](ImGuiTestContext *ctx)
     {
         Engine::Entity bip = SelectEntity(ctx, editor, "Bip");
         IM_CHECK(bip);
 
-        ctx->SetRef("Inspecteur");
-        ctx->ItemClick("Audio/Écouter");
+        ctx->SetRef("Inspector");
+        ctx->ItemClick("Audio/Play");
         ctx->Yield(2);
 
         auto &audio = bip.GetComponent<Engine::AudioComponent>();
@@ -500,10 +500,10 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         const char *outputFile = "output/captures/inspector_audio.png";
         ctx->CaptureReset();
         ImStrncpy(ctx->CaptureArgs->InOutputFile, outputFile, IM_ARRAYSIZE(ctx->CaptureArgs->InOutputFile));
-        IM_CHECK(ctx->CaptureAddWindow("//Inspecteur"));
+        IM_CHECK(ctx->CaptureAddWindow("//Inspector"));
         IM_CHECK(ctx->CaptureScreenshot());
 
-        ctx->ItemClick("Audio/Arrêter");
+        ctx->ItemClick("Audio/Stop");
         ctx->Yield(2);
         IM_CHECK(!audio.Source->IsPlaying());
     };
@@ -601,7 +601,7 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         ctx->ItemOpen("textures");
         ctx->Yield();
 
-        ctx->ItemDragAndDrop("textures/axololt.jpg", "//Inspecteur/Sprite Renderer/Texture");
+        ctx->ItemDragAndDrop("textures/axololt.jpg", "//Inspector/Sprite Renderer/Texture");
         ctx->Yield(2);
 
         IM_CHECK((uint64_t)sprite.Texture != Engine::k_InvalidAssetHandle);
@@ -613,7 +613,7 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         ctx->SetRef("Content Browser");
         ctx->ItemOpen("audio");
         ctx->Yield();
-        ctx->ItemDragAndDrop("audio/bip.wav", "//Inspecteur/Sprite Renderer/Texture");
+        ctx->ItemDragAndDrop("audio/bip.wav", "//Inspector/Sprite Renderer/Texture");
         ctx->Yield(2);
         IM_CHECK_EQ((uint64_t)sprite.Texture, (uint64_t)texture);
 
@@ -641,15 +641,15 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK_GT(entityCount, 0);
 
         ctx->SetRef("DockSpace");
-        ctx->MenuClick("Fichier/Enregistrer sous...");
+        ctx->MenuClick("File/Save As...");
         ctx->Yield();
 
-        ctx->SetRef("Enregistrer la scène sous");
+        ctx->SetRef("Save Scene As");
         // KeyCharsReplace et pas ItemInputValue : ce dernier valide avec Entrée, ce qui
         // fermerait la boîte avant qu'on ait pu cliquer le bouton qu'on veut tester.
-        ctx->ItemClick("##Nom");
+        ctx->ItemClick("##Name");
         ctx->KeyCharsReplace("test_file_menu");
-        ctx->ItemClick("Enregistrer");
+        ctx->ItemClick("Save");
         ctx->Yield(2);
 
         IM_CHECK(std::filesystem::exists(scenePath));
@@ -659,21 +659,21 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         // Une nouvelle scène repart de zéro et oublie le chemin : sans ça, le Ctrl+S
         // suivant écraserait le fichier de la scène précédente.
         ctx->SetRef("DockSpace");
-        ctx->MenuClick("Fichier/Nouvelle scène");
+        ctx->MenuClick("File/New Scene");
         ctx->Yield(2);
         IM_CHECK_EQ(CountEntities(editor), 0);
         IM_CHECK(editor.GetCurrentScenePathForTests().empty());
 
-        ctx->MenuClick("Fichier/Ouvrir...");
+        ctx->MenuClick("File/Open...");
         ctx->Yield();
 
         // La liste vit dans une fenêtre enfant ImGui, dont le vrai nom est mangled
-        // ("Popup/Fichiers_XXXXXXXX") : WindowInfo est le seul moyen de la désigner,
-        // un chemin "Ouvrir une scène/Fichiers" ne se résoudrait pas.
-        ctx->SetRef(ctx->WindowInfo("//Ouvrir une scène/Fichiers").Window);
+        // ("Popup/Files_XXXXXXXX") : WindowInfo est le seul moyen de la désigner,
+        // un chemin "Open Scene/Files" ne se résoudrait pas.
+        ctx->SetRef(ctx->WindowInfo("//Open Scene/Files").Window);
         ctx->ItemClick("test_file_menu.scene");
-        ctx->SetRef("Ouvrir une scène");
-        ctx->ItemClick("Ouvrir");
+        ctx->SetRef("Open Scene");
+        ctx->ItemClick("Open");
         ctx->Yield(2);
 
         IM_CHECK_EQ(CountEntities(editor), entityCount);
@@ -706,7 +706,7 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         const char *outputFile = "output/captures/inspector_panel.png";
         ctx->CaptureReset();
         ImStrncpy(ctx->CaptureArgs->InOutputFile, outputFile, IM_ARRAYSIZE(ctx->CaptureArgs->InOutputFile));
-        IM_CHECK(ctx->CaptureAddWindow("//Inspecteur"));
+        IM_CHECK(ctx->CaptureAddWindow("//Inspector"));
         IM_CHECK(ctx->CaptureScreenshot());
         IM_CHECK(std::filesystem::exists(outputFile));
     };
@@ -716,13 +716,13 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
     t->TestFunc = [](ImGuiTestContext *ctx)
     {
         ctx->SetRef("DockSpace");
-        ctx->MenuClick("Fichier/Enregistrer sous...");
+        ctx->MenuClick("File/Save As...");
         ctx->Yield(2);
 
         const char *outputFile = "output/captures/scene_file_dialog.png";
         ctx->CaptureReset();
         ImStrncpy(ctx->CaptureArgs->InOutputFile, outputFile, IM_ARRAYSIZE(ctx->CaptureArgs->InOutputFile));
-        IM_CHECK(ctx->CaptureAddWindow("//Enregistrer la scène sous"));
+        IM_CHECK(ctx->CaptureAddWindow("//Save Scene As"));
         // Sans IncludeOtherWindows, le Test Engine masque toutes les autres fenêtres
         // pendant la capture — y compris celle qui a ouvert la modale, ce qui referme
         // la modale et ne laisse que le décor derrière sur l'image.
@@ -730,8 +730,8 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK(ctx->CaptureScreenshot());
         IM_CHECK(std::filesystem::exists(outputFile));
 
-        ctx->SetRef("Enregistrer la scène sous");
-        ctx->ItemClick("Annuler");
+        ctx->SetRef("Save Scene As");
+        ctx->ItemClick("Cancel");
     };
     // Le Viewport avec les contours de colliders activés : sert de vérification
     // visuelle qu'ils épousent bien la géométrie envoyée à Box2D.
@@ -739,7 +739,7 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
     t->TestFunc = [&editor](ImGuiTestContext *ctx)
     {
         ctx->SetRef("DockSpace");
-        ctx->MenuCheck("Affichage/Contours de tous les colliders");
+        ctx->MenuCheck("View/All collider outlines");
         IM_CHECK(editor.AreColliderOutlinesVisibleForTests());
         ctx->Yield(2);
 
@@ -750,7 +750,7 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK(ctx->CaptureScreenshot());
         IM_CHECK(std::filesystem::exists(outputFile));
 
-        ctx->MenuUncheck("Affichage/Contours de tous les colliders");
+        ctx->MenuUncheck("View/All collider outlines");
         IM_CHECK(!editor.AreColliderOutlinesVisibleForTests());
     };
     // Sans la case globale, seule l'entité sélectionnée montre son collider.
@@ -758,7 +758,7 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
     t->TestFunc = [&editor](ImGuiTestContext *ctx)
     {
         ctx->SetRef("DockSpace");
-        ctx->MenuUncheck("Affichage/Contours de tous les colliders");
+        ctx->MenuUncheck("View/All collider outlines");
         IM_CHECK(!editor.AreColliderOutlinesVisibleForTests());
         // Le menu resté ouvert recouvre la hiérarchie et empêche d'y cliquer.
         ctx->PopupCloseAll();

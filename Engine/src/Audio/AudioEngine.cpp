@@ -22,7 +22,7 @@ namespace Engine
         if (ma_engine_init(&config, &s_Engine) == MA_SUCCESS)
         {
             s_Initialized = true;
-            ENGINE_LOG_INFO(LogCategories::Audio, "Audio initialisé ({0} Hz)", ma_engine_get_sample_rate(&s_Engine));
+            ENGINE_LOG_INFO(LogCategories::Audio, "Audio initialized ({0} Hz)", ma_engine_get_sample_rate(&s_Engine));
             return;
         }
 
@@ -33,7 +33,7 @@ namespace Engine
         ma_backend nullBackend = ma_backend_null;
         if (ma_context_init(&nullBackend, 1, nullptr, &s_NullContext) != MA_SUCCESS)
         {
-            ENGINE_LOG_ERROR(LogCategories::Audio, "Audio indisponible : impossible d'initialiser miniaudio");
+            ENGINE_LOG_ERROR(LogCategories::Audio, "Audio unavailable: could not initialize miniaudio");
             return;
         }
 
@@ -41,13 +41,13 @@ namespace Engine
         if (ma_engine_init(&config, &s_Engine) != MA_SUCCESS)
         {
             ma_context_uninit(&s_NullContext);
-            ENGINE_LOG_ERROR(LogCategories::Audio, "Audio indisponible : impossible d'initialiser miniaudio");
+            ENGINE_LOG_ERROR(LogCategories::Audio, "Audio unavailable: could not initialize miniaudio");
             return;
         }
 
         s_Initialized = true;
         s_UsingNullBackend = true;
-        ENGINE_LOG_WARN(LogCategories::Audio, "Aucun périphérique audio : les sons seront joués en silence");
+        ENGINE_LOG_WARN(LogCategories::Audio, "No audio device: sounds will play silently");
     }
 
     void AudioEngine::Shutdown()

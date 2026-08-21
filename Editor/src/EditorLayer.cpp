@@ -73,7 +73,7 @@ void EditorLayer::OnAttach()
 
     // Démo Phase 6 : de quoi tester l'audio, mais volontairement muet au lancement du
     // Play — un bip à chaque exécution est vite pénible quand on travaille. Il s'écoute
-    // au bouton "Écouter" de l'Inspecteur, ou en cochant "Jouer au démarrage".
+    // au bouton "Play" de l'Inspecteur, ou en cochant "Play On Start".
     auto sound = m_EditorScene->CreateEntity("Bip");
     auto &soundAudio = sound.AddComponent<Engine::AudioComponent>();
     soundAudio.Sound = Engine::AssetManager::Import("audio/bip.wav");
@@ -85,7 +85,7 @@ void EditorLayer::OnAttach()
     m_PhysicsSystem.OnCollisionBegin = [](Engine::Entity a, Engine::Entity b)
     { ENGINE_LOG_INFO(Engine::LogCategories::Collision, "{0} <-> {1}", a.GetName(), b.GetName()); };
     m_PhysicsSystem.OnCollisionEnd = [](Engine::Entity a, Engine::Entity b)
-    { ENGINE_LOG_INFO(Engine::LogCategories::Collision, "fin : {0} <-> {1}", a.GetName(), b.GetName()); };
+    { ENGINE_LOG_INFO(Engine::LogCategories::Collision, "end: {0} <-> {1}", a.GetName(), b.GetName()); };
 
     m_SceneHierarchyPanel.SetContext(m_EditorScene);
     UpdateWindowTitle();
@@ -238,7 +238,7 @@ void EditorLayer::RunTestModeStep()
     const bool ok = Engine::ImageCapture::CaptureBackBuffer(m_TestOptions.ScreenshotPath,
                                                             (uint32_t)width, (uint32_t)height);
     if (!ok)
-        LOG_ERROR("Mode test : la capture a échoué");
+        LOG_ERROR("Test mode: screenshot failed");
 
     Engine::Application::Get().Close();
 }
@@ -290,16 +290,16 @@ void EditorLayer::RenderImGui()
         RenderFileMenu();
         RenderEditMenu();
         RenderViewMenu();
-        if (ImGui::BeginMenu("Fenêtre"))
+        if (ImGui::BeginMenu("Window"))
         {
-            if (ImGui::MenuItem("Réinitialiser la disposition"))
+            if (ImGui::MenuItem("Reset Layout"))
                 m_ResetDockLayoutRequested = true;
-            if (ImGui::MenuItem("Sauvegarder la disposition"))
+            if (ImGui::MenuItem("Save Layout"))
             {
                 ImGui::SaveIniSettingsToDisk(ImGui::GetIO().IniFilename);
-                LOG_INFO("Disposition des panels sauvegardée");
+                LOG_INFO("Panel layout saved");
             }
-            if (ImGui::MenuItem("Charger la dernière disposition sauvegardée"))
+            if (ImGui::MenuItem("Load Last Saved Layout"))
                 m_LoadLastSavedLayoutRequested = true;
             ImGui::EndMenu();
         }
@@ -314,7 +314,7 @@ void EditorLayer::RenderImGui()
         }
         else
         {
-            if (ImGui::Button(m_ScenePaused ? "Reprendre" : "Pause"))
+            if (ImGui::Button(m_ScenePaused ? "Resume" : "Pause"))
                 m_ScenePaused = !m_ScenePaused;
             ImGui::SameLine();
             if (ImGui::Button("Stop"))
@@ -379,7 +379,7 @@ void EditorLayer::TrackGizmoEdit()
             m_CommandHistory.PushAlreadyApplied(std::make_unique<ComponentEditCommand<Engine::TransformComponent>>(
                 *this, m_GizmoEntityID, m_TransformBeforeGizmo,
                 entity.GetComponent<Engine::TransformComponent>(),
-                "manipuler " + entity.GetName()));
+                "move " + entity.GetName()));
         }
     }
 
@@ -446,7 +446,7 @@ void EditorLayer::PasteEntity()
     if (!m_ClipboardEntity)
         return;
 
-    m_CommandHistory.Execute(std::make_unique<CreateEntityFromCommand>(*this, m_ClipboardEntity, "coller"));
+    m_CommandHistory.Execute(std::make_unique<CreateEntityFromCommand>(*this, m_ClipboardEntity, "paste"));
 }
 
 void EditorLayer::DuplicateSelectedEntity()
@@ -455,7 +455,7 @@ void EditorLayer::DuplicateSelectedEntity()
     if (!selected)
         return;
 
-    m_CommandHistory.Execute(std::make_unique<CreateEntityFromCommand>(*this, selected, "dupliquer"));
+    m_CommandHistory.Execute(std::make_unique<CreateEntityFromCommand>(*this, selected, "duplicate"));
 }
 
 void EditorLayer::DeleteSelectedEntity()
@@ -469,12 +469,12 @@ void EditorLayer::DeleteSelectedEntity()
 
 void EditorLayer::RenderViewMenu()
 {
-    if (!ImGui::BeginMenu("Affichage"))
+    if (!ImGui::BeginMenu("View"))
         return;
 
-    ImGui::MenuItem("Contours de tous les colliders", nullptr, &m_ShowColliderOutlines);
+    ImGui::MenuItem("All collider outlines", nullptr, &m_ShowColliderOutlines);
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Celui de l'entité sélectionnée est affiché en permanence");
+        ImGui::SetTooltip("The selected entity's outline is always shown");
 
     ImGui::EndMenu();
 }
@@ -512,7 +512,7 @@ void EditorLayer::SetEditorScene(const std::shared_ptr<Engine::Scene> &scene,
 void EditorLayer::NewScene()
 {
     SetEditorScene(Engine::SceneManager::NewScene(), {});
-    LOG_INFO("Nouvelle scène");
+    LOG_INFO("New scene");
 }
 
 void EditorLayer::OpenScene(const std::filesystem::path &path)
@@ -522,12 +522,12 @@ void EditorLayer::OpenScene(const std::filesystem::path &path)
     {
         // SceneManager a déjà logué la cause ; la scène courante reste en place plutôt
         // que de laisser l'éditeur sans scène.
-        LOG_ERROR("Ouverture annulée : {0} n'a pas pu être chargée", path.string());
+        LOG_ERROR("Open cancelled: {0} could not be loaded", path.string());
         return;
     }
 
     SetEditorScene(scene, path);
-    LOG_INFO("Scène ouverte : {0}", path.string());
+    LOG_INFO("Scene opened: {0}", path.string());
 }
 
 void EditorLayer::SaveScene()
@@ -554,7 +554,7 @@ void EditorLayer::SaveSceneTo(const std::filesystem::path &path)
     std::filesystem::create_directories(path.parent_path(), ec);
     if (ec)
     {
-        LOG_ERROR("Impossible de créer {0} : {1}", path.parent_path().string(), ec.message());
+        LOG_ERROR("Could not create {0}: {1}", path.parent_path().string(), ec.message());
         return;
     }
 
@@ -563,7 +563,7 @@ void EditorLayer::SaveSceneTo(const std::filesystem::path &path)
 
     m_CurrentScenePath = path;
     UpdateWindowTitle();
-    LOG_INFO("Scène enregistrée : {0}", path.string());
+    LOG_INFO("Scene saved: {0}", path.string());
 }
 
 void EditorLayer::ShowSceneDialog(SceneFileDialog::Mode mode)
@@ -575,28 +575,28 @@ void EditorLayer::ShowSceneDialog(SceneFileDialog::Mode mode)
 
 void EditorLayer::RenderFileMenu()
 {
-    if (!ImGui::BeginMenu("Fichier"))
+    if (!ImGui::BeginMenu("File"))
         return;
 
     // Tout est grisé pendant le Play : la scène éditée n'est pas celle qui tourne, et
     // enregistrer la copie runtime (jetée au Stop) n'aurait aucun sens.
     const bool editing = m_SceneState == SceneState::Edit;
 
-    if (ImGui::MenuItem("Nouvelle scène", "Ctrl+N", false, editing))
+    if (ImGui::MenuItem("New Scene", "Ctrl+N", false, editing))
         NewScene();
-    if (ImGui::MenuItem("Ouvrir...", "Ctrl+O", false, editing))
+    if (ImGui::MenuItem("Open...", "Ctrl+O", false, editing))
         ShowSceneDialog(SceneFileDialog::Mode::Open);
 
     ImGui::Separator();
 
-    if (ImGui::MenuItem("Enregistrer", "Ctrl+S", false, editing))
+    if (ImGui::MenuItem("Save", "Ctrl+S", false, editing))
         SaveScene();
-    if (ImGui::MenuItem("Enregistrer sous...", "Ctrl+Maj+S", false, editing))
+    if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S", false, editing))
         SaveSceneAs();
 
     ImGui::Separator();
 
-    if (ImGui::MenuItem("Quitter"))
+    if (ImGui::MenuItem("Quit"))
         Engine::Application::Get().Close();
 
     ImGui::EndMenu();
@@ -604,7 +604,7 @@ void EditorLayer::RenderFileMenu()
 
 void EditorLayer::RenderEditMenu()
 {
-    if (!ImGui::BeginMenu("Édition"))
+    if (!ImGui::BeginMenu("Edit"))
         return;
 
     const bool editing = m_SceneState == SceneState::Edit;
@@ -613,8 +613,8 @@ void EditorLayer::RenderEditMenu()
     // Le nom de la commande apparaît dans l'entrée de menu, façon "Annuler : coller Square".
     const std::string undoName = m_CommandHistory.PeekUndoName();
     const std::string redoName = m_CommandHistory.PeekRedoName();
-    const std::string undoLabel = undoName.empty() ? "Annuler" : "Annuler : " + undoName;
-    const std::string redoLabel = redoName.empty() ? "Rétablir" : "Rétablir : " + redoName;
+    const std::string undoLabel = undoName.empty() ? "Undo" : "Undo: " + undoName;
+    const std::string redoLabel = redoName.empty() ? "Redo" : "Redo: " + redoName;
 
     if (ImGui::MenuItem(undoLabel.c_str(), "Ctrl+Z", false, editing && m_CommandHistory.CanUndo()))
         m_CommandHistory.Undo();
@@ -623,13 +623,13 @@ void EditorLayer::RenderEditMenu()
 
     ImGui::Separator();
 
-    if (ImGui::MenuItem("Copier", "Ctrl+C", false, hasSelection))
+    if (ImGui::MenuItem("Copy", "Ctrl+C", false, hasSelection))
         CopySelectedEntity();
-    if (ImGui::MenuItem("Coller", "Ctrl+V", false, editing && (bool)m_ClipboardEntity))
+    if (ImGui::MenuItem("Paste", "Ctrl+V", false, editing && (bool)m_ClipboardEntity))
         PasteEntity();
-    if (ImGui::MenuItem("Dupliquer", "Ctrl+D", false, hasSelection))
+    if (ImGui::MenuItem("Duplicate", "Ctrl+D", false, hasSelection))
         DuplicateSelectedEntity();
-    if (ImGui::MenuItem("Supprimer", "Suppr", false, hasSelection))
+    if (ImGui::MenuItem("Delete", "Del", false, hasSelection))
         DeleteSelectedEntity();
 
     ImGui::EndMenu();
@@ -659,9 +659,9 @@ void EditorLayer::SetupDefaultDockLayout()
     // "Game" n'est pas dans le layout par défaut : elle n'existe (et ne se docke jamais)
     // que pendant le Play, en fenêtre flottante détachée — voir GamePanel.
     ImGui::DockBuilderDockWindow("Console", dockLeftBottom);
-    ImGui::DockBuilderDockWindow("Hiérarchie de la scène", dockMiddleTop);
+    ImGui::DockBuilderDockWindow("Scene Hierarchy", dockMiddleTop);
     ImGui::DockBuilderDockWindow("Content Browser", dockMiddleBottom);
-    ImGui::DockBuilderDockWindow("Inspecteur", dockRight);
+    ImGui::DockBuilderDockWindow("Inspector", dockRight);
 
     ImGui::DockBuilderFinish(dockspaceId);
 }

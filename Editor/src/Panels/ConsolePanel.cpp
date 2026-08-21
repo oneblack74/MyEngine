@@ -93,10 +93,10 @@ void ConsolePanel::OnImGuiRender()
 
 void ConsolePanel::RenderToolbar()
 {
-    if (ImGui::Checkbox("Grouper", &m_Collapse))
+    if (ImGui::Checkbox("Collapse", &m_Collapse))
         m_FiltersDirty = true;
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Regroupe les messages identiques sur une seule ligne, avec leur nombre d'occurrences");
+        ImGui::SetTooltip("Groups identical messages on a single line, with their occurrence count");
 
     ImGui::SameLine();
     if (SeverityToggle("Log", m_ShowSeverity[(int)Engine::LogSeverityFilter::Info],
@@ -115,15 +115,15 @@ void ConsolePanel::RenderToolbar()
 
     // Largeur juste suffisante pour le libellé : les listes n'ont pas d'aperçu, elles
     // ne servent qu'à ouvrir leur liste de cases à cocher.
-    const float menuWidth = ImGui::CalcTextSize("Moteur").x + ImGui::GetFrameHeight() * 1.5f;
+    const float menuWidth = ImGui::CalcTextSize("Engine").x + ImGui::GetFrameHeight() * 1.5f;
 
     ImGui::SameLine();
     ImGui::SetNextItemWidth(menuWidth);
-    RenderCategoryMenu("Moteur", Engine::LogSource::Engine);
+    RenderCategoryMenu("Engine", Engine::LogSource::Engine);
 
     ImGui::SameLine();
     ImGui::SetNextItemWidth(menuWidth);
-    RenderCategoryMenu("Jeu", Engine::LogSource::Game);
+    RenderCategoryMenu("Game", Engine::LogSource::Game);
 }
 
 void ConsolePanel::SyncCategories()
@@ -159,7 +159,7 @@ void ConsolePanel::RenderCategoryMenu(const char *label, Engine::LogSource sourc
     }
 
     if (!any)
-        ImGui::TextDisabled("Aucune catégorie");
+        ImGui::TextDisabled("No category");
 
     ImGui::EndCombo();
 }

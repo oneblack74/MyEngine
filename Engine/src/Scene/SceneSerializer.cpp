@@ -109,7 +109,7 @@ namespace Engine
         std::ifstream file(filepath);
         if (!file.is_open())
         {
-            LOG_ERROR("SceneSerializer: impossible d'ouvrir {0}", filepath);
+            LOG_ERROR("SceneSerializer: could not open {0}", filepath);
             return false;
         }
 

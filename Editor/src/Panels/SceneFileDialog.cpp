@@ -7,7 +7,7 @@ namespace
 {
     const char *TitleFor(SceneFileDialog::Mode mode)
     {
-        return mode == SceneFileDialog::Mode::Open ? "Ouvrir une scène" : "Enregistrer la scène sous";
+        return mode == SceneFileDialog::Mode::Open ? "Open Scene" : "Save Scene As";
     }
 
     // Le nom tapé à la main n'a pas forcément l'extension : l'ajouter évite de créer
@@ -67,7 +67,7 @@ bool SceneFileDialog::OnImGuiRender(std::filesystem::path &outPath)
         ImGui::Separator();
 
         // Deux lignes réservées en bas pour le champ de nom et les boutons.
-        ImGui::BeginChild("Fichiers", ImVec2(0.0f, -ImGui::GetFrameHeightWithSpacing() * 2.2f),
+        ImGui::BeginChild("Files", ImVec2(0.0f, -ImGui::GetFrameHeightWithSpacing() * 2.2f),
                           ImGuiChildFlags_Borders);
         bool empty = true;
         if (std::filesystem::exists(m_Directory))
@@ -88,22 +88,22 @@ bool SceneFileDialog::OnImGuiRender(std::filesystem::path &outPath)
             }
         }
         if (empty)
-            ImGui::TextDisabled("Aucune scène enregistrée ici pour l'instant");
+            ImGui::TextDisabled("No scene saved here yet");
         ImGui::EndChild();
 
         ImGui::SetNextItemWidth(-1.0f);
         // EnterReturnsTrue : taper un nom puis Entrée vaut un clic sur le bouton.
-        if (ImGui::InputText("##Nom", m_Filename, sizeof(m_Filename), ImGuiInputTextFlags_EnterReturnsTrue))
+        if (ImGui::InputText("##Name", m_Filename, sizeof(m_Filename), ImGuiInputTextFlags_EnterReturnsTrue))
             confirmed = true;
 
         const bool hasName = m_Filename[0] != '\0';
         ImGui::BeginDisabled(!hasName);
-        if (ImGui::Button(m_Mode == Mode::Open ? "Ouvrir" : "Enregistrer"))
+        if (ImGui::Button(m_Mode == Mode::Open ? "Open" : "Save"))
             confirmed = true;
         ImGui::EndDisabled();
 
         ImGui::SameLine();
-        if (ImGui::Button("Annuler"))
+        if (ImGui::Button("Cancel"))
         {
             m_Open = false;
             ImGui::CloseCurrentPopup();
