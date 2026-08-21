@@ -121,7 +121,7 @@
 - 🔄 **Instanciation de scènes (prefabs)** — pouvoir réutiliser une branche d'entités (un ennemi, une plateforme) à plusieurs endroits, et la modifier à un seul endroit
   - **Modèle retenu (2026-08-21) : celui de Godot** — tout est une scène, et n'importe quelle scène peut être instanciée dans une autre. Pas de second concept ni de second format : le `.scene` existant sert de prefab. Écarté : le modèle Unity, où le prefab est un asset distinct de la scène (distinction plus nette entre « niveau » et « objet réutilisable », mais deux concepts à écrire, deux formats à sérialiser et un mode d'édition séparé)
   - ✅ Racine unique par scène — c'est elle qui devient l'entité instanciée. Une scène neuve naît avec sa racine, un fichier multi-racines est enveloppé au chargement, et la racine n'est pas supprimable depuis l'éditeur
-  - ⬜ Instancier sans lien : déposer une scène dans la hiérarchie y recopie sa branche, point. Immédiatement utile, aucune notion à maintenir
+  - ✅ Instancier sans lien : déposer une scène du Content Browser sur une entité de la hiérarchie y recopie sa branche, en enfant de la cible. L'instance reçoit de nouveaux UUID mais garde les transforms locaux de la source ; une scène refuse de s'instancier dans elle-même ; le tout est annulable
   - ⬜ Garder le lien : un `SceneInstanceComponent` retient l'`AssetHandle` de la source, et modifier la source se répercute sur les instances (le hot-reload existe déjà)
   - ⬜ Surcharges par propriété : une instance peut diverger de sa source sans perdre le lien — c'est la vraie difficulté, et elle est la même dans les deux modèles
 
