@@ -2,6 +2,7 @@
 #include <Scene/Components.h>
 #include <imgui.h>
 #include <cstring>
+#include <cstdio>
 
 namespace
 {
@@ -16,11 +17,8 @@ namespace
     // À refermer avec EndComponentSection().
     bool BeginComponentSection(const char *label, bool &resetRequested)
     {
-        ImGui::PushID(label);
-
         const ImGuiStyle &style = ImGui::GetStyle();
-        const char *resetLabel = "Réinit.";
-        const float buttonWidth = ImGui::CalcTextSize(resetLabel).x + style.FramePadding.x * 2.0f;
+        const float buttonWidth = ImGui::CalcTextSize("Réinit.").x + style.FramePadding.x * 2.0f;
         const float lineStartX = ImGui::GetCursorPosX();
         const float availWidth = ImGui::GetContentRegionAvail().x;
 
@@ -28,8 +26,15 @@ namespace
         // par-dessus sa ligne.
         const bool open = ImGui::TreeNodeEx(label, ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowOverlap);
 
+        // Le TreeNode ouvert empile déjà son propre ID, ce qui suffit à distinguer les
+        // boutons entre sections ; replié il n'empile rien, d'où le suffixe ## explicite.
+        // (Un PushID(label) autour de tout donnerait un ID en double, "Transform/Transform",
+        // qui alourdirait les chemins utilisés par les tests automatisés.)
+        char buttonId[64];
+        snprintf(buttonId, sizeof(buttonId), "Réinit.##%s", label);
+
         ImGui::SameLine(lineStartX + availWidth - buttonWidth);
-        resetRequested = ImGui::SmallButton(resetLabel);
+        resetRequested = ImGui::SmallButton(buttonId);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Réinitialiser %s aux valeurs par défaut", label);
 
@@ -40,7 +45,6 @@ namespace
     {
         if (open)
             ImGui::TreePop();
-        ImGui::PopID();
     }
 }
 
