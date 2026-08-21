@@ -18,6 +18,16 @@
 #include <ImGuizmo.h>
 #include <GLFW/glfw3.h>
 
+namespace
+{
+    // Le suffixe de version invalide les dispositions enregistrées dans imgui.ini quand
+    // les panels changent de nom : l'ancien nœud n'est alors plus trouvé, et la
+    // disposition par défaut est reconstruite au lieu de laisser les panels renommés
+    // flotter hors du dock. À incrémenter à chaque renommage de panel.
+    // v2 : passage de l'interface en anglais (Inspecteur -> Inspector, etc.).
+    constexpr const char *k_DockSpaceName = "MyEngineDockSpace_v2";
+}
+
 EditorLayer::EditorLayer(const EditorTestOptions &testOptions)
     : Layer("EditorLayer"), m_TestOptions(testOptions) {}
 
@@ -197,6 +207,12 @@ void EditorLayer::OnUpdate(Engine::Timestep ts)
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+    // ImGuizmo::BeginFrame() ouvre une fenêtre ImGui "gizmo" de la taille du viewport
+    // principal pour y dessiner. Avec ConfigViewportsNoAutoMerge, ImGui refuse de la
+    // fondre dans la fenêtre principale et lui fabrique sa propre fenêtre OS — une
+    // fenêtre noire plein écran derrière l'éditeur. SetNextWindowViewport est consommé
+    // par le prochain Begin(), c'est-à-dire justement celui d'ImGuizmo.
+    ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
     ImGuizmo::BeginFrame(); // requis une fois par frame pour qu'ImGuizmo suive le drag de la souris
 
     RenderImGui();
@@ -263,7 +279,7 @@ void EditorLayer::RenderImGui()
     ImGui::Begin("DockSpace", nullptr, windowFlags);
     ImGui::PopStyleVar(3);
 
-    ImGuiID dockspaceId = ImGui::GetID("MyEngineDockSpace");
+    ImGuiID dockspaceId = ImGui::GetID(k_DockSpaceName);
 
     // La reconstruction du dock tree (DockBuilder*) doit se faire AVANT le DockSpace()
     // de cette frame, jamais pendant/après (ça corromprait l'état actif en cours de frame,
@@ -489,7 +505,7 @@ std::filesystem::path EditorLayer::GetSceneDirectory()
 void EditorLayer::UpdateWindowTitle()
 {
     const std::string sceneName =
-        m_CurrentScenePath.empty() ? "Sans titre" : m_CurrentScenePath.filename().string();
+        m_CurrentScenePath.empty() ? "Untitled" : m_CurrentScenePath.filename().string();
     Engine::Application::Get().GetWindow().SetTitle("MyEngine Editor - " + sceneName);
 }
 
@@ -637,7 +653,7 @@ void EditorLayer::RenderEditMenu()
 
 void EditorLayer::SetupDefaultDockLayout()
 {
-    ImGuiID dockspaceId = ImGui::GetID("MyEngineDockSpace");
+    ImGuiID dockspaceId = ImGui::GetID(k_DockSpaceName);
 
     ImGui::DockBuilderRemoveNode(dockspaceId);
     ImGui::DockBuilderAddNode(dockspaceId, ImGuiDockNodeFlags_DockSpace);
