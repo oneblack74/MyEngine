@@ -12,7 +12,16 @@ struct EditorTestOptions
     // Si non vide : capture le rendu dans ce fichier PNG puis quitte.
     std::string ScreenshotPath;
 
-    // Nombre de frames rendues avant la capture. Il en faut plus d'une : la mise en
+    // Démarre Dear ImGui Test Engine. Avec Headless, la suite complète est jouée puis
+    // l'éditeur quitte avec un code de sortie ; sinon les tests sont pilotés à la main
+    // depuis la fenêtre du Test Engine.
+    bool RunTests = false;
+    bool ShowTestUI = false;
+
+    // Restreint les tests joués, au format "catégorie/nom" (ex. "inspector/*").
+    std::string TestFilter;
+
+    // Nombre de frames rendues avant la capture ou le lancement des tests. Il en faut plus d'une : la mise en
     // place du dock layout est volontairement différée d'une frame (voir
     // EditorLayer::RenderImGui), et ImGui a besoin d'une passe pour connaître la
     // taille réelle des panels.

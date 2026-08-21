@@ -109,6 +109,9 @@ void EditorLayer::OnAttach()
     GLFWwindow *window = Engine::Application::Get().GetWindow().GetNativeWindow();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
+
+    // Après la création du contexte ImGui : le Test Engine s'y accroche.
+    m_TestEngine.Start(*this, m_TestOptions);
 }
 
 void EditorLayer::OnDetach()
@@ -116,12 +119,19 @@ void EditorLayer::OnDetach()
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+    // Après ImGui::DestroyContext() : le Test Engine sauve ses propres réglages à ce
+    // moment-là et a besoin que le contexte ImGui soit déjà parti.
+    m_TestEngine.Stop();
 
     Engine::Renderer2D::Shutdown();
 }
 
 void EditorLayer::OnUpdate(Engine::Timestep ts)
 {
+    // Le swap de la frame précédente vient d'avoir lieu dans Window::OnUpdate : c'est
+    // le moment attendu par le Test Engine pour son PostSwap.
+    m_TestEngine.OnFrameStart();
+
     // La physique ne tourne que pendant le Play, et se fige en Pause (comme le
     // ferait n'importe quel moteur : Pause gèle la simulation, pas juste le rendu).
     if (m_SceneState == SceneState::Play && !m_ScenePaused)
@@ -297,6 +307,10 @@ void EditorLayer::RenderImGui()
     m_InspectorPanel.OnImGuiRender(m_SceneHierarchyPanel.GetSelectedEntity());
     m_ContentBrowserPanel.OnImGuiRender();
     m_ConsolePanel.OnImGuiRender();
+
+    // Fenêtres du Test Engine (liste des tests, log) : hors dockspace, et seulement
+    // en mode interactif.
+    m_TestEngine.RenderUI();
 }
 
 void EditorLayer::SetupDefaultDockLayout()

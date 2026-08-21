@@ -1,6 +1,6 @@
 #pragma once
 #include "Panels/ViewportPanel.h"
-#include "Testing/EditorTestOptions.h"
+#include "Testing/EditorTestEngine.h"
 #include "Panels/GamePanel.h"
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/InspectorPanel.h"
@@ -27,6 +27,14 @@ public:
     void OnAttach() override;
     void OnDetach() override;
     void OnUpdate(Engine::Timestep ts) override;
+
+    // Code de sortie du processus après une exécution de tests (0 si tout va bien).
+    int GetTestExitCode() const { return m_TestEngine.ExitCode(); }
+
+    // Accès réservé aux tests automatisés (Testing/EditorTests.cpp) : ils pilotent l'UI
+    // puis vérifient l'état réel de l'éditeur derrière.
+    Engine::Entity GetSelectedEntityForTests() const { return m_SceneHierarchyPanel.GetSelectedEntity(); }
+    bool IsPlayingForTests() const { return m_SceneState == SceneState::Play; }
 
 private:
     void RenderImGui();
@@ -65,5 +73,6 @@ private:
 
     // Mode test : inactif tant qu'aucun argument de ligne de commande ne l'active.
     EditorTestOptions m_TestOptions;
+    EditorTestEngine m_TestEngine;
     int m_FrameCount = 0;
 };
