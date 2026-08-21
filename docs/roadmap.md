@@ -115,8 +115,8 @@
 - ✅ Import des textures (type déduit de l'extension, chargement à la demande et mise en cache)
 - ✅ Import des sons (non mis en cache : chaque entité a besoin de sa propre lecture)
 - ✅ Hot-reload des assets en éditeur (dates des fichiers relues quelques fois par seconde)
-- ⬜ Glisser-déposer d'un asset du Content Browser vers l'Inspecteur (aujourd'hui la référence se saisit au clavier)
-- ⬜ Registre d'assets versionné avec les sources (il vit dans `build/assets/`, donc les handles ne survivent pas à un clone — sans effet tant que les scènes ne sont pas sauvegardées, à régler avec le `Ctrl+S`)
+- ✅ Glisser-déposer d'un asset du Content Browser vers l'Inspecteur (type vérifié au dépôt)
+- ✅ Registre d'assets versionné avec les sources (l'éditeur travaille directement sur `Editor/assets/`)
 
 ---
 
