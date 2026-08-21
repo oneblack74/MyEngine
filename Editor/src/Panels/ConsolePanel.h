@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 // Affiche les messages loggés via spdlog (Engine::Log) directement dans l'éditeur,
@@ -27,11 +28,19 @@ private:
 
     void RebuildVisibleLines();
     void RenderToolbar();
+    // Un menu déroulant par provenance, avec une case par catégorie.
+    void RenderCategoryMenu(const char *label, Engine::LogSource source);
+    void SyncCategories();
 
     std::vector<DisplayLine> m_VisibleLines;
 
     // Regroupe les messages identiques sur une seule ligne, façon "Collapse" d'Unity.
     bool m_Collapse = false;
+
+    // Catégories affichées, indexées par nom. Une catégorie inconnue est affichée par
+    // défaut : mieux vaut voir un message inattendu que le perdre en silence.
+    std::unordered_map<std::string, bool> m_CategoryEnabled;
+    size_t m_KnownCategoryCount = 0;
 
     // Un filtre par catégorie de sévérité (Info / Warning / Error).
     bool m_ShowSeverity[3] = {true, true, true};

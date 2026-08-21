@@ -49,6 +49,8 @@ void ConsolePanel::OnImGuiRender()
     // Le compteur, et non la taille du tampon : celui-ci plafonne à 500 messages et
     // continue ensuite de défiler à taille constante — s'y fier laisserait m_VisibleLines
     // pointer sur des messages déjà évincés.
+    SyncCategories();
+
     const uint64_t counter = Engine::Log::GetConsoleMessageCounter();
     if (counter != m_LastMessageCounter || m_FiltersDirty)
     {
@@ -110,6 +112,56 @@ void ConsolePanel::RenderToolbar()
     if (SeverityToggle("Error", m_ShowSeverity[(int)Engine::LogSeverityFilter::Error],
                        m_SeverityCounts[(int)Engine::LogSeverityFilter::Error]))
         m_FiltersDirty = true;
+
+    // Largeur juste suffisante pour le libellé : les listes n'ont pas d'aperçu, elles
+    // ne servent qu'à ouvrir leur liste de cases à cocher.
+    const float menuWidth = ImGui::CalcTextSize("Moteur").x + ImGui::GetFrameHeight() * 1.5f;
+
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(menuWidth);
+    RenderCategoryMenu("Moteur", Engine::LogSource::Engine);
+
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(menuWidth);
+    RenderCategoryMenu("Jeu", Engine::LogSource::Game);
+}
+
+void ConsolePanel::SyncCategories()
+{
+    // Les catégories ne font que s'ajouter (le jeu peut en inventer une à tout moment),
+    // il suffit donc de comparer leur nombre pour savoir s'il y a du nouveau.
+    const auto &categories = Engine::Log::GetCategories();
+    if (categories.size() == m_KnownCategoryCount)
+        return;
+
+    for (const Engine::LogCategoryInfo &category : categories)
+        m_CategoryEnabled.emplace(category.Name, true);
+
+    m_KnownCategoryCount = categories.size();
+    m_FiltersDirty = true;
+}
+
+void ConsolePanel::RenderCategoryMenu(const char *label, Engine::LogSource source)
+{
+    if (!ImGui::BeginCombo(label, label, ImGuiComboFlags_NoPreview))
+        return;
+
+    bool any = false;
+    for (const Engine::LogCategoryInfo &category : Engine::Log::GetCategories())
+    {
+        if (category.Source != source)
+            continue;
+
+        any = true;
+        bool &enabled = m_CategoryEnabled[category.Name];
+        if (ImGui::Checkbox(category.Name.c_str(), &enabled))
+            m_FiltersDirty = true;
+    }
+
+    if (!any)
+        ImGui::TextDisabled("Aucune catégorie");
+
+    ImGui::EndCombo();
 }
 
 void ConsolePanel::RebuildVisibleLines()
@@ -131,6 +183,10 @@ void ConsolePanel::RebuildVisibleLines()
         ++m_SeverityCounts[severity];
 
         if (!m_ShowSeverity[severity])
+            continue;
+
+        auto category = m_CategoryEnabled.find(message.Category);
+        if (category != m_CategoryEnabled.end() && !category->second)
             continue;
 
         if (m_Collapse)
