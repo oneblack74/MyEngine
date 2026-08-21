@@ -363,18 +363,7 @@ void EditorLayer::OnScenePlay()
 
     Engine::Entity newSelection;
     if (hadSelection)
-    {
-        auto view = m_RuntimeScene->GetAllEntitiesWith<Engine::IDComponent>();
-        for (auto entityHandle : view)
-        {
-            Engine::Entity candidate{entityHandle, m_RuntimeScene.get()};
-            if (candidate.GetUUID() == selectedUUID)
-            {
-                newSelection = candidate;
-                break;
-            }
-        }
-    }
+        newSelection = m_RuntimeScene->FindEntityByUUID(selectedUUID);
     m_SceneHierarchyPanel.SetSelectedEntity(newSelection);
 }
 
