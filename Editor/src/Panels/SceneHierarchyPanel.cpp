@@ -8,11 +8,14 @@ void SceneHierarchyPanel::OnImGuiRender()
 
     if (m_Context)
     {
-        auto view = m_Context->GetAllEntitiesWith<Engine::IDComponent>();
-        for (auto entityHandle : view)
+        // Parcours de l'ordre de la scène et non d'une vue EnTT : c'est ce qui garantit
+        // qu'une entité ne change pas de place quand on en supprime une autre (le
+        // registre déplace alors sa dernière entité dans le trou laissé).
+        for (Engine::UUID uuid : m_Context->GetEntityOrder())
         {
-            Engine::Entity entity{entityHandle, m_Context.get()};
-            DrawEntityNode(entity);
+            Engine::Entity entity = m_Context->FindEntityByUUID(uuid);
+            if (entity)
+                DrawEntityNode(entity);
         }
     }
 

@@ -3,6 +3,8 @@
 #include <entt/entt.hpp>
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace Engine
 {
@@ -38,6 +40,20 @@ namespace Engine
         // sans jamais toucher à la scène d'édition originale.
         std::shared_ptr<Scene> Copy();
 
+        // Ordre d'affichage des entités, celui de la hiérarchie. Une vue EnTT n'a pas
+        // d'ordre garanti et le registre remanie son stockage à chaque suppression
+        // (swap-and-pop) : sans cette liste, les entités changeraient de place toutes
+        // seules dès qu'on en supprime une.
+        const std::vector<UUID> &GetEntityOrder() const { return m_EntityOrder; }
+
+        // Position d'une entité dans cet ordre, ou la taille de la liste si elle est
+        // inconnue.
+        size_t GetEntityOrderIndex(UUID uuid) const;
+
+        // Replace une entité à une position donnée — sert à annuler une suppression
+        // sans que l'entité ressorte tout en bas de la hiérarchie.
+        void SetEntityOrderIndex(UUID uuid, size_t index);
+
         template <typename... Components>
         auto GetAllEntitiesWith()
         {
@@ -46,6 +62,12 @@ namespace Engine
 
     private:
         entt::registry m_Registry;
+
+        // Les handles EnTT sont recyclés et changent à chaque copie de scène : l'UUID
+        // est la seule clé stable, d'où cette table pour retrouver une entité sans
+        // parcourir tout le registre.
+        std::unordered_map<UUID, entt::entity> m_EntityMap;
+        std::vector<UUID> m_EntityOrder;
 
         friend class Entity;
     };

@@ -113,6 +113,10 @@ private:
     Engine::UUID m_EntityID;
     std::string m_EntityName;
 
+    // Position dans la hiérarchie au moment de la suppression : l'annulation doit
+    // remettre l'entité là où elle était, pas l'ajouter en bas de la liste.
+    size_t m_OrderIndex = 0;
+
     // Copie hors scène des components de l'entité supprimée, seule chose qui permette
     // de la faire revenir intacte.
     std::shared_ptr<Engine::Scene> m_Backup;

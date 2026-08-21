@@ -16,6 +16,7 @@
 #include <cstring>
 #include <filesystem>
 #include <string>
+#include <vector>
 
 namespace
 {
@@ -53,6 +54,19 @@ namespace
 
     bool NearlyEqual(float a, float b) { return std::fabs(a - b) < 0.0001f; }
 
+    // Noms des entités dans l'ordre où la hiérarchie les affiche.
+    std::vector<std::string> HierarchyOrder(EditorLayer &editor)
+    {
+        std::vector<std::string> names;
+        for (Engine::UUID uuid : editor.GetEditorScene().GetEntityOrder())
+        {
+            Engine::Entity entity = editor.GetEditorScene().FindEntityByUUID(uuid);
+            if (entity)
+                names.push_back(entity.GetName());
+        }
+        return names;
+    }
+
     int CountEntities(EditorLayer &editor)
     {
         int count = 0;
@@ -81,6 +95,36 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         Engine::Entity camera = SelectEntity(ctx, editor, "Main Camera");
         IM_CHECK(camera);
         IM_CHECK_STR_EQ(camera.GetName().c_str(), "Main Camera");
+    };
+
+    // Régression : les entités ne doivent pas changer de place quand on en supprime
+    // une autre. Une vue EnTT n'a pas d'ordre garanti et le registre rebouche le trou
+    // laissé par une suppression avec sa dernière entité, ce qui les faisait sauter.
+    t = IM_REGISTER_TEST(engine, "hierarchy", "order_is_stable_around_delete");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        const std::vector<std::string> before = HierarchyOrder(editor);
+        IM_CHECK_GT((int)before.size(), 2);
+
+        // Une entité du milieu : c'est le cas qui révèle le problème.
+        Engine::Entity circle = SelectEntity(ctx, editor, "Circle");
+        IM_CHECK(circle);
+        const size_t circleIndex = editor.GetEditorScene().GetEntityOrderIndex(circle.GetUUID());
+        IM_CHECK_GT((int)circleIndex, 0);
+        IM_CHECK_LT((int)circleIndex, (int)before.size() - 1);
+
+        ctx->SetRef("DockSpace");
+        ctx->MenuClick("Edit/Delete");
+        ctx->Yield(2);
+
+        std::vector<std::string> expected = before;
+        expected.erase(expected.begin() + (long)circleIndex);
+        IM_CHECK(HierarchyOrder(editor) == expected);
+
+        // L'annulation la remet à sa place, pas en bas de la liste.
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+        ctx->Yield(2);
+        IM_CHECK(HierarchyOrder(editor) == before);
     };
 
     // --- Inspecteur ---------------------------------------------------------

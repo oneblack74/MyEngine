@@ -1,6 +1,7 @@
 #include "Scene/Scene.h"
 #include "Scene/Entity.h"
 #include "Scene/Components.h"
+#include <algorithm>
 
 namespace Engine
 {
@@ -31,23 +32,45 @@ namespace Engine
         entity.AddComponent<TransformComponent>();
         auto &tag = entity.AddComponent<TagComponent>();
         tag.Tag = name.empty() ? "Entity" : name;
+
+        m_EntityMap[uuid] = entity;
+        m_EntityOrder.push_back(uuid);
         return entity;
     }
 
     void Scene::DestroyEntity(Entity entity)
     {
+        const UUID uuid = entity.GetComponent<IDComponent>().ID;
+        m_EntityMap.erase(uuid);
+        m_EntityOrder.erase(std::remove(m_EntityOrder.begin(), m_EntityOrder.end(), uuid),
+                            m_EntityOrder.end());
+
         m_Registry.destroy(entity);
+    }
+
+    size_t Scene::GetEntityOrderIndex(UUID uuid) const
+    {
+        auto it = std::find(m_EntityOrder.begin(), m_EntityOrder.end(), uuid);
+        return (size_t)std::distance(m_EntityOrder.begin(), it);
+    }
+
+    void Scene::SetEntityOrderIndex(UUID uuid, size_t index)
+    {
+        auto it = std::find(m_EntityOrder.begin(), m_EntityOrder.end(), uuid);
+        if (it == m_EntityOrder.end())
+            return;
+
+        m_EntityOrder.erase(it);
+        m_EntityOrder.insert(m_EntityOrder.begin() + (long)std::min(index, m_EntityOrder.size()), uuid);
     }
 
     Entity Scene::FindEntityByUUID(UUID uuid)
     {
-        auto view = GetAllEntitiesWith<IDComponent>();
-        for (auto entityHandle : view)
-        {
-            if (m_Registry.get<IDComponent>(entityHandle).ID == uuid)
-                return Entity{entityHandle, this};
-        }
-        return {};
+        auto it = m_EntityMap.find(uuid);
+        if (it == m_EntityMap.end())
+            return {};
+
+        return Entity{it->second, this};
     }
 
     Entity Scene::DuplicateEntity(Entity source)
@@ -79,11 +102,12 @@ namespace Engine
     {
         auto newScene = std::make_shared<Scene>();
 
-        auto view = GetAllEntitiesWith<IDComponent>();
-        for (auto entityHandle : view)
+        // Parcours dans l'ordre de la hiérarchie, pas dans celui du registre : la copie
+        // doit présenter ses entités exactement comme l'originale.
+        for (UUID uuid : m_EntityOrder)
         {
-            Entity srcEntity{entityHandle, this};
-            Entity newEntity = newScene->CreateEntityWithUUID(srcEntity.GetComponent<IDComponent>().ID,
+            Entity srcEntity = FindEntityByUUID(uuid);
+            Entity newEntity = newScene->CreateEntityWithUUID(uuid,
                                                               srcEntity.GetComponent<TagComponent>().Tag);
             CopyComponents(srcEntity, newEntity);
         }

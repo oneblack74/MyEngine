@@ -125,12 +125,11 @@ namespace Engine
             if (entityJson.contains("TagComponent"))
                 name = entityJson["TagComponent"]["Tag"].get<std::string>();
 
-            Entity entity = m_Scene->CreateEntity(name);
-
-            // CreateEntity génère un nouvel UUID aléatoire : on le remplace par celui
-            // sauvegardé pour préserver l'identité de l'entité entre les sessions.
-            uint64_t uuid = entityJson["UUID"].get<uint64_t>();
-            entity.GetComponent<IDComponent>().ID = UUID(uuid);
+            // L'UUID sauvegardé est passé à la création, et non écrit dans l'IDComponent
+            // après coup : la scène indexe ses entités par UUID au moment où elle les
+            // crée, un remplacement tardif lui laisserait une clé périmée.
+            const uint64_t uuid = entityJson["UUID"].get<uint64_t>();
+            Entity entity = m_Scene->CreateEntityWithUUID(UUID(uuid), name);
 
             if (entityJson.contains("TransformComponent"))
             {

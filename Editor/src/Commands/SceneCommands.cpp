@@ -85,7 +85,8 @@ std::string CreateEntityFromCommand::GetName() const
 
 DeleteEntityCommand::DeleteEntityCommand(EditorContext &context, Engine::Entity entity)
     : m_Context(context), m_EntityID(entity.GetUUID()),
-      m_EntityName(entity.GetComponent<Engine::TagComponent>().Tag)
+      m_EntityName(entity.GetComponent<Engine::TagComponent>().Tag),
+      m_OrderIndex(context.GetEditorScene().GetEntityOrderIndex(entity.GetUUID()))
 {
     m_Backup = MakeDetachedCopyOf(entity, m_BackupEntity);
 }
@@ -104,6 +105,7 @@ void DeleteEntityCommand::Undo()
 {
     Engine::Entity restored = m_Context.GetEditorScene().CreateEntityWithUUID(m_EntityID, m_EntityName);
     Engine::Scene::CopyComponents(m_BackupEntity, restored);
+    m_Context.GetEditorScene().SetEntityOrderIndex(m_EntityID, m_OrderIndex);
     m_Context.SelectEntity(restored);
 }
 
