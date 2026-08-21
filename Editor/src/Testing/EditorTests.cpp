@@ -438,6 +438,66 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK(!console.IsCollapsedForTests());
     };
 
+    // --- Audio ----------------------------------------------------------------
+
+    t = IM_REGISTER_TEST(engine, "audio", "plays_on_runtime_start");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        // La sélection est re-résolue par UUID dans la scène runtime au moment du Play :
+        // c'est ce qui donne accès au component de la scène réellement simulée.
+        Engine::Entity bip = SelectEntity(ctx, editor, "Bip");
+        IM_CHECK(bip);
+        IM_CHECK(bip.HasComponent<Engine::AudioComponent>());
+        IM_CHECK(!bip.GetComponent<Engine::AudioComponent>().Source);
+
+        ctx->SetRef("DockSpace");
+        ctx->ItemClick("**/Play");
+        IM_CHECK(editor.IsPlayingForTests());
+        ctx->Yield(3);
+
+        Engine::Entity runtimeBip = editor.GetSelectedEntityForTests();
+        IM_CHECK(runtimeBip);
+        auto &audio = runtimeBip.GetComponent<Engine::AudioComponent>();
+        IM_CHECK(audio.Source != nullptr);
+        IM_CHECK(audio.Source->IsLoaded());
+        IM_CHECK(audio.Source->IsPlaying());
+
+        ctx->ItemClick("**/Stop");
+        IM_CHECK(!editor.IsPlayingForTests());
+
+        // Le son est relâché à l'arrêt : la scène d'édition n'en garde aucun.
+        Engine::Entity editorBip = SelectEntity(ctx, editor, "Bip");
+        IM_CHECK(editorBip);
+        IM_CHECK(!editorBip.GetComponent<Engine::AudioComponent>().Source);
+    };
+
+    // "Lecture depuis l'éditeur" : écouter un son sans passer par le Play.
+    t = IM_REGISTER_TEST(engine, "audio", "preview_from_inspector");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        Engine::Entity bip = SelectEntity(ctx, editor, "Bip");
+        IM_CHECK(bip);
+
+        ctx->SetRef("Inspecteur");
+        ctx->ItemClick("Audio/Écouter");
+        ctx->Yield(2);
+
+        auto &audio = bip.GetComponent<Engine::AudioComponent>();
+        IM_CHECK(audio.Source != nullptr);
+        IM_CHECK(audio.Source->IsLoaded());
+        IM_CHECK(audio.Source->IsPlaying());
+
+        const char *outputFile = "output/captures/inspector_audio.png";
+        ctx->CaptureReset();
+        ImStrncpy(ctx->CaptureArgs->InOutputFile, outputFile, IM_ARRAYSIZE(ctx->CaptureArgs->InOutputFile));
+        IM_CHECK(ctx->CaptureAddWindow("//Inspecteur"));
+        IM_CHECK(ctx->CaptureScreenshot());
+
+        ctx->ItemClick("Audio/Arrêter");
+        ctx->Yield(2);
+        IM_CHECK(!audio.Source->IsPlaying());
+    };
+
     // --- Captures -----------------------------------------------------------
 
     // Ce test existe surtout pour produire une image à regarder, mais il vérifie que
