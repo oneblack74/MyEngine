@@ -110,11 +110,13 @@
 
 ## Phase 7 — Asset System
 
-- ⬜ `AssetHandle` (UUID → asset)
-- ⬜ `AssetManager` (registry + cache)
-- ⬜ `TextureImporter`
-- ⬜ `AudioImporter`
-- ⬜ Hot-reload des assets en éditeur
+- ✅ `AssetHandle` (UUID → asset)
+- ✅ `AssetManager` (registre JSON persisté + cache)
+- ✅ Import des textures (type déduit de l'extension, chargement à la demande et mise en cache)
+- ✅ Import des sons (non mis en cache : chaque entité a besoin de sa propre lecture)
+- ✅ Hot-reload des assets en éditeur (dates des fichiers relues quelques fois par seconde)
+- ⬜ Glisser-déposer d'un asset du Content Browser vers l'Inspecteur (aujourd'hui la référence se saisit au clavier)
+- ⬜ Registre d'assets versionné avec les sources (il vit dans `build/assets/`, donc les handles ne survivent pas à un clone — sans effet tant que les scènes ne sont pas sauvegardées, à régler avec le `Ctrl+S`)
 
 ---
 
