@@ -1,5 +1,6 @@
 #pragma once
 #include <filesystem>
+#include <nlohmann/json.hpp>
 #include <vector>
 #include "Commands/EditorCommand.h"
 #include "Commands/EditorContext.h"
@@ -154,6 +155,49 @@ private:
     // entités plutôt que des nouvelles.
     std::shared_ptr<Engine::Scene> m_Template;
     Engine::Entity m_TemplateRoot;
+};
+
+// Édition d'une entité décrite par son JSON. Générique, là où ComponentEditCommand
+// est typée : la révocation d'une surcharge d'instance se fait par nom de propriété,
+// sans que l'appelant connaisse le type du component concerné.
+class EntityJsonEditCommand : public EditorCommand
+{
+public:
+    EntityJsonEditCommand(EditorContext &context, Engine::UUID entityID, nlohmann::json before,
+                          nlohmann::json after, std::string name);
+
+    void Redo() override;
+    void Undo() override;
+    std::string GetName() const override { return m_Name; }
+
+private:
+    void Apply(const nlohmann::json &state);
+
+    EditorContext &m_Context;
+    Engine::UUID m_EntityID;
+    nlohmann::json m_Before;
+    nlohmann::json m_After;
+    std::string m_Name;
+};
+
+// Retrait d'un component. Séparé de la commande ci-dessus parce qu'appliquer un JSON
+// n'enlève jamais rien : ça ne sait qu'ajouter ou mettre à jour.
+class RemoveComponentCommand : public EditorCommand
+{
+public:
+    RemoveComponentCommand(EditorContext &context, Engine::UUID entityID, std::string componentName);
+
+    void Redo() override;
+    void Undo() override;
+    std::string GetName() const override;
+
+private:
+    EditorContext &m_Context;
+    Engine::UUID m_EntityID;
+    std::string m_ComponentName;
+
+    // Le component tel qu'il était : de quoi le faire revenir intact.
+    nlohmann::json m_Backup;
 };
 
 class DeleteEntityCommand : public EditorCommand

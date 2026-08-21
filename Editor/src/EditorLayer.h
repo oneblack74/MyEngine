@@ -51,6 +51,7 @@ public:
     Engine::Entity GetSelectedEntityForTests() const { return m_SceneHierarchyPanel.GetSelectedEntity(); }
     bool IsPlayingForTests() const { return m_SceneState == SceneState::Play; }
     const std::filesystem::path &GetCurrentScenePathForTests() const { return m_CurrentScenePath; }
+    SceneInstanceSync &GetInstanceSyncForTests() { return m_SceneInstanceSync; }
 
 private:
     void RenderImGui();

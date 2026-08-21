@@ -145,6 +145,7 @@ void EditorLayer::OnAttach()
 
     // Après la création du contexte ImGui : le Test Engine s'y accroche.
     m_InspectorPanel.SetEditorContext(this);
+    m_InspectorPanel.SetInstanceSync(&m_SceneInstanceSync);
     m_TestEngine.Start(*this, m_TestOptions);
 }
 

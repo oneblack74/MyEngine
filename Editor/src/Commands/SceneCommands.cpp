@@ -1,6 +1,7 @@
 #include "Commands/SceneCommands.h"
 #include <Core/Log.h>
 #include <Assets/AssetManager.h>
+#include <algorithm>
 #include <Scene/SceneSerializer.h>
 
 namespace
@@ -223,6 +224,82 @@ void InstantiateSceneCommand::Undo()
 std::string InstantiateSceneCommand::GetName() const
 {
     return "instantiate " + m_SceneName;
+}
+
+// --- Édition générique ------------------------------------------------------
+
+EntityJsonEditCommand::EntityJsonEditCommand(EditorContext &context, Engine::UUID entityID,
+                                             nlohmann::json before, nlohmann::json after,
+                                             std::string name)
+    : m_Context(context), m_EntityID(entityID), m_Before(std::move(before)),
+      m_After(std::move(after)), m_Name(std::move(name)) {}
+
+void EntityJsonEditCommand::Redo() { Apply(m_After); }
+void EntityJsonEditCommand::Undo() { Apply(m_Before); }
+
+void EntityJsonEditCommand::Apply(const nlohmann::json &state)
+{
+    Engine::Entity entity = m_Context.GetEditorScene().FindEntityByUUID(m_EntityID);
+    if (!entity)
+        return;
+
+    Engine::SceneSerializer::ApplyJsonToEntity(state, entity);
+    m_Context.SelectEntity(entity);
+}
+
+RemoveComponentCommand::RemoveComponentCommand(EditorContext &context, Engine::UUID entityID,
+                                               std::string componentName)
+    : m_Context(context), m_EntityID(entityID), m_ComponentName(std::move(componentName))
+{
+    Engine::Entity entity = context.GetEditorScene().FindEntityByUUID(m_EntityID);
+    if (!entity)
+        return;
+
+    const nlohmann::json entityJson = Engine::SceneSerializer::EntityToJson(entity);
+    if (entityJson.contains(m_ComponentName))
+        m_Backup[m_ComponentName] = entityJson[m_ComponentName];
+}
+
+void RemoveComponentCommand::Redo()
+{
+    Engine::Entity entity = m_Context.GetEditorScene().FindEntityByUUID(m_EntityID);
+    if (!entity)
+        return;
+
+    Engine::Scene::RemoveComponentByName(entity, m_ComponentName);
+
+    // Sur une instance, le retrait doit être retenu : sinon la prochaine fusion avec la
+    // scène source ferait revenir le component.
+    if (entity.HasComponent<Engine::SceneInstanceMemberComponent>())
+    {
+        auto &removed = entity.GetComponent<Engine::SceneInstanceMemberComponent>().RemovedComponents;
+        if (std::find(removed.begin(), removed.end(), m_ComponentName) == removed.end())
+            removed.push_back(m_ComponentName);
+    }
+
+    m_Context.SelectEntity(entity);
+}
+
+void RemoveComponentCommand::Undo()
+{
+    Engine::Entity entity = m_Context.GetEditorScene().FindEntityByUUID(m_EntityID);
+    if (!entity || m_Backup.empty())
+        return;
+
+    Engine::SceneSerializer::ApplyJsonToEntity(m_Backup, entity);
+
+    if (entity.HasComponent<Engine::SceneInstanceMemberComponent>())
+    {
+        auto &removed = entity.GetComponent<Engine::SceneInstanceMemberComponent>().RemovedComponents;
+        removed.erase(std::remove(removed.begin(), removed.end(), m_ComponentName), removed.end());
+    }
+
+    m_Context.SelectEntity(entity);
+}
+
+std::string RemoveComponentCommand::GetName() const
+{
+    return "remove " + m_ComponentName;
 }
 
 // --- Suppression ------------------------------------------------------------

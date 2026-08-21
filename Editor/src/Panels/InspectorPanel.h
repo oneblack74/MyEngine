@@ -2,9 +2,11 @@
 #include "Commands/CommandHistory.h"
 #include "Commands/EditorContext.h"
 #include "Commands/SceneCommands.h"
+#include "SceneInstanceSync.h"
 #include <Scene/Entity.h>
 #include <functional>
 #include <imgui.h>
+#include <set>
 #include <string>
 #include <memory>
 
@@ -19,10 +21,57 @@ public:
 
     // history nul = éditions non annulables (pendant le Play, où la scène est une
     // copie jetée au Stop).
+    // Sert à repérer et révoquer les surcharges d'une instance de scène. Nul : le
+    // panel se comporte comme avant, sans marquage.
+    void SetInstanceSync(SceneInstanceSync *sync) { m_InstanceSync = sync; }
+
     void OnImGuiRender(Engine::Entity selectedEntity, CommandHistory *history);
 
 private:
     void DrawComponents(Engine::Entity entity);
+
+    // En-tête d'une section de component : le TreeNode habituel, le bouton "Reset"
+    // aligné à droite, et un menu contextuel (clic droit) pour retirer le component ou
+    // révoquer ses surcharges. Renvoie true si la section est ouverte ;
+    // resetRequested passe à true la frame où le bouton est cliqué.
+    // componentName est le nom de sérialisation ("SpriteRendererComponent").
+    bool BeginComponentSection(Engine::Entity entity, const char *label, const char *componentName,
+                               bool &resetRequested);
+
+    // Marque une propriété qui s'écarte de la scène source, d'un liseré à gauche de sa
+    // ligne — façon Unity. À appeler juste après le widget concerné.
+    void MarkOverride(const char *componentName, const char *field);
+
+    void DrawComponentContextMenu(Engine::Entity entity, const char *componentName);
+
+    // Ce qu'un menu contextuel a demandé. L'action n'est pas exécutée sur place :
+    // retirer ou réécrire un component au milieu du dessin de sa propre section
+    // laisserait la suite du code travailler sur une référence morte.
+    struct PendingAction
+    {
+        enum class Kind
+        {
+            RemoveComponent,
+            RevertComponent,
+            RevertProperty
+        };
+
+        Kind Type = Kind::RemoveComponent;
+        Engine::Entity Target;
+        std::string Component;
+        std::string Field;
+    };
+
+    void ApplyPendingAction();
+
+    bool m_HasPendingAction = false;
+    PendingAction m_PendingAction;
+
+    SceneInstanceSync *m_InstanceSync = nullptr;
+
+    // Propriétés surchargées de l'entité affichée, recalculées à chaque frame :
+    // "NomDuComponent/NomDuChamp".
+    std::set<std::string> m_Overrides;
 
     // À appeler juste après un widget continu (drag, sélecteur de couleur) : la valeur
     // d'avant est capturée quand on saisit le widget et la commande n'est empilée qu'au
