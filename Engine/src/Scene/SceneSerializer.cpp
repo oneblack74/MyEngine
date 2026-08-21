@@ -17,6 +17,12 @@ namespace Engine
 
     void SceneSerializer::Serialize(const std::string &filepath)
     {
+        std::ofstream file(filepath);
+        file << ToJson().dump(4);
+    }
+
+    json SceneSerializer::ToJson() const
+    {
         json root;
         root["Entities"] = json::array();
 
@@ -104,6 +110,12 @@ namespace Engine
                 entityJson["SceneInstanceComponent"]["Source"] = (uint64_t)si.Source;
             }
 
+            if (entity.HasComponent<SceneInstanceMemberComponent>())
+            {
+                auto &member = entity.GetComponent<SceneInstanceMemberComponent>();
+                entityJson["SceneInstanceMemberComponent"]["SourceEntity"] = (uint64_t)member.SourceEntity;
+            }
+
             if (entity.HasComponent<CameraComponent>())
             {
                 auto &cc = entity.GetComponent<CameraComponent>();
@@ -116,8 +128,7 @@ namespace Engine
             root["Entities"].push_back(entityJson);
         }
 
-        std::ofstream file(filepath);
-        file << root.dump(4);
+        return root;
     }
 
     bool SceneSerializer::Deserialize(const std::string &filepath)
@@ -132,6 +143,18 @@ namespace Engine
         json root;
         file >> root;
 
+        if (!FromJson(root))
+            return false;
+
+        // Une scène a exactement une racine. Un fichier écrit avant cette règle en a
+        // plusieurs : elles sont regroupées sous une nouvelle entité portant le nom du
+        // fichier, plutôt que de refuser de charger la scène.
+        m_Scene->EnsureSingleRoot(std::filesystem::path(filepath).stem().string());
+        return true;
+    }
+
+    bool SceneSerializer::FromJson(const json &root)
+    {
         if (!root.contains("Entities"))
             return false;
 
@@ -219,6 +242,12 @@ namespace Engine
                 si.Source = entityJson["SceneInstanceComponent"]["Source"].get<uint64_t>();
             }
 
+            if (entityJson.contains("SceneInstanceMemberComponent"))
+            {
+                auto &member = entity.AddComponent<SceneInstanceMemberComponent>();
+                member.SourceEntity = entityJson["SceneInstanceMemberComponent"]["SourceEntity"].get<uint64_t>();
+            }
+
             if (entityJson.contains("CameraComponent"))
             {
                 auto &cc = entity.AddComponent<CameraComponent>();
@@ -226,11 +255,6 @@ namespace Engine
                 cc.Primary = entityJson["CameraComponent"]["Primary"].get<bool>();
             }
         }
-
-        // Une scène a exactement une racine. Un fichier écrit avant cette règle en a
-        // plusieurs : elles sont regroupées sous une nouvelle entité portant le nom du
-        // fichier, plutôt que de refuser de charger la scène.
-        m_Scene->EnsureSingleRoot(std::filesystem::path(filepath).stem().string());
 
         return true;
     }

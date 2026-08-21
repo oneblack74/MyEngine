@@ -51,6 +51,18 @@ namespace Engine
         SceneInstanceComponent(const SceneInstanceComponent &) = default;
     };
 
+    // Portée par chaque entité d'une branche instanciée : de quelle entité de la scène
+    // source elle est issue. C'est cette correspondance qui permet, quand la source
+    // change, de retrouver quoi mettre à jour au lieu de tout reconstruire — et donc de
+    // préserver les modifications faites sur l'instance.
+    struct SceneInstanceMemberComponent
+    {
+        UUID SourceEntity{0};
+
+        SceneInstanceMemberComponent() = default;
+        SceneInstanceMemberComponent(const SceneInstanceMemberComponent &) = default;
+    };
+
     // Attention : les valeurs sont exprimées dans le repère du parent, pas dans celui du
     // monde. Passer de l'un à l'autre est le rôle de Scene::GetWorldTransform() /
     // SetWorldTransform(), qui sont ce que doivent utiliser le rendu, la physique et les

@@ -1,5 +1,6 @@
 #pragma once
 #include "Scene/Scene.h"
+#include <nlohmann/json_fwd.hpp>
 #include <memory>
 #include <string>
 
@@ -18,6 +19,12 @@ namespace Engine
 
         void Serialize(const std::string &filepath);
         bool Deserialize(const std::string &filepath);
+
+        // Mêmes conversions, sans passer par le disque. C'est cette forme qu'utilise la
+        // fusion des instances : le JSON nomme chaque propriété, ce qui permet de
+        // comparer et fusionner sans avoir à réénumérer les champs des components.
+        nlohmann::json ToJson() const;
+        bool FromJson(const nlohmann::json &root);
 
     private:
         std::shared_ptr<Scene> m_Scene;

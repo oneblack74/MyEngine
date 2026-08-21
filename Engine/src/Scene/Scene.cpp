@@ -75,6 +75,13 @@ namespace Engine
         }
     }
 
+    void Scene::Clear()
+    {
+        m_Registry.clear();
+        m_EntityMap.clear();
+        m_EntityOrder.clear();
+    }
+
     Entity Scene::CreateEntity(const std::string &name)
     {
         return CreateEntityWithUUID(UUID(), name);
@@ -291,6 +298,13 @@ namespace Engine
         Entity copy = CreateEntity(source.GetComponent<TagComponent>().Tag);
         CopyComponents(source, copy);
 
+        // De quelle entité de la source celle-ci est issue : c'est ce lien qui, plus
+        // tard, permettra de la mettre à jour plutôt que de la recréer.
+        if (!copy.HasComponent<SceneInstanceMemberComponent>())
+            copy.AddComponent<SceneInstanceMemberComponent>();
+        copy.GetComponent<SceneInstanceMemberComponent>().SourceEntity =
+            source.GetComponent<IDComponent>().ID;
+
         // Le lien est écrit directement, sans passer par SetParent : celui-ci conserve
         // la position dans le monde, alors qu'une instance doit garder le transform
         // local tel qu'il a été composé dans sa scène d'origine.
@@ -335,6 +349,7 @@ namespace Engine
         CopyComponentIfPresent<AudioComponent>(source, destination);
         CopyComponentIfPresent<CameraComponent>(source, destination);
         CopyComponentIfPresent<SceneInstanceComponent>(source, destination);
+        CopyComponentIfPresent<SceneInstanceMemberComponent>(source, destination);
     }
 
     std::shared_ptr<Scene> Scene::Copy()

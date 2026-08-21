@@ -18,6 +18,10 @@ namespace Engine
         Scene() = default;
         ~Scene() = default;
 
+        // Vide la scène de toutes ses entités, l'objet Scene restant le même. Utile pour
+        // la relire depuis une autre source sans invalider ce qui la référence.
+        void Clear();
+
         Entity CreateEntity(const std::string &name = std::string());
         // Recrée une entité avec un UUID imposé — nécessaire pour annuler une suppression :
         // l'entité doit revenir avec la même identité, sans quoi toutes les références
