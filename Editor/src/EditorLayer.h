@@ -48,6 +48,7 @@ private:
     void RenderImGui();
     void RunTestModeStep();
     void HandleShortcuts();
+    void TrackGizmoEdit();
     void RenderEditMenu();
 
     // Actions du menu Édition, chacune passant par une commande annulable.
@@ -83,6 +84,13 @@ private:
     // l'entité copiée, y compris après sa suppression.
     std::shared_ptr<Engine::Scene> m_Clipboard;
     Engine::Entity m_ClipboardEntity;
+
+    // Suivi du drag de gizmo : ImGuizmo écrit dans le Transform à chaque frame, la
+    // commande d'annulation n'est empilée qu'au relâchement, pour qu'un déplacement
+    // entier ne compte que pour une seule annulation.
+    bool m_GizmoWasUsing = false;
+    Engine::UUID m_GizmoEntityID{0};
+    Engine::TransformComponent m_TransformBeforeGizmo;
 
     ViewportPanel m_ViewportPanel;
     GamePanel m_GamePanel;

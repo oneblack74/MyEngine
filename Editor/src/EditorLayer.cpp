@@ -112,6 +112,7 @@ void EditorLayer::OnAttach()
     ImGui_ImplOpenGL3_Init("#version 330");
 
     // Après la création du contexte ImGui : le Test Engine s'y accroche.
+    m_InspectorPanel.SetEditorContext(this);
     m_TestEngine.Start(*this, m_TestOptions);
 }
 
@@ -303,18 +304,49 @@ void EditorLayer::RenderImGui()
                                    m_SceneHierarchyPanel.GetSelectedEntity(),
                                    [this](Engine::Entity picked)
                                    { m_SceneHierarchyPanel.SetSelectedEntity(picked); });
+    TrackGizmoEdit();
+
     // Fermer la fenêtre "Game" avec sa croix arrête le Play, comme sur Godot.
     bool gameStillOpen = m_GamePanel.OnImGuiRender(GetActiveScene(), m_SceneState == SceneState::Play);
     if (m_SceneState == SceneState::Play && !gameStillOpen)
         OnSceneStop();
     m_SceneHierarchyPanel.OnImGuiRender();
-    m_InspectorPanel.OnImGuiRender(m_SceneHierarchyPanel.GetSelectedEntity());
+    // Historique nul pendant le Play : la scène runtime est jetée au Stop, y annuler
+    // une édition n'aurait pas de sens.
+    m_InspectorPanel.OnImGuiRender(m_SceneHierarchyPanel.GetSelectedEntity(),
+                                   m_SceneState == SceneState::Edit ? &m_CommandHistory : nullptr);
     m_ContentBrowserPanel.OnImGuiRender();
     m_ConsolePanel.OnImGuiRender();
 
     // Fenêtres du Test Engine (liste des tests, log) : hors dockspace, et seulement
     // en mode interactif.
     m_TestEngine.RenderUI();
+}
+
+void EditorLayer::TrackGizmoEdit()
+{
+    const bool usingGizmo = ImGuizmo::IsUsing();
+    Engine::Entity selected = m_SceneHierarchyPanel.GetSelectedEntity();
+
+    if (usingGizmo && !m_GizmoWasUsing && selected)
+    {
+        m_GizmoEntityID = selected.GetUUID();
+        m_TransformBeforeGizmo = selected.GetComponent<Engine::TransformComponent>();
+    }
+    else if (!usingGizmo && m_GizmoWasUsing && m_SceneState == SceneState::Edit)
+    {
+        Engine::Entity entity = m_EditorScene->FindEntityByUUID(m_GizmoEntityID);
+        if (entity)
+        {
+            // Le gizmo a déjà écrit la valeur d'arrivée dans le Transform.
+            m_CommandHistory.PushAlreadyApplied(std::make_unique<ComponentEditCommand<Engine::TransformComponent>>(
+                *this, m_GizmoEntityID, m_TransformBeforeGizmo,
+                entity.GetComponent<Engine::TransformComponent>(),
+                "manipuler " + entity.GetName()));
+        }
+    }
+
+    m_GizmoWasUsing = usingGizmo;
 }
 
 void EditorLayer::HandleShortcuts()

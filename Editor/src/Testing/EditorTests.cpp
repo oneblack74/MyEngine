@@ -283,6 +283,45 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK_EQ(CountEntities(editor), before);
     };
 
+    // Une édition de l'Inspecteur doit être annulable, et un drag entier ne doit
+    // compter que pour une seule annulation (la commande n'est empilée qu'au
+    // relâchement du widget, pas à chaque frame).
+    t = IM_REGISTER_TEST(engine, "edit", "undo_inspector_edit");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        Engine::Entity square = SelectEntity(ctx, editor, "Square");
+        IM_CHECK(square);
+        const float startX = square.GetComponent<Engine::TransformComponent>().Position.x;
+
+        ctx->SetRef("Inspecteur");
+        ctx->ItemInputValue("Transform/Position/$$0", 4.0f);
+        IM_CHECK(NearlyEqual(square.GetComponent<Engine::TransformComponent>().Position.x, 4.0f));
+
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+        IM_CHECK(NearlyEqual(square.GetComponent<Engine::TransformComponent>().Position.x, startX));
+
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Y);
+        IM_CHECK(NearlyEqual(square.GetComponent<Engine::TransformComponent>().Position.x, 4.0f));
+
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+        IM_CHECK(NearlyEqual(square.GetComponent<Engine::TransformComponent>().Position.x, startX));
+    };
+
+    t = IM_REGISTER_TEST(engine, "edit", "undo_inspector_reset");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        Engine::Entity square = SelectEntity(ctx, editor, "Square");
+        IM_CHECK(square);
+        const glm::vec3 startScale = square.GetComponent<Engine::TransformComponent>().Scale;
+
+        ctx->SetRef("Inspecteur");
+        ctx->ItemClick(ResetButtonOf("Transform").c_str());
+        IM_CHECK(NearlyEqual(square.GetComponent<Engine::TransformComponent>().Scale.x, 1.0f));
+
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+        IM_CHECK(NearlyEqual(square.GetComponent<Engine::TransformComponent>().Scale.x, startScale.x));
+    };
+
     // --- Captures -----------------------------------------------------------
 
     // Ce test existe surtout pour produire une image à regarder, mais il vérifie que
