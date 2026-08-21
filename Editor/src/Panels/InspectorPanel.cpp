@@ -3,6 +3,14 @@
 #include <imgui.h>
 #include <cstring>
 
+namespace
+{
+    // Les champs bornés (min/max) doivent aussi être bornés quand la valeur est *tapée*
+    // au clavier : sans ce flag, ImGui laisse la saisie manuelle sortir des limites
+    // (un rayon négatif ferait planter Box2D, par exemple).
+    constexpr ImGuiSliderFlags k_ClampedDrag = ImGuiSliderFlags_AlwaysClamp;
+}
+
 void InspectorPanel::OnImGuiRender(Engine::Entity selectedEntity)
 {
     ImGui::Begin("Inspecteur");
@@ -46,7 +54,7 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
         {
             auto &sprite = entity.GetComponent<Engine::SpriteRendererComponent>();
             ImGui::ColorEdit4("Couleur", &sprite.Color.x);
-            ImGui::DragFloat("Tiling", &sprite.TilingFactor, 0.05f, 0.0f, 100.0f);
+            ImGui::DragFloat("Tiling", &sprite.TilingFactor, 0.05f, 0.0f, 100.0f, "%.3f", k_ClampedDrag);
             ImGui::TreePop();
         }
     }
@@ -73,10 +81,10 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
         {
             auto &bc = entity.GetComponent<Engine::BoxColliderComponent>();
             ImGui::DragFloat2("Offset", &bc.Offset.x, 0.05f);
-            ImGui::DragFloat2("Taille (demi)", &bc.Size.x, 0.05f, 0.01f, 100.0f);
-            ImGui::DragFloat("Densité", &bc.Density, 0.05f, 0.0f, 100.0f);
-            ImGui::DragFloat("Friction", &bc.Friction, 0.01f, 0.0f, 1.0f);
-            ImGui::DragFloat("Restitution", &bc.Restitution, 0.01f, 0.0f, 1.0f);
+            ImGui::DragFloat2("Taille (demi)", &bc.Size.x, 0.05f, 0.01f, 100.0f, "%.3f", k_ClampedDrag);
+            ImGui::DragFloat("Densité", &bc.Density, 0.05f, 0.0f, 100.0f, "%.3f", k_ClampedDrag);
+            ImGui::DragFloat("Friction", &bc.Friction, 0.01f, 0.0f, 1.0f, "%.3f", k_ClampedDrag);
+            ImGui::DragFloat("Restitution", &bc.Restitution, 0.01f, 0.0f, 1.0f, "%.3f", k_ClampedDrag);
             ImGui::TreePop();
         }
     }
@@ -87,10 +95,10 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
         {
             auto &cc = entity.GetComponent<Engine::CircleColliderComponent>();
             ImGui::DragFloat2("Offset", &cc.Offset.x, 0.05f);
-            ImGui::DragFloat("Rayon", &cc.Radius, 0.05f, 0.01f, 100.0f);
-            ImGui::DragFloat("Densité", &cc.Density, 0.05f, 0.0f, 100.0f);
-            ImGui::DragFloat("Friction", &cc.Friction, 0.01f, 0.0f, 1.0f);
-            ImGui::DragFloat("Restitution", &cc.Restitution, 0.01f, 0.0f, 1.0f);
+            ImGui::DragFloat("Rayon", &cc.Radius, 0.05f, 0.01f, 100.0f, "%.3f", k_ClampedDrag);
+            ImGui::DragFloat("Densité", &cc.Density, 0.05f, 0.0f, 100.0f, "%.3f", k_ClampedDrag);
+            ImGui::DragFloat("Friction", &cc.Friction, 0.01f, 0.0f, 1.0f, "%.3f", k_ClampedDrag);
+            ImGui::DragFloat("Restitution", &cc.Restitution, 0.01f, 0.0f, 1.0f, "%.3f", k_ClampedDrag);
             ImGui::TreePop();
         }
     }
@@ -101,7 +109,7 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
         {
             auto &cc = entity.GetComponent<Engine::CameraComponent>();
             ImGui::Checkbox("Principale (Primary)", &cc.Primary);
-            ImGui::DragFloat("Taille orthographique", &cc.OrthographicSize, 0.05f, 0.05f, 100.0f);
+            ImGui::DragFloat("Taille orthographique", &cc.OrthographicSize, 0.05f, 0.05f, 100.0f, "%.3f", k_ClampedDrag);
             ImGui::TreePop();
         }
     }

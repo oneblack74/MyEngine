@@ -87,6 +87,10 @@ void EditorLayer::OnAttach()
     // séparée que si on la faisait glisser assez loin manuellement.
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
     io.ConfigViewportsNoAutoMerge = true;
+    // Un simple clic-relâché (sans bouger la souris) sur un DragFloat le transforme en
+    // champ de saisie texte : on peut donc taper une valeur au clavier dans l'Inspecteur
+    // au lieu de devoir la faire glisser. Le drag reste inchangé dès que la souris bouge.
+    io.ConfigDragClickToInputText = true;
 
     ImGui::StyleColorsDark();
 
