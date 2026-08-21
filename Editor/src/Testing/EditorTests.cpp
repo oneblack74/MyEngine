@@ -1060,9 +1060,10 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         std::filesystem::remove(scenePath);
     };
 
-    // Modifier la scène source se répercute sur ses instances, sans effacer ce que le
-    // niveau a décidé : le placement de l'instance et son nom.
-    t = IM_REGISTER_TEST(engine, "scene", "source_change_propagates_to_instances");
+    // Le cœur du modèle : une modification de la source arrive sur ses instances, mais
+    // ce que l'utilisateur a changé sur une instance lui survit — propriété par
+    // propriété, pas component par component.
+    t = IM_REGISTER_TEST(engine, "scene", "source_change_preserves_instance_overrides");
     t->TestFunc = [&editor](ImGuiTestContext *ctx)
     {
         const std::filesystem::path scenePath =
@@ -1070,24 +1071,21 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         std::error_code ec;
         std::filesystem::create_directories(scenePath.parent_path(), ec);
 
-        // Source initiale : "Crate" avec un seul enfant.
-        auto writeSource = [&](bool withExtra)
-        {
-            auto source = std::make_shared<Engine::Scene>();
-            Engine::Entity crate = source->CreateEntity("Crate");
-            Engine::Entity label = source->CreateEntity("Label");
-            IM_CHECK(source->SetParent(label, crate));
-            if (withExtra)
-            {
-                Engine::Entity extra = source->CreateEntity("Extra");
-                IM_CHECK(source->SetParent(extra, crate));
-            }
-            Engine::SceneSerializer(source).Serialize(scenePath.string());
-        };
-        writeSource(false);
+        // La source est gardée en mémoire et réenregistrée telle quelle : ses UUID ne
+        // changent pas d'une version à l'autre, comme quand on édite une scène dans
+        // l'éditeur. C'est ce qui donne son sens à la comparaison.
+        auto source = std::make_shared<Engine::Scene>();
+        Engine::Entity sourceCrate = source->CreateEntity("Crate");
+        auto &sourceSprite = sourceCrate.AddComponent<Engine::SpriteRendererComponent>();
+        sourceSprite.Color = {1.0f, 1.0f, 1.0f, 1.0f};
+        sourceSprite.TilingFactor = 1.0f;
+        Engine::Entity sourceLabel = source->CreateEntity("Label");
+        IM_CHECK(source->SetParent(sourceLabel, sourceCrate));
+        Engine::SceneSerializer(source).Serialize(scenePath.string());
 
         Engine::Scene &scene = editor.GetEditorScene();
         Engine::Entity square = SelectEntity(ctx, editor, "Square");
+        const Engine::UUID squareID = square.GetUUID();
         ImGuiTestItemInfo target = FindHierarchyItem(ctx, "Square");
         IM_CHECK(square && target.ID != 0);
 
@@ -1101,18 +1099,23 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK_EQ((int)children.size(), 1);
         Engine::Entity instance = children[0];
         const Engine::UUID instanceID = instance.GetUUID();
-
-        // L'instance retient d'où elle vient.
         IM_CHECK(instance.HasComponent<Engine::SceneInstanceComponent>());
         IM_CHECK_EQ((int)scene.GetChildren(instance).size(), 1);
 
-        // Ce que le niveau décide : où elle est posée, et comment elle s'appelle.
+        // Surcharges posées sur l'instance : sa place, son nom, et une seule propriété
+        // de son sprite.
         instance.GetComponent<Engine::TransformComponent>().Position = {4.25f, 0.0f, 0.0f};
         instance.GetComponent<Engine::TagComponent>().Tag = "Crate placée";
+        instance.GetComponent<Engine::SpriteRendererComponent>().Color = {0.0f, 0.0f, 1.0f, 1.0f};
 
-        // La source gagne un enfant. Seule sa date compte pour la détection.
+        // La source change ailleurs : une autre propriété du même component, et un
+        // enfant en plus.
+        sourceSprite.TilingFactor = 3.0f;
+        Engine::Entity sourceExtra = source->CreateEntity("Extra");
+        IM_CHECK(source->SetParent(sourceExtra, sourceCrate));
+
         const uint64_t reloadsBefore = Engine::AssetManager::GetReloadCount();
-        writeSource(true);
+        Engine::SceneSerializer(source).Serialize(scenePath.string());
         std::filesystem::last_write_time(scenePath, std::filesystem::file_time_type::clock::now());
 
         // L'éditeur ne consulte le disque que quelques fois par seconde, et son minuteur
@@ -1126,16 +1129,22 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK_GT(reloadsAfter, reloadsBefore);
         ctx->Yield(2);
 
+        // La fusion relit la scène : les handles EnTT sont recréés, seules les identités
+        // survivent. On ne réutilise donc aucune Entity d'avant.
         Engine::Entity refreshed = scene.FindEntityByUUID(instanceID);
         IM_CHECK(refreshed);
 
-        // L'ajout de la source est arrivé...
+        // Ce que la source apporte est arrivé...
         IM_CHECK_EQ((int)scene.GetChildren(refreshed).size(), 2);
+        IM_CHECK(NearlyEqual(refreshed.GetComponent<Engine::SpriteRendererComponent>().TilingFactor, 3.0f));
 
-        // ...sans écraser ce que le niveau possède.
+        // ...sans écraser les surcharges de l'instance, y compris sur le component que
+        // la source vient justement de modifier.
+        IM_CHECK(NearlyEqual(refreshed.GetComponent<Engine::SpriteRendererComponent>().Color.b, 1.0f));
+        IM_CHECK(NearlyEqual(refreshed.GetComponent<Engine::SpriteRendererComponent>().Color.r, 0.0f));
         IM_CHECK(NearlyEqual(refreshed.GetComponent<Engine::TransformComponent>().Position.x, 4.25f));
         IM_CHECK_STR_EQ(refreshed.GetName().c_str(), "Crate placée");
-        IM_CHECK(scene.GetParent(refreshed) == square);
+        IM_CHECK(scene.GetParent(refreshed).GetUUID() == squareID);
         IM_CHECK(refreshed.HasComponent<Engine::SceneInstanceComponent>());
 
         scene.DestroyEntity(refreshed);
