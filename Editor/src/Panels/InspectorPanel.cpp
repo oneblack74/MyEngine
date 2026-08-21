@@ -1,5 +1,7 @@
 #include "Panels/InspectorPanel.h"
+#include "Panels/ContentBrowserPanel.h"
 #include <Assets/AssetManager.h>
+#include <filesystem>
 #include <Scene/Components.h>
 #include <imgui.h>
 #include <cstring>
@@ -11,6 +13,29 @@ namespace
     // au clavier : sans ce flag, ImGui laisse la saisie manuelle sortir des limites
     // (un rayon négatif ferait planter Box2D, par exemple).
     constexpr ImGuiSliderFlags k_ClampedDrag = ImGuiSliderFlags_AlwaysClamp;
+
+    // Reçoit un asset glissé depuis le Content Browser sur le widget qui vient d'être
+    // dessiné. Le type attendu est vérifié : déposer un son sur un champ de texture ne
+    // doit rien faire, plutôt que d'installer une référence invalide.
+    bool AcceptAssetDrop(Engine::AssetType expected, Engine::AssetHandle &outHandle)
+    {
+        if (!ImGui::BeginDragDropTarget())
+            return false;
+
+        bool accepted = false;
+        if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload(k_AssetPayloadType))
+        {
+            const std::string path((const char *)payload->Data);
+            if (Engine::AssetTypeFromExtension(std::filesystem::path(path).extension().string()) == expected)
+            {
+                outHandle = Engine::AssetManager::Import(path);
+                accepted = true;
+            }
+        }
+
+        ImGui::EndDragDropTarget();
+        return accepted;
+    }
 
     // En-tête d'une section de component : le TreeNode habituel plus un bouton
     // "Réinit." aligné à droite de la même ligne. Renvoie true si la section est
@@ -134,6 +159,10 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
         {
             // La texture s'édite par son chemin : le Content Browser ne sait pas encore
             // glisser-déposer un asset, l'import se fait donc à la saisie.
+            // Copie prise avant le widget : un dépôt est instantané, sa valeur d'avant
+            // ne peut pas être capturée au moment où on constate le changement.
+            const Engine::SpriteRendererComponent spriteBeforeDrop = sprite;
+
             char texturePath[512];
             memset(texturePath, 0, sizeof(texturePath));
             strncpy(texturePath, Engine::AssetManager::GetPath(sprite.Texture).c_str(), sizeof(texturePath) - 1);
@@ -143,6 +172,8 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
                 sprite.Texture = path.empty() ? Engine::AssetHandle(Engine::k_InvalidAssetHandle)
                                               : Engine::AssetManager::Import(path);
             }
+            if (AcceptAssetDrop(Engine::AssetType::Texture, sprite.Texture))
+                RecordEdit(entity, spriteBeforeDrop, "changer la texture de");
             TrackEdit<Engine::SpriteRendererComponent>(entity, "changer la texture de");
 
             ImGui::ColorEdit4("Couleur", &sprite.Color.x);
@@ -282,6 +313,8 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
 
         if (open)
         {
+            const Engine::AudioComponent audioBeforeDrop = audio;
+
             char pathBuffer[512];
             memset(pathBuffer, 0, sizeof(pathBuffer));
             strncpy(pathBuffer, Engine::AssetManager::GetPath(audio.Sound).c_str(), sizeof(pathBuffer) - 1);
@@ -292,6 +325,11 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
                                            : Engine::AssetManager::Import(path);
                 // Le son déjà chargé ne correspond plus à la référence affichée.
                 audio.Source.reset();
+            }
+            if (AcceptAssetDrop(Engine::AssetType::Audio, audio.Sound))
+            {
+                audio.Source.reset();
+                RecordEdit(entity, audioBeforeDrop, "changer le son de");
             }
             TrackEdit<Engine::AudioComponent>(entity, "changer le son de");
 
