@@ -99,11 +99,11 @@
 
 ## Phase 6 — Audio
 
-- ⬜ Intégration **miniaudio** ou **OpenAL**
-- ⬜ `AudioEngine` (init, shutdown)
-- ⬜ `AudioSource` (play, stop, loop, volume)
-- ⬜ `AudioComponent` dans l'ECS
-- ⬜ Lecture depuis l'éditeur
+- ✅ Intégration **miniaudio** (retenu plutôt qu'OpenAL : pas de dépendance système, récupéré par FetchContent)
+- ✅ `AudioEngine` (init, shutdown, volume global, repli sur le backend "null" sans périphérique)
+- ✅ `AudioSource` (play, stop, pause, loop, volume)
+- ✅ `AudioComponent` dans l'ECS (+ `AudioSystem` : chargement au Play, lecture au démarrage, relâchement au Stop)
+- ✅ Lecture depuis l'éditeur (bouton Écouter/Arrêter dans l'Inspecteur, sans passer par le Play)
 
 ---
 
