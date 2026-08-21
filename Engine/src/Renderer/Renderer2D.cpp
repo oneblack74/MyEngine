@@ -4,6 +4,7 @@
 #include "Renderer/Shader.h"
 #include "Renderer/RenderCommand.h"
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/constants.hpp>
 #include <array>
 
 namespace Engine
@@ -15,6 +16,12 @@ namespace Engine
         glm::vec2 TexCoord;
         float TexIndex;
         float TilingFactor;
+    };
+
+    struct LineVertex
+    {
+        glm::vec3 Position;
+        glm::vec4 Color;
     };
 
     struct Renderer2DData
@@ -37,6 +44,18 @@ namespace Engine
         uint32_t TextureSlotIndex = 1; // slot 0 réservé à la texture blanche
 
         glm::vec4 QuadVertexPositions[4];
+
+        static const uint32_t MaxLineVertices = 20000;
+
+        std::shared_ptr<VertexArray> LineVertexArray;
+        std::shared_ptr<VertexBuffer> LineVertexBuffer;
+        std::shared_ptr<Shader> LineShader;
+
+        uint32_t LineVertexCount = 0;
+        LineVertex *LineVertexBufferBase = nullptr;
+        LineVertex *LineVertexBufferPtr = nullptr;
+
+        float LineWidth = 2.0f;
     };
 
     static Renderer2DData s_Data;
@@ -135,11 +154,52 @@ namespace Engine
         s_Data.QuadVertexPositions[1] = {0.5f, -0.5f, 0.0f, 1.0f};
         s_Data.QuadVertexPositions[2] = {0.5f, 0.5f, 0.0f, 1.0f};
         s_Data.QuadVertexPositions[3] = {-0.5f, 0.5f, 0.0f, 1.0f};
+
+        // --- Lignes : VAO/VBO et shader dédiés, sans texture ni index buffer ---
+        s_Data.LineVertexArray = std::make_shared<VertexArray>();
+        s_Data.LineVertexBuffer = std::make_shared<VertexBuffer>(Renderer2DData::MaxLineVertices * sizeof(LineVertex));
+        s_Data.LineVertexBuffer->SetLayout({
+            {ShaderDataType::Float3, "a_Position"},
+            {ShaderDataType::Float4, "a_Color"},
+        });
+        s_Data.LineVertexArray->AddVertexBuffer(s_Data.LineVertexBuffer);
+        s_Data.LineVertexBufferBase = new LineVertex[Renderer2DData::MaxLineVertices];
+
+        std::string lineVertexSrc = R"(
+            #version 330 core
+            layout(location = 0) in vec3 a_Position;
+            layout(location = 1) in vec4 a_Color;
+
+            uniform mat4 u_ViewProjection;
+
+            out vec4 v_Color;
+
+            void main()
+            {
+                v_Color = a_Color;
+                gl_Position = u_ViewProjection * vec4(a_Position, 1.0);
+            }
+        )";
+
+        std::string lineFragmentSrc = R"(
+            #version 330 core
+            in vec4 v_Color;
+
+            out vec4 color;
+
+            void main()
+            {
+                color = v_Color;
+            }
+        )";
+
+        s_Data.LineShader = std::make_shared<Shader>(lineVertexSrc, lineFragmentSrc);
     }
 
     void Renderer2D::Shutdown()
     {
         delete[] s_Data.QuadVertexBufferBase;
+        delete[] s_Data.LineVertexBufferBase;
         s_Data = Renderer2DData();
     }
 
@@ -148,6 +208,9 @@ namespace Engine
         s_Data.QuadIndexCount = 0;
         s_Data.QuadVertexBufferPtr = s_Data.QuadVertexBufferBase;
         s_Data.TextureSlotIndex = 1;
+
+        s_Data.LineVertexCount = 0;
+        s_Data.LineVertexBufferPtr = s_Data.LineVertexBufferBase;
     }
 
     void Renderer2D::NextBatch()
@@ -158,8 +221,13 @@ namespace Engine
 
     void Renderer2D::BeginScene(const OrthographicCamera &camera)
     {
+        const glm::mat4 &viewProjection = camera.GetViewProjectionMatrix();
+
         s_Data.TextureShader->Bind();
-        s_Data.TextureShader->SetMat4("u_ViewProjection", camera.GetViewProjectionMatrix());
+        s_Data.TextureShader->SetMat4("u_ViewProjection", viewProjection);
+
+        s_Data.LineShader->Bind();
+        s_Data.LineShader->SetMat4("u_ViewProjection", viewProjection);
 
         StartBatch();
     }
@@ -171,16 +239,95 @@ namespace Engine
 
     void Renderer2D::Flush()
     {
+        // Les lignes après les quads : un contour de collider doit se voir par-dessus
+        // le sprite qu'il entoure, pas dessous.
+        FlushQuads();
+        FlushLines();
+    }
+
+    void Renderer2D::FlushQuads()
+    {
         if (s_Data.QuadIndexCount == 0)
             return; // rien à dessiner
 
         uint32_t dataSize = (uint32_t)((uint8_t *)s_Data.QuadVertexBufferPtr - (uint8_t *)s_Data.QuadVertexBufferBase);
         s_Data.QuadVertexBuffer->SetData(s_Data.QuadVertexBufferBase, dataSize);
 
+        s_Data.TextureShader->Bind();
         for (uint32_t i = 0; i < s_Data.TextureSlotIndex; i++)
             s_Data.TextureSlots[i]->Bind(i);
 
         RenderCommand::DrawIndexed(s_Data.QuadVertexArray, s_Data.QuadIndexCount);
+    }
+
+    void Renderer2D::FlushLines()
+    {
+        if (s_Data.LineVertexCount == 0)
+            return;
+
+        uint32_t dataSize = (uint32_t)((uint8_t *)s_Data.LineVertexBufferPtr - (uint8_t *)s_Data.LineVertexBufferBase);
+        s_Data.LineVertexBuffer->SetData(s_Data.LineVertexBufferBase, dataSize);
+
+        s_Data.LineShader->Bind();
+        RenderCommand::SetLineWidth(s_Data.LineWidth);
+        RenderCommand::DrawLines(s_Data.LineVertexArray, s_Data.LineVertexCount);
+    }
+
+    void Renderer2D::DrawLine(const glm::vec3 &p0, const glm::vec3 &p1, const glm::vec4 &color)
+    {
+        if (s_Data.LineVertexCount + 2 > Renderer2DData::MaxLineVertices)
+            NextBatch();
+
+        s_Data.LineVertexBufferPtr->Position = p0;
+        s_Data.LineVertexBufferPtr->Color = color;
+        s_Data.LineVertexBufferPtr++;
+
+        s_Data.LineVertexBufferPtr->Position = p1;
+        s_Data.LineVertexBufferPtr->Color = color;
+        s_Data.LineVertexBufferPtr++;
+
+        s_Data.LineVertexCount += 2;
+    }
+
+    void Renderer2D::DrawRect(const glm::mat4 &transform, const glm::vec4 &color)
+    {
+        // Les coins passent par la transform : le contour suit donc la rotation et
+        // l'échelle, au lieu de rester aligné aux axes.
+        glm::vec3 corners[4];
+        for (int i = 0; i < 4; i++)
+            corners[i] = transform * s_Data.QuadVertexPositions[i];
+
+        for (int i = 0; i < 4; i++)
+            DrawLine(corners[i], corners[(i + 1) % 4], color);
+    }
+
+    void Renderer2D::DrawRect(const glm::vec3 &center, const glm::vec2 &size, const glm::vec4 &color)
+    {
+        glm::mat4 transform = glm::translate(glm::mat4(1.0f), center) *
+                               glm::scale(glm::mat4(1.0f), {size.x, size.y, 1.0f});
+        DrawRect(transform, color);
+    }
+
+    void Renderer2D::DrawCircle(const glm::vec3 &center, float radius, const glm::vec4 &color, int segments)
+    {
+        if (segments < 3)
+            segments = 3;
+
+        const float step = glm::two_pi<float>() / (float)segments;
+        glm::vec3 previous = center + glm::vec3(radius, 0.0f, 0.0f);
+
+        for (int i = 1; i <= segments; i++)
+        {
+            const float angle = step * (float)i;
+            glm::vec3 current = center + glm::vec3(radius * glm::cos(angle), radius * glm::sin(angle), 0.0f);
+            DrawLine(previous, current, color);
+            previous = current;
+        }
+    }
+
+    void Renderer2D::SetLineWidth(float width)
+    {
+        s_Data.LineWidth = width;
     }
 
     void Renderer2D::DrawQuad(const glm::vec2 &position, const glm::vec2 &size, const glm::vec4 &color)
