@@ -23,6 +23,8 @@ add_library(Engine STATIC
     src/Scene/PhysicsSystem.cpp
     src/Scene/AudioSystem.cpp
     src/Physics/Physics2D.cpp
+    src/Assets/AssetTypes.cpp
+    src/Assets/AssetManager.cpp
     src/Audio/AudioEngine.cpp
     src/Audio/AudioSource.cpp
 )
