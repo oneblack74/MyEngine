@@ -35,6 +35,7 @@ public:
     void SelectEntity(Engine::Entity entity) override { m_SceneHierarchyPanel.SetSelectedEntity(entity); }
 
     CommandHistory &GetCommandHistoryForTests() { return m_CommandHistory; }
+    bool AreColliderOutlinesVisibleForTests() const { return m_ShowColliderOutlines; }
 
     // Code de sortie du processus après une exécution de tests (0 si tout va bien).
     int GetTestExitCode() const { return m_TestEngine.ExitCode(); }
@@ -50,6 +51,7 @@ private:
     void HandleShortcuts();
     void TrackGizmoEdit();
     void RenderEditMenu();
+    void RenderViewMenu();
 
     // Actions du menu Édition, chacune passant par une commande annulable.
     void CopySelectedEntity();
@@ -98,6 +100,9 @@ private:
     InspectorPanel m_InspectorPanel;
     ContentBrowserPanel m_ContentBrowserPanel;
     ConsolePanel m_ConsolePanel;
+
+    // Contours des colliders superposés au Viewport (menu Affichage).
+    bool m_ShowColliderOutlines = false;
 
     bool m_ResetDockLayoutRequested = false;
     bool m_LoadLastSavedLayoutRequested = false;

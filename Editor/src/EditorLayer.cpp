@@ -162,6 +162,8 @@ void EditorLayer::OnUpdate(Engine::Timestep ts)
     Engine::Renderer::SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     Engine::Renderer::Clear();
     Engine::RenderSystem::Render(*GetActiveScene(), *m_Camera);
+    if (m_ShowColliderOutlines)
+        Engine::RenderSystem::RenderColliderOutlines(*GetActiveScene(), *m_Camera);
     m_Framebuffer->Unbind();
 
     // Rendu de l'UI ImGui (dockspace + panels) par-dessus
@@ -264,6 +266,7 @@ void EditorLayer::RenderImGui()
             ImGui::EndMenu();
         }
         RenderEditMenu();
+        RenderViewMenu();
         if (ImGui::BeginMenu("Fenêtre"))
         {
             if (ImGui::MenuItem("Réinitialiser la disposition"))
@@ -417,6 +420,16 @@ void EditorLayer::DeleteSelectedEntity()
         return;
 
     m_CommandHistory.Execute(std::make_unique<DeleteEntityCommand>(*this, selected));
+}
+
+void EditorLayer::RenderViewMenu()
+{
+    if (!ImGui::BeginMenu("Affichage"))
+        return;
+
+    ImGui::MenuItem("Contours des colliders", nullptr, &m_ShowColliderOutlines);
+
+    ImGui::EndMenu();
 }
 
 void EditorLayer::RenderEditMenu()
