@@ -69,7 +69,8 @@
 - ✅ `ConsolePanel` — affichage des logs spdlog dans l'UI
 - ✅ Gizmos de transformation (translate, rotate, scale)
 - ✅ Play / Pause / Stop depuis l'éditeur
-- ⬜ Raccourcis clavier standards de l'éditeur (Undo/Redo `Ctrl+Z`/`Ctrl+Y`, Copier/Coller `Ctrl+C`/`Ctrl+V`, etc.)
+- ✅ Raccourcis clavier standards de l'éditeur (Undo/Redo `Ctrl+Z`/`Ctrl+Y`, Copier/Coller `Ctrl+C`/`Ctrl+V`, Dupliquer `Ctrl+D`, Supprimer) — historique de commandes annulables (`Editor/src/Commands/`), doublé d'un menu "Édition"
+- ✅ Tests automatisés de l'éditeur — mode sans fenêtre, captures PNG et suite de tests qui pilotent l'UI (Dear ImGui Test Engine), voir [tests.md](tests.md)
 - ✅ Saisie des valeurs de l'Inspecteur directement au clavier (taper un chiffre plutôt que de devoir drag-slider)
 - ✅ Bouton "Réinitialiser aux valeurs par défaut" dans l'Inspecteur (un par section de component)
 - ✅ `GamePanel` — vue de jeu séparée du Viewport d'édition, ouvrable dans une fenêtre à part (façon Godot) ; l'Inspecteur reste éditable en direct pendant le Play (façon Unity)
