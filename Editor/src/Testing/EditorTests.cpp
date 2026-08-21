@@ -997,6 +997,69 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         std::filesystem::remove(scenePath);
     };
 
+    // Déposer une scène du Content Browser dans la hiérarchie y recopie sa branche.
+    t = IM_REGISTER_TEST(engine, "scene", "instantiate_scene_from_content_browser");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        const std::filesystem::path scenePath =
+            Engine::AssetManager::GetAssetRoot() / "scenes" / "test_instance.scene";
+        std::error_code ec;
+        std::filesystem::create_directories(scenePath.parent_path(), ec);
+
+        // Scène source : une racine "Crate" décalée, avec un enfant "Label".
+        Engine::UUID sourceCrateID, sourceLabelID;
+        {
+            auto source = std::make_shared<Engine::Scene>();
+            Engine::Entity crate = source->CreateEntity("Crate");
+            crate.GetComponent<Engine::TransformComponent>().Position = {1.5f, 0.0f, 0.0f};
+            Engine::Entity label = source->CreateEntity("Label");
+            IM_CHECK(source->SetParent(label, crate));
+            sourceCrateID = crate.GetUUID();
+            sourceLabelID = label.GetUUID();
+            Engine::SceneSerializer(source).Serialize(scenePath.string());
+        }
+        IM_CHECK(std::filesystem::exists(scenePath));
+
+        Engine::Scene &scene = editor.GetEditorScene();
+        const int before = CountEntities(editor);
+        Engine::Entity square = SelectEntity(ctx, editor, "Square");
+        IM_CHECK(square);
+        IM_CHECK_EQ((int)scene.GetChildren(square).size(), 0);
+
+        ImGuiTestItemInfo target = FindHierarchyItem(ctx, "Square");
+        IM_CHECK(target.ID != 0);
+
+        ctx->SetRef("Content Browser");
+        ctx->ItemOpen("scenes");
+        ctx->Yield();
+        ctx->ItemDragAndDrop("scenes/test_instance.scene", target.ID);
+        ctx->Yield(3);
+
+        // Les deux entités de la source sont arrivées.
+        IM_CHECK_EQ(CountEntities(editor), before + 2);
+
+        // Mais avec de nouveaux UUID : l'instance est une copie indépendante, sans quoi
+        // deux instances de la même scène se marcheraient dessus.
+        IM_CHECK(!scene.FindEntityByUUID(sourceCrateID));
+        IM_CHECK(!scene.FindEntityByUUID(sourceLabelID));
+
+        // Accrochée à la cible du dépôt, sa propre hiérarchie conservée, et le transform
+        // local tel qu'il était composé dans la source.
+        std::vector<Engine::Entity> children = scene.GetChildren(square);
+        IM_CHECK_EQ((int)children.size(), 1);
+        IM_CHECK_STR_EQ(children[0].GetName().c_str(), "Crate");
+        IM_CHECK(NearlyEqual(children[0].GetComponent<Engine::TransformComponent>().Position.x, 1.5f));
+        IM_CHECK_EQ((int)scene.GetChildren(children[0]).size(), 1);
+
+        // Annuler retire toute la branche instanciée.
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+        ctx->Yield(2);
+        IM_CHECK_EQ(CountEntities(editor), before);
+        IM_CHECK_EQ((int)scene.GetChildren(square).size(), 0);
+
+        std::filesystem::remove(scenePath);
+    };
+
     // --- Captures -----------------------------------------------------------
 
     // Ce test existe surtout pour produire une image à regarder, mais il vérifie que
@@ -1056,6 +1119,44 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK(std::filesystem::exists(outputFile));
 
         IM_CHECK(scene.SetParent(circle, scene.GetRootEntity()));
+    };
+
+    // Une scène instanciée dans une autre, à regarder : la branche recopiée doit
+    // apparaître sous sa cible avec sa propre hiérarchie.
+    t = IM_REGISTER_TEST(engine, "capture", "instantiated_scene");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        const std::filesystem::path scenePath =
+            Engine::AssetManager::GetAssetRoot() / "scenes" / "capture_crate.scene";
+        std::error_code ec;
+        std::filesystem::create_directories(scenePath.parent_path(), ec);
+        {
+            auto source = std::make_shared<Engine::Scene>();
+            Engine::Entity crate = source->CreateEntity("Crate");
+            Engine::Entity label = source->CreateEntity("Label");
+            IM_CHECK(source->SetParent(label, crate));
+            Engine::SceneSerializer(source).Serialize(scenePath.string());
+        }
+
+        Engine::Entity square = SelectEntity(ctx, editor, "Square");
+        ImGuiTestItemInfo target = FindHierarchyItem(ctx, "Square");
+        IM_CHECK(square && target.ID != 0);
+
+        ctx->SetRef("Content Browser");
+        ctx->ItemOpen("scenes");
+        ctx->Yield();
+        ctx->ItemDragAndDrop("scenes/capture_crate.scene", target.ID);
+        ctx->Yield(3);
+
+        const char *outputFile = "output/captures/instantiated_scene.png";
+        ctx->CaptureReset();
+        ImStrncpy(ctx->CaptureArgs->InOutputFile, outputFile, IM_ARRAYSIZE(ctx->CaptureArgs->InOutputFile));
+        IM_CHECK(ctx->CaptureAddWindow("//Scene Hierarchy"));
+        IM_CHECK(ctx->CaptureScreenshot());
+
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+        ctx->Yield(2);
+        std::filesystem::remove(scenePath);
     };
 
     // Un message plus large que le panel, répété : à regarder pour vérifier qu'il
