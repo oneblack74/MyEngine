@@ -452,6 +452,12 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         IM_CHECK(bip.HasComponent<Engine::AudioComponent>());
         IM_CHECK(!bip.GetComponent<Engine::AudioComponent>().Source);
 
+        // La scène de démo laisse le bip muet au lancement pour ne pas sonner à chaque
+        // Play : c'est donc au test d'activer ce qu'il veut vérifier.
+        auto &editorAudio = bip.GetComponent<Engine::AudioComponent>();
+        const bool previousPlayOnStart = editorAudio.PlayOnStart;
+        editorAudio.PlayOnStart = true;
+
         ctx->SetRef("DockSpace");
         ctx->ItemClick("**/Play");
         IM_CHECK(editor.IsPlayingForTests());
@@ -471,6 +477,8 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         Engine::Entity editorBip = SelectEntity(ctx, editor, "Bip");
         IM_CHECK(editorBip);
         IM_CHECK(!editorBip.GetComponent<Engine::AudioComponent>().Source);
+
+        editorBip.GetComponent<Engine::AudioComponent>().PlayOnStart = previousPlayOnStart;
     };
 
     // "Lecture depuis l'éditeur" : écouter un son sans passer par le Play.

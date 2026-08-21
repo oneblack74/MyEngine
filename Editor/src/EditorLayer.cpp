@@ -70,10 +70,13 @@ void EditorLayer::OnAttach()
     auto mainCamera = m_EditorScene->CreateEntity("Main Camera");
     mainCamera.AddComponent<Engine::CameraComponent>();
 
-    // Démo Phase 6 : un son joué au démarrage du Play.
+    // Démo Phase 6 : de quoi tester l'audio, mais volontairement muet au lancement du
+    // Play — un bip à chaque exécution est vite pénible quand on travaille. Il s'écoute
+    // au bouton "Écouter" de l'Inspecteur, ou en cochant "Jouer au démarrage".
     auto sound = m_EditorScene->CreateEntity("Bip");
     auto &soundAudio = sound.AddComponent<Engine::AudioComponent>();
     soundAudio.Sound = Engine::AssetManager::Import("assets/audio/bip.wav");
+    soundAudio.PlayOnStart = false;
 
     // Démo Phase 5 : logue chaque début/fin de collision dans la Console pour vérifier
     // que les contact events Box2D remontent bien jusqu'à l'ECS (via Entity, pas juste
