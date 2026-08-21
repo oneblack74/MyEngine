@@ -118,6 +118,15 @@
 - ✅ Hot-reload des assets en éditeur (dates des fichiers relues quelques fois par seconde)
 - ✅ Glisser-déposer d'un asset du Content Browser vers l'Inspecteur (type vérifié au dépôt)
 - ✅ Registre d'assets versionné avec les sources (l'éditeur travaille directement sur `Editor/assets/`)
+- ⬜ **Instanciation de scènes (prefabs)** — pouvoir réutiliser une branche d'entités (un ennemi, une plateforme) à plusieurs endroits, et la modifier à un seul endroit
+  - Deux modèles possibles, à trancher :
+    - **Godot** : tout est une scène, et n'importe quelle scène peut être instanciée dans une autre. Pas de second concept ni de second format — le `.scene` existant sert déjà de prefab, et la hiérarchie parent/enfant qui vient d'arriver est exactement ce qu'il fallait pour ça.
+    - **Unity** : le prefab est un asset distinct de la scène, avec ses propres règles d'application et de surcharge. Distinction plus nette entre « niveau » et « objet réutilisable », mais deux concepts à écrire et à expliquer.
+  - Proposition : le modèle Godot, parce qu'il ne demande aucun format ni panneau nouveau (`AssetManager` sait déjà référencer un fichier, le Content Browser sait déjà le glisser-déposer)
+  - Découpage suggéré, du plus utile au plus coûteux :
+    - ⬜ Instancier sans lien : déposer une scène dans la hiérarchie y recopie sa branche, point. Immédiatement utile, aucune notion à maintenir
+    - ⬜ Garder le lien : un `SceneInstanceComponent` retient l'`AssetHandle` de la source, et modifier la source se répercute sur les instances (le hot-reload existe déjà)
+    - ⬜ Surcharges par propriété : une instance peut diverger de sa source sans perdre le lien — c'est la vraie difficulté, dans les deux modèles
 
 ---
 
