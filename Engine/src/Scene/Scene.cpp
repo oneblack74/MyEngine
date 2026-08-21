@@ -71,6 +71,7 @@ namespace Engine
         CopyComponentIfPresent<RigidBodyComponent>(source, destination);
         CopyComponentIfPresent<BoxColliderComponent>(source, destination);
         CopyComponentIfPresent<CircleColliderComponent>(source, destination);
+        CopyComponentIfPresent<AudioComponent>(source, destination);
         CopyComponentIfPresent<CameraComponent>(source, destination);
     }
 

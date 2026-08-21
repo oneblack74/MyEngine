@@ -1,4 +1,5 @@
 #include "Core/Application.h"
+#include "Audio/AudioEngine.h"
 #include "Core/Log.h"
 #include <GLFW/glfw3.h>
 #include <cassert>
@@ -15,9 +16,14 @@ namespace Engine
 
         m_Window.SetEventCallback([this](Event &e)
                                   { OnEvent(e); });
+
+        AudioEngine::Init();
     }
 
-    Application::~Application() {}
+    Application::~Application()
+    {
+        AudioEngine::Shutdown();
+    }
 
     void Application::OnEvent(Event &event)
     {

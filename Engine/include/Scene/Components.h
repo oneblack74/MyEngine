@@ -1,6 +1,7 @@
 #pragma once
 #include "Core/UUID.h"
 #include "Renderer/Texture.h"
+#include "Audio/AudioSource.h"
 #include "Renderer/OrthographicCamera.h"
 #include <box2d/id.h>
 #include <glm/glm.hpp>
@@ -106,6 +107,26 @@ namespace Engine
 
         CircleColliderComponent() = default;
         CircleColliderComponent(const CircleColliderComponent &) = default;
+    };
+
+    struct AudioComponent
+    {
+        // Chemin du fichier son, relatif au dossier de travail (pas encore d'asset
+        // system : c'est la même limite que SpriteRendererComponent::Texture).
+        std::string Path;
+
+        float Volume = 1.0f;
+        bool Loop = false;
+
+        // Joué dès le démarrage du Play, façon "Play On Awake" d'Unity.
+        bool PlayOnStart = true;
+
+        // Son chargé, créé au Play par AudioSystem et relâché au Stop — comme les
+        // handles Box2D, ce n'est pas une donnée à sérialiser.
+        std::shared_ptr<AudioSource> Source;
+
+        AudioComponent() = default;
+        AudioComponent(const AudioComponent &) = default;
     };
 
     struct CameraComponent

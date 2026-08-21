@@ -76,6 +76,15 @@ namespace Engine
                 entityJson["CircleColliderComponent"]["Restitution"] = cc.Restitution;
             }
 
+            if (entity.HasComponent<AudioComponent>())
+            {
+                auto &ac = entity.GetComponent<AudioComponent>();
+                entityJson["AudioComponent"]["Path"] = ac.Path;
+                entityJson["AudioComponent"]["Volume"] = ac.Volume;
+                entityJson["AudioComponent"]["Loop"] = ac.Loop;
+                entityJson["AudioComponent"]["PlayOnStart"] = ac.PlayOnStart;
+            }
+
             if (entity.HasComponent<CameraComponent>())
             {
                 auto &cc = entity.GetComponent<CameraComponent>();
@@ -166,6 +175,15 @@ namespace Engine
                 cc.Density = entityJson["CircleColliderComponent"]["Density"].get<float>();
                 cc.Friction = entityJson["CircleColliderComponent"]["Friction"].get<float>();
                 cc.Restitution = entityJson["CircleColliderComponent"]["Restitution"].get<float>();
+            }
+
+            if (entityJson.contains("AudioComponent"))
+            {
+                auto &ac = entity.AddComponent<AudioComponent>();
+                ac.Path = entityJson["AudioComponent"]["Path"].get<std::string>();
+                ac.Volume = entityJson["AudioComponent"]["Volume"].get<float>();
+                ac.Loop = entityJson["AudioComponent"]["Loop"].get<bool>();
+                ac.PlayOnStart = entityJson["AudioComponent"]["PlayOnStart"].get<bool>();
             }
 
             if (entityJson.contains("CameraComponent"))

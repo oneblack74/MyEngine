@@ -21,7 +21,10 @@ add_library(Engine STATIC
     src/Scene/SceneSerializer.cpp
     src/Scene/SceneManager.cpp
     src/Scene/PhysicsSystem.cpp
+    src/Scene/AudioSystem.cpp
     src/Physics/Physics2D.cpp
+    src/Audio/AudioEngine.cpp
+    src/Audio/AudioSource.cpp
 )
 
 target_include_directories(Engine
@@ -38,5 +41,6 @@ target_link_libraries(Engine PUBLIC
     EnTT::EnTT
     nlohmann_json::nlohmann_json
     box2d
+    miniaudio
 )
 

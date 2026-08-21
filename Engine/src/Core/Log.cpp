@@ -40,7 +40,8 @@ namespace Engine
         for (const std::string *category : {&LogCategories::General, &LogCategories::Collision,
                                             &LogCategories::Input, &LogCategories::Window,
                                             &LogCategories::Renderer,
-                                            &LogCategories::Physics, &LogCategories::Assets})
+                                            &LogCategories::Physics, &LogCategories::Assets,
+                                            &LogCategories::Audio})
         {
             GetCategoryLogger(LogSource::Engine, *category);
         }

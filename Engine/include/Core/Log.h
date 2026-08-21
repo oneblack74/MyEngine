@@ -21,6 +21,7 @@ namespace Engine
         inline const std::string Renderer = "Renderer";
         inline const std::string Physics = "Physique";
         inline const std::string Assets = "Assets";
+        inline const std::string Audio = "Audio";
     }
 
     class Log
