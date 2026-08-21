@@ -31,7 +31,13 @@ namespace Engine
         // du logger spdlog, ce qui la fait aussi apparaître dans la ligne formatée.
         std::string Category;
 
+        // Ligne complète, telle qu'affichée (horodatage et catégorie compris).
         std::string Text;
+
+        // Message brut, sans horodatage : c'est lui qui sert à reconnaître deux messages
+        // « identiques ». Comparer le texte formaté ne marcherait pas, deux occurrences
+        // à des secondes différentes n'ayant jamais la même ligne.
+        std::string Payload;
     };
 
     // Une catégorie connue, telle qu'affichée dans les menus de la console.

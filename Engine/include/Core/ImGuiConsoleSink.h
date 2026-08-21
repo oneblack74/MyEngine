@@ -40,7 +40,9 @@ namespace Engine
             // Sa provenance, elle, n'est pas dupliquée par message : la console la
             // retrouve à partir du nom via Log::GetCategories().
             std::string category(msg.logger_name.data(), msg.logger_name.size());
-            messages.push_back({ToLogLevel(msg.level), std::move(category), fmt::to_string(formatted)});
+            std::string payload(msg.payload.data(), msg.payload.size());
+            messages.push_back({ToLogLevel(msg.level), std::move(category),
+                                fmt::to_string(formatted), std::move(payload)});
             ++GetReceivedCount();
 
             constexpr size_t maxMessages = 500;

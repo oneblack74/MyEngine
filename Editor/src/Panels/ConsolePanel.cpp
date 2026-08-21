@@ -174,7 +174,9 @@ void ConsolePanel::RebuildVisibleLines()
     // qu'on les a masquées.
     const auto &messages = Engine::Log::GetConsoleMessages();
 
-    // Index dans m_VisibleLines de la ligne déjà émise pour un texte donné (mode groupé).
+    // Index dans m_VisibleLines de la ligne déjà émise pour un message donné (mode
+    // groupé). La clé est le message brut, sa catégorie et son niveau — surtout pas la
+    // ligne formatée, dont l'horodatage diffère à chaque occurrence.
     std::unordered_map<std::string, size_t> collapsedLines;
 
     for (const Engine::LogMessage &message : messages)
@@ -191,13 +193,16 @@ void ConsolePanel::RebuildVisibleLines()
 
         if (m_Collapse)
         {
-            auto existing = collapsedLines.find(message.Text);
+            std::string key = message.Category + '\x1f' + std::to_string((int)message.Level) +
+                              '\x1f' + message.Payload;
+
+            auto existing = collapsedLines.find(key);
             if (existing != collapsedLines.end())
             {
                 ++m_VisibleLines[existing->second].Count;
                 continue;
             }
-            collapsedLines.emplace(message.Text, m_VisibleLines.size());
+            collapsedLines.emplace(std::move(key), m_VisibleLines.size());
         }
 
         m_VisibleLines.push_back({message.Level, &message.Text, 1});
