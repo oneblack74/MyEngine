@@ -55,6 +55,25 @@ namespace
 
     bool NearlyEqual(float a, float b) { return std::fabs(a - b) < 0.0001f; }
 
+    // Les nœuds tirent leur ID ImGui de l'UUID de l'entité : on les retrouve par
+    // libellé, comme dans SelectEntity.
+    ImGuiTestItemInfo FindHierarchyItem(ImGuiTestContext *ctx, const char *name)
+    {
+        ctx->SetRef("Scene Hierarchy");
+
+        ImGuiTestItemList items;
+        ctx->GatherItems(&items, "");
+
+        for (const ImGuiTestItemInfo &item : items)
+        {
+            if (strcmp(item.DebugLabel, name) == 0)
+                return item;
+        }
+
+        ctx->LogError("Nœud '%s' introuvable dans la hiérarchie", name);
+        return {};
+    }
+
     // Noms des entités dans l'ordre où la hiérarchie les affiche.
     std::vector<std::string> HierarchyOrder(EditorLayer &editor)
     {
@@ -137,6 +156,136 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
         ctx->Yield(2);
         IM_CHECK(HierarchyOrder(editor) == before);
+    };
+
+    // Glisser une entité sur une autre en fait son enfant, et l'annulation la ramène
+    // à la racine.
+    t = IM_REGISTER_TEST(engine, "hierarchy", "drag_onto_entity_makes_it_a_child");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        Engine::Scene &scene = editor.GetEditorScene();
+        Engine::Entity circle = SelectEntity(ctx, editor, "Circle");
+        Engine::Entity square = SelectEntity(ctx, editor, "Square");
+        IM_CHECK(circle && square);
+        IM_CHECK(!scene.GetParent(circle));
+
+        ImGuiTestItemInfo source = FindHierarchyItem(ctx, "Circle");
+        ImGuiTestItemInfo target = FindHierarchyItem(ctx, "Square");
+        IM_CHECK(source.ID != 0 && target.ID != 0);
+
+        ctx->ItemDragAndDrop(source.ID, target.ID);
+        ctx->Yield(2);
+
+        IM_CHECK(scene.GetParent(circle) == square);
+        IM_CHECK_EQ((int)scene.GetChildren(square).size(), 1);
+
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+        ctx->Yield(2);
+        IM_CHECK(!scene.GetParent(circle));
+    };
+
+    // Déposer sur la bande du haut d'un nœud réordonne au lieu de rattacher.
+    t = IM_REGISTER_TEST(engine, "hierarchy", "drop_on_top_band_reorders");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        Engine::Scene &scene = editor.GetEditorScene();
+        const std::vector<std::string> before = HierarchyOrder(editor);
+
+        Engine::Entity ground = SelectEntity(ctx, editor, "Ground");
+        IM_CHECK(ground);
+        IM_CHECK_GT((int)scene.GetEntityOrderIndex(ground.GetUUID()), 0);
+
+        ImGuiTestItemInfo source = FindHierarchyItem(ctx, "Ground");
+        ImGuiTestItemInfo target = FindHierarchyItem(ctx, "Square");
+        IM_CHECK(source.ID != 0 && target.ID != 0);
+
+        // ItemDragAndDrop viserait le centre du nœud, donc la zone de rattachement :
+        // le dépôt est piloté à la main pour tomber sur la bande du haut.
+        ctx->MouseMove(source.ID);
+        ctx->MouseDown(ImGuiMouseButton_Left);
+        ctx->MouseMoveToPos(ImVec2(target.RectFull.GetCenter().x, target.RectFull.Min.y + 1.0f));
+        ctx->Yield(2);
+        ctx->MouseUp(ImGuiMouseButton_Left);
+        ctx->Yield(2);
+
+        // Ground passe juste avant Square, et reste à la racine.
+        IM_CHECK(!scene.GetParent(ground));
+        IM_CHECK_EQ((int)scene.GetEntityOrderIndex(ground.GetUUID()), 0);
+
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+        ctx->Yield(2);
+        IM_CHECK(HierarchyOrder(editor) == before);
+    };
+
+    // Le transform d'un enfant est exprimé dans le repère du parent : déplacer le
+    // parent déplace l'enfant, sans que son transform local ne bouge.
+    t = IM_REGISTER_TEST(engine, "hierarchy", "child_follows_its_parent");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        Engine::Scene &scene = editor.GetEditorScene();
+        Engine::Entity circle = SelectEntity(ctx, editor, "Circle");
+        Engine::Entity square = SelectEntity(ctx, editor, "Square");
+        IM_CHECK(circle && square);
+
+        const Engine::TransformComponent squareSaved = square.GetComponent<Engine::TransformComponent>();
+        const Engine::TransformComponent circleSaved = circle.GetComponent<Engine::TransformComponent>();
+
+        const Engine::TransformComponent circleWorldBefore = scene.GetWorldTransform(circle);
+        IM_CHECK(scene.SetParent(circle, square));
+
+        // Le rattachement conserve la position dans le monde.
+        IM_CHECK(NearlyEqual(scene.GetWorldTransform(circle).Position.x, circleWorldBefore.Position.x));
+        IM_CHECK(NearlyEqual(scene.GetWorldTransform(circle).Position.y, circleWorldBefore.Position.y));
+
+        const Engine::TransformComponent circleLocal = circle.GetComponent<Engine::TransformComponent>();
+        square.GetComponent<Engine::TransformComponent>().Position.x += 1.0f;
+
+        // Le local n'a pas bougé, le monde a suivi le parent.
+        IM_CHECK(NearlyEqual(circle.GetComponent<Engine::TransformComponent>().Position.x, circleLocal.Position.x));
+        IM_CHECK(NearlyEqual(scene.GetWorldTransform(circle).Position.x, circleWorldBefore.Position.x + 1.0f));
+
+        // Une entité ne peut pas devenir l'enfant de son propre descendant.
+        IM_CHECK(!scene.CanSetParent(square, circle));
+        IM_CHECK(!scene.SetParent(square, circle));
+        IM_CHECK(scene.GetParent(circle) == square);
+
+        IM_CHECK(scene.SetParent(circle, {}));
+        square.GetComponent<Engine::TransformComponent>() = squareSaved;
+        circle.GetComponent<Engine::TransformComponent>() = circleSaved;
+    };
+
+    // Le lien de parenté survit à un aller-retour sur disque.
+    t = IM_REGISTER_TEST(engine, "hierarchy", "parent_survives_save_load");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        IM_UNUSED(ctx);
+        Engine::Scene source;
+        Engine::Entity parent = source.CreateEntity("Parent");
+        Engine::Entity child = source.CreateEntity("Child");
+        child.GetComponent<Engine::TransformComponent>().Position = {2.0f, 0.0f, 0.0f};
+        IM_CHECK(source.SetParent(child, parent));
+
+        const std::string file = "output/hierarchy_roundtrip.scene";
+        std::error_code ec;
+        std::filesystem::create_directories("output", ec);
+        {
+            auto holder = std::make_shared<Engine::Scene>();
+            for (Engine::UUID uuid : source.GetEntityOrder())
+                holder->CreateEntityWithUUID(uuid, source.FindEntityByUUID(uuid).GetName());
+            for (Engine::UUID uuid : source.GetEntityOrder())
+                Engine::Scene::CopyComponents(source.FindEntityByUUID(uuid), holder->FindEntityByUUID(uuid));
+            Engine::SceneSerializer(holder).Serialize(file);
+        }
+
+        auto reloaded = std::make_shared<Engine::Scene>();
+        IM_CHECK(Engine::SceneSerializer(reloaded).Deserialize(file));
+
+        Engine::Entity reloadedChild = reloaded->FindEntityByUUID(child.GetUUID());
+        IM_CHECK(reloadedChild);
+        IM_CHECK(reloaded->GetParent(reloadedChild) == reloaded->FindEntityByUUID(parent.GetUUID()));
+        IM_CHECK(NearlyEqual(reloadedChild.GetComponent<Engine::TransformComponent>().Position.x, 2.0f));
+
+        std::filesystem::remove(file);
     };
 
     // --- Inspecteur ---------------------------------------------------------
@@ -818,6 +967,27 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         ctx->SetRef("Save Scene As");
         ctx->ItemClick("Cancel");
     };
+    // Une hiérarchie à deux niveaux, à regarder : l'enfant doit être indenté sous son
+    // parent, et la scène coiffer le tout.
+    t = IM_REGISTER_TEST(engine, "capture", "nested_hierarchy");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        Engine::Scene &scene = editor.GetEditorScene();
+        Engine::Entity circle = SelectEntity(ctx, editor, "Circle");
+        Engine::Entity square = SelectEntity(ctx, editor, "Square");
+        IM_CHECK(scene.SetParent(circle, square));
+        ctx->Yield(2);
+
+        const char *outputFile = "output/captures/nested_hierarchy.png";
+        ctx->CaptureReset();
+        ImStrncpy(ctx->CaptureArgs->InOutputFile, outputFile, IM_ARRAYSIZE(ctx->CaptureArgs->InOutputFile));
+        IM_CHECK(ctx->CaptureAddWindow("//Scene Hierarchy"));
+        IM_CHECK(ctx->CaptureScreenshot());
+        IM_CHECK(std::filesystem::exists(outputFile));
+
+        IM_CHECK(scene.SetParent(circle, {}));
+    };
+
     // Un message plus large que le panel, répété : à regarder pour vérifier qu'il
     // revient à la ligne et que son compteur d'occurrences reste lisible à droite.
     t = IM_REGISTER_TEST(engine, "capture", "console_long_collapsed_line");
