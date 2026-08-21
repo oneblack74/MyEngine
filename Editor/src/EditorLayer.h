@@ -86,6 +86,10 @@ private:
     void DeleteSelectedEntity();
     void SetupDefaultDockLayout();
 
+    // Applique un glisser-déposer de la hiérarchie, en passant par l'historique pour
+    // que le déplacement soit annulable comme le reste.
+    void ApplyHierarchyDrop(const SceneHierarchyPanel::HierarchyDrop &drop);
+
     void OnScenePlay();
     void OnSceneStop();
     const std::shared_ptr<Engine::Scene> &GetActiveScene() const

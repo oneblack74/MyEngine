@@ -353,6 +353,12 @@ void EditorLayer::RenderImGui()
     if (m_SceneState == SceneState::Play && !gameStillOpen)
         OnSceneStop();
     m_SceneHierarchyPanel.OnImGuiRender();
+
+    // Le dépôt est traité une fois l'arbre entièrement dessiné : rattacher une entité
+    // en plein parcours reviendrait à remanier l'arbre pendant qu'on le lit.
+    SceneHierarchyPanel::HierarchyDrop drop;
+    if (m_SceneHierarchyPanel.TakePendingDrop(drop) && m_SceneState == SceneState::Edit)
+        ApplyHierarchyDrop(drop);
     // Historique nul pendant le Play : la scène runtime est jetée au Stop, y annuler
     // une édition n'aurait pas de sens.
     m_InspectorPanel.OnImGuiRender(m_SceneHierarchyPanel.GetSelectedEntity(),
@@ -664,6 +670,25 @@ void EditorLayer::RenderEditMenu()
         DeleteSelectedEntity();
 
     ImGui::EndMenu();
+}
+
+void EditorLayer::ApplyHierarchyDrop(const SceneHierarchyPanel::HierarchyDrop &drop)
+{
+    Engine::Entity dragged = m_EditorScene->FindEntityByUUID(drop.Dragged);
+    if (!dragged)
+        return;
+
+    Engine::Entity target = m_EditorScene->FindEntityByUUID(drop.Target);
+
+    // Insérer avant une entité, c'est la rejoindre au même niveau : le nouveau parent
+    // est alors celui de l'entité de référence, et non elle-même.
+    Engine::Entity newParent = drop.InsertBefore ? m_EditorScene->GetParent(target) : target;
+    if (!m_EditorScene->CanSetParent(dragged, newParent))
+        return;
+
+    m_CommandHistory.Execute(std::make_unique<ReparentEntityCommand>(
+        *this, drop.Dragged, newParent ? newParent.GetUUID() : Engine::UUID(0),
+        drop.InsertBefore ? drop.Target : Engine::UUID(0)));
 }
 
 void EditorLayer::SetupDefaultDockLayout()

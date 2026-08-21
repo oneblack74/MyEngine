@@ -178,14 +178,19 @@ namespace Engine
         return false;
     }
 
-    bool Scene::SetParent(Entity child, Entity parent)
+    bool Scene::CanSetParent(Entity child, Entity parent)
     {
         if (!child || !child.HasComponent<ParentComponent>())
             return false;
 
         // Rattacher une entité à elle-même ou à l'un de ses propres descendants
         // détacherait la branche du reste de la scène et boucherait tous les parcours.
-        if (parent && (child == parent || IsDescendantOf(parent, child)))
+        return !parent || (child != parent && !IsDescendantOf(parent, child));
+    }
+
+    bool Scene::SetParent(Entity child, Entity parent)
+    {
+        if (!CanSetParent(child, parent))
             return false;
 
         // La position dans le monde est conservée : seul le transform local change,

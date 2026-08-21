@@ -100,6 +100,32 @@ private:
     std::string m_ActionName;
 };
 
+// Rattachement et réordonnancement, tous deux issus d'un glisser-déposer dans la
+// hiérarchie : c'est la même opération à un détail près, la position finale.
+class ReparentEntityCommand : public EditorCommand
+{
+public:
+    // newParent nul = racine. insertBefore nul = placer en dernier parmi ses frères.
+    ReparentEntityCommand(EditorContext &context, Engine::UUID entityID, Engine::UUID newParent,
+                          Engine::UUID insertBefore);
+
+    void Redo() override;
+    void Undo() override;
+    std::string GetName() const override;
+
+private:
+    EditorContext &m_Context;
+    Engine::UUID m_EntityID;
+    std::string m_EntityName;
+
+    Engine::UUID m_NewParent;
+    Engine::UUID m_InsertBefore;
+
+    // État d'avant, capturé à la construction : de quoi revenir exactement en place.
+    Engine::UUID m_OldParent;
+    size_t m_OldIndex = 0;
+};
+
 class DeleteEntityCommand : public EditorCommand
 {
 public:

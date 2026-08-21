@@ -54,6 +54,10 @@ namespace Engine
         Entity GetParent(Entity entity);
         bool IsDescendantOf(Entity entity, Entity possibleAncestor);
 
+        // Un rattachement est refusé s'il crée un cycle : une entité ne peut devenir
+        // ni son propre parent, ni l'enfant de l'un de ses descendants.
+        bool CanSetParent(Entity child, Entity parent);
+
         // Rattache child à parent (parent nul = racine). La position dans le monde est
         // conservée : c'est le transform local qui est recalculé. Renvoie false si le
         // rattachement créerait un cycle, auquel cas rien n'est modifié.

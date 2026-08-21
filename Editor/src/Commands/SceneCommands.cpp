@@ -81,6 +81,56 @@ std::string CreateEntityFromCommand::GetName() const
     return m_ActionName + " " + m_EntityName;
 }
 
+// --- Rattachement -----------------------------------------------------------
+
+ReparentEntityCommand::ReparentEntityCommand(EditorContext &context, Engine::UUID entityID,
+                                             Engine::UUID newParent, Engine::UUID insertBefore)
+    : m_Context(context), m_EntityID(entityID), m_NewParent(newParent), m_InsertBefore(insertBefore)
+{
+    Engine::Scene &scene = context.GetEditorScene();
+    Engine::Entity entity = scene.FindEntityByUUID(entityID);
+    if (!entity)
+        return;
+
+    m_EntityName = entity.GetComponent<Engine::TagComponent>().Tag;
+
+    Engine::Entity oldParent = scene.GetParent(entity);
+    m_OldParent = oldParent ? oldParent.GetUUID() : Engine::UUID(0);
+    m_OldIndex = scene.GetEntityOrderIndex(entityID);
+}
+
+void ReparentEntityCommand::Redo()
+{
+    Engine::Scene &scene = m_Context.GetEditorScene();
+    Engine::Entity entity = scene.FindEntityByUUID(m_EntityID);
+    if (!entity || !scene.SetParent(entity, scene.FindEntityByUUID(m_NewParent)))
+        return;
+
+    if ((uint64_t)m_InsertBefore != 0)
+        scene.MoveEntityBefore(m_EntityID, m_InsertBefore);
+    else
+        scene.MoveEntityToEnd(m_EntityID);
+
+    m_Context.SelectEntity(entity);
+}
+
+void ReparentEntityCommand::Undo()
+{
+    Engine::Scene &scene = m_Context.GetEditorScene();
+    Engine::Entity entity = scene.FindEntityByUUID(m_EntityID);
+    if (!entity)
+        return;
+
+    scene.SetParent(entity, scene.FindEntityByUUID(m_OldParent));
+    scene.SetEntityOrderIndex(m_EntityID, m_OldIndex);
+    m_Context.SelectEntity(entity);
+}
+
+std::string ReparentEntityCommand::GetName() const
+{
+    return "move " + m_EntityName;
+}
+
 // --- Suppression ------------------------------------------------------------
 
 namespace
