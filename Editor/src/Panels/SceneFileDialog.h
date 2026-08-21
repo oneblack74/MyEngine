@@ -1,11 +1,7 @@
 #pragma once
+#include <Scene/SceneSerializer.h>
 #include <filesystem>
 #include <string>
-
-// Extension des scènes de MyEngine. Le contenu est du JSON (voir SceneSerializer),
-// mais l'extension est propre au moteur : elle distingue une scène du registre
-// d'assets et de tout autre .json qui traînerait dans le dossier.
-inline constexpr const char *k_SceneExtension = ".scene";
 
 // Choix d'un fichier de scène, dessiné en ImGui plutôt qu'en boîte de dialogue native :
 // pas de dépendance système à ajouter, et surtout une fenêtre que le Test Engine sait

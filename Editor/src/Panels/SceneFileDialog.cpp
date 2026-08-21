@@ -15,8 +15,8 @@ namespace
     std::filesystem::path WithSceneExtension(const std::string &filename)
     {
         std::filesystem::path path = filename;
-        if (path.extension() != k_SceneExtension)
-            path += k_SceneExtension;
+        if (path.extension() != Engine::k_SceneExtension)
+            path += Engine::k_SceneExtension;
         return path;
     }
 }
@@ -74,7 +74,7 @@ bool SceneFileDialog::OnImGuiRender(std::filesystem::path &outPath)
         {
             for (const auto &entry : std::filesystem::directory_iterator(m_Directory))
             {
-                if (!entry.is_regular_file() || entry.path().extension() != k_SceneExtension)
+                if (!entry.is_regular_file() || entry.path().extension() != Engine::k_SceneExtension)
                     continue;
 
                 empty = false;

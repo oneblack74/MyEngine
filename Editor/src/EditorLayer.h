@@ -125,6 +125,11 @@ private:
     std::filesystem::path m_CurrentScenePath;
     SceneFileDialog m_SceneFileDialog;
 
+    // Scène demandée par un double-clic dans le Content Browser. Le chargement est
+    // repoussé après le dessin de tous les panels : changer de scène au milieu d'une
+    // frame remplacerait celle que les panels déjà dessinés viennent d'utiliser.
+    std::filesystem::path m_SceneToOpen;
+
     ViewportPanel m_ViewportPanel;
     GamePanel m_GamePanel;
     SceneHierarchyPanel m_SceneHierarchyPanel;

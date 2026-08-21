@@ -8,8 +8,10 @@ ContentBrowserPanel::ContentBrowserPanel()
 {
 }
 
-void ContentBrowserPanel::OnImGuiRender()
+void ContentBrowserPanel::OnImGuiRender(const SceneActivatedCallback &onSceneActivated)
 {
+    m_OnSceneActivated = onSceneActivated;
+
     ImGui::Begin("Content Browser");
 
     if (std::filesystem::exists(m_RootDirectory))
@@ -45,6 +47,13 @@ void ContentBrowserPanel::DrawDirectory(const std::filesystem::path &directory)
             ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen |
                                         ImGuiTreeNodeFlags_Bullet | ImGuiTreeNodeFlags_SpanAvailWidth;
             ImGui::TreeNodeEx(filename.c_str(), flags);
+
+            // Double-clic sur une scène : l'ouvrir, comme dans n'importe quel éditeur.
+            if (path.extension() == Engine::k_SceneExtension && m_OnSceneActivated &&
+                ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+            {
+                m_OnSceneActivated(path);
+            }
 
             // Le fichier peut être déposé sur un champ d'asset de l'Inspecteur. La charge
             // utile est le chemin relatif à la racine des assets, c'est-à-dire exactement

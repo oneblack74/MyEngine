@@ -5,6 +5,11 @@
 
 namespace Engine
 {
+    // Extension des fichiers de scène. Le contenu est du JSON, mais l'extension est
+    // propre au moteur : elle distingue une scène du registre d'assets et de tout
+    // autre .json qui traînerait dans le dossier.
+    inline constexpr const char *k_SceneExtension = ".scene";
+
     // Sauvegarde/charge une Scene (entités + components) au format JSON.
     class SceneSerializer
     {

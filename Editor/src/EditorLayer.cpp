@@ -357,8 +357,19 @@ void EditorLayer::RenderImGui()
     // une édition n'aurait pas de sens.
     m_InspectorPanel.OnImGuiRender(m_SceneHierarchyPanel.GetSelectedEntity(),
                                    m_SceneState == SceneState::Edit ? &m_CommandHistory : nullptr);
-    m_ContentBrowserPanel.OnImGuiRender();
+    m_ContentBrowserPanel.OnImGuiRender([this](const std::filesystem::path &scenePath)
+                                        {
+        // Rien pendant le Play : la scène qui tourne est une copie jetée au Stop.
+        if (m_SceneState == SceneState::Edit)
+            m_SceneToOpen = scenePath; });
     m_ConsolePanel.OnImGuiRender();
+
+    if (!m_SceneToOpen.empty())
+    {
+        const std::filesystem::path scenePath = m_SceneToOpen;
+        m_SceneToOpen.clear();
+        OpenScene(scenePath);
+    }
 
     // La boîte de dialogue est rendue après les panels : c'est une modale, elle doit
     // passer par-dessus tout le reste.
