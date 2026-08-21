@@ -1,5 +1,6 @@
 #include "Commands/SceneCommands.h"
 #include <Core/Log.h>
+#include <Assets/AssetManager.h>
 #include <Scene/SceneSerializer.h>
 
 namespace
@@ -168,11 +169,14 @@ namespace
     }
 }
 
-InstantiateSceneCommand::InstantiateSceneCommand(EditorContext &context,
-                                                 const std::filesystem::path &scenePath,
+InstantiateSceneCommand::InstantiateSceneCommand(EditorContext &context, Engine::AssetHandle source,
                                                  Engine::UUID parent)
-    : m_Context(context), m_Parent(parent), m_SceneName(scenePath.stem().string())
+    : m_Context(context), m_Parent(parent)
 {
+    const std::filesystem::path scenePath =
+        Engine::AssetManager::GetAssetRoot() / Engine::AssetManager::GetPath(source);
+    m_SceneName = scenePath.stem().string();
+
     auto loaded = std::make_shared<Engine::Scene>();
     if (!Engine::SceneSerializer(loaded).Deserialize(scenePath.string()))
         return;
@@ -188,6 +192,12 @@ InstantiateSceneCommand::InstantiateSceneCommand(EditorContext &context,
     // chargée, elle, peut être jetée derrière.
     m_Template = std::make_shared<Engine::Scene>();
     m_TemplateRoot = m_Template->InstantiateBranch(loadedRoot, {});
+
+    // C'est ce component qui fait de la branche une instance et non une simple copie :
+    // il retient d'où elle vient, donc quoi lui répercuter.
+    if (!m_TemplateRoot.HasComponent<Engine::SceneInstanceComponent>())
+        m_TemplateRoot.AddComponent<Engine::SceneInstanceComponent>();
+    m_TemplateRoot.GetComponent<Engine::SceneInstanceComponent>().Source = source;
 }
 
 void InstantiateSceneCommand::Redo()

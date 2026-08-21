@@ -15,7 +15,8 @@ namespace Engine
     {
         None = 0,
         Texture,
-        Audio
+        Audio,
+        Scene
     };
 
     struct AssetMetadata

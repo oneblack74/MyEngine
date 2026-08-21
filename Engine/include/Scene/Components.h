@@ -40,6 +40,17 @@ namespace Engine
         ParentComponent(const ParentComponent &) = default;
     };
 
+    // Marque la racine d'une branche instanciée depuis une autre scène, et retient de
+    // laquelle. C'est ce lien qui permet de répercuter une modification de la source sur
+    // toutes ses instances.
+    struct SceneInstanceComponent
+    {
+        AssetHandle Source{k_InvalidAssetHandle};
+
+        SceneInstanceComponent() = default;
+        SceneInstanceComponent(const SceneInstanceComponent &) = default;
+    };
+
     // Attention : les valeurs sont exprimées dans le repère du parent, pas dans celui du
     // monde. Passer de l'un à l'autre est le rôle de Scene::GetWorldTransform() /
     // SetWorldTransform(), qui sont ce que doivent utiliser le rendu, la physique et les

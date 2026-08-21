@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace Engine
 {
@@ -43,6 +44,12 @@ namespace Engine
         // Chaque appel renvoie un son distinct : deux entités qui jouent le même fichier
         // doivent avoir leur propre lecture, un son partagé se couperait lui-même.
         static std::shared_ptr<AudioSource> LoadSound(AssetHandle handle);
+
+        // Handles des scènes dont le fichier a changé depuis le dernier appel, puis
+        // oubliés. Les scènes ne sont pas mises en cache — chaque instance en est une
+        // copie indépendante — donc AssetManager se contente de signaler le changement
+        // et laisse l'éditeur décider quoi en faire.
+        static std::vector<AssetHandle> TakeModifiedScenes();
 
         // Recharge les assets dont le fichier a changé sur le disque depuis leur
         // chargement. Appelé périodiquement par l'éditeur.

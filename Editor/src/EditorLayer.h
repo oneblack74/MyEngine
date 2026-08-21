@@ -91,6 +91,9 @@ private:
     void ApplyHierarchyDrop(const SceneHierarchyPanel::HierarchyDrop &drop);
     void InstantiateScene(const SceneHierarchyPanel::SceneInstanceDrop &drop);
 
+    // Répercute une scène source modifiée sur toutes ses instances de la scène éditée.
+    void RefreshSceneInstances(Engine::AssetHandle source);
+
     void OnScenePlay();
     void OnSceneStop();
     const std::shared_ptr<Engine::Scene> &GetActiveScene() const

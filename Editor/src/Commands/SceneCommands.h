@@ -133,8 +133,9 @@ private:
 class InstantiateSceneCommand : public EditorCommand
 {
 public:
-    InstantiateSceneCommand(EditorContext &context, const std::filesystem::path &scenePath,
-                            Engine::UUID parent);
+    // La source est désignée par son handle d'asset et non par un chemin : c'est ce
+    // handle que l'instance retient, et qui survit à un déplacement du fichier.
+    InstantiateSceneCommand(EditorContext &context, Engine::AssetHandle source, Engine::UUID parent);
 
     // Le fichier n'a pas pu être lu : la commande ne doit alors pas être exécutée.
     bool IsValid() const { return m_Template != nullptr; }

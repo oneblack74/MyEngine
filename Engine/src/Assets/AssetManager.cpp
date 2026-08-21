@@ -20,6 +20,12 @@ namespace Engine
         std::unordered_map<uint64_t, CachedAsset> s_Cache;
         uint64_t s_ReloadCount = 0;
 
+
+        // Dates des fichiers de scène, suivies à part : une scène n'a pas d'entrée de
+        // cache, puisqu'on n'en garde jamais d'exemplaire chargé.
+        std::unordered_map<uint64_t, std::filesystem::file_time_type> s_SceneWriteTimes;
+        std::vector<AssetHandle> s_ModifiedScenes;
+
         std::filesystem::path RegistryFile()
         {
             return s_AssetRoot / "AssetRegistry.json";
@@ -28,6 +34,21 @@ namespace Engine
         std::filesystem::path FullPath(const AssetMetadata &metadata)
         {
             return s_AssetRoot / metadata.Path;
+        }
+
+        // Relève la date d'un fichier de scène, sans la signaler comme un changement.
+        // Appelé dès l'enregistrement de l'asset : sans ça, une scène modifiée avant le
+        // premier passage du hot-reload verrait sa modification avalée, la date relevée
+        // à ce moment-là étant déjà la nouvelle.
+        void RememberSceneWriteTime(uint64_t handle, const AssetMetadata &metadata)
+        {
+            if (metadata.Type != AssetType::Scene)
+                return;
+
+            std::error_code ec;
+            const auto writeTime = std::filesystem::last_write_time(FullPath(metadata), ec);
+            if (!ec)
+                s_SceneWriteTimes[handle] = writeTime;
         }
 
         // Les chemins sont stockés relativement à la racine des assets et avec des
@@ -95,6 +116,7 @@ namespace Engine
 
         AssetHandle handle;
         s_Registry[(uint64_t)handle] = {type, normalized};
+        RememberSceneWriteTime((uint64_t)handle, s_Registry[(uint64_t)handle]);
         SaveRegistry();
 
         ENGINE_LOG_INFO(LogCategories::Assets, "Asset imported: {0} ({1})", normalized, AssetTypeToString(type));
@@ -160,6 +182,35 @@ namespace Engine
 
     void AssetManager::ReloadModifiedAssets()
     {
+        // Les scènes d'abord : elles ne passent pas par le cache, leur date est
+        // comparée directement à celle relevée au dernier passage.
+        for (const auto &[handle, metadata] : s_Registry)
+        {
+            if (metadata.Type != AssetType::Scene)
+                continue;
+
+            std::error_code ec;
+            const auto writeTime = std::filesystem::last_write_time(FullPath(metadata), ec);
+            if (ec)
+                continue;
+
+            auto known = s_SceneWriteTimes.find(handle);
+            if (known == s_SceneWriteTimes.end())
+            {
+                // Première observation : on note la date sans crier au changement.
+                s_SceneWriteTimes[handle] = writeTime;
+                continue;
+            }
+
+            if (known->second == writeTime)
+                continue;
+
+            known->second = writeTime;
+            s_ModifiedScenes.push_back(AssetHandle(handle));
+            ++s_ReloadCount;
+            ENGINE_LOG_INFO(LogCategories::Assets, "Scene asset changed: {0}", metadata.Path);
+        }
+
         for (auto &[handle, entry] : s_Cache)
         {
             const AssetMetadata *metadata = FindMetadata(AssetHandle(handle));
@@ -181,6 +232,13 @@ namespace Engine
             ++s_ReloadCount;
             ENGINE_LOG_INFO(LogCategories::Assets, "Asset reloaded: {0}", metadata->Path);
         }
+    }
+
+    std::vector<AssetHandle> AssetManager::TakeModifiedScenes()
+    {
+        std::vector<AssetHandle> modified;
+        modified.swap(s_ModifiedScenes);
+        return modified;
     }
 
     uint64_t AssetManager::GetReloadCount()

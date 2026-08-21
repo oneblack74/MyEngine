@@ -13,6 +13,8 @@ namespace Engine
             return AssetType::Texture;
         if (lower == ".wav" || lower == ".mp3" || lower == ".flac" || lower == ".ogg")
             return AssetType::Audio;
+        if (lower == ".scene")
+            return AssetType::Scene;
 
         return AssetType::None;
     }
@@ -25,6 +27,8 @@ namespace Engine
             return "Texture";
         case AssetType::Audio:
             return "Audio";
+        case AssetType::Scene:
+            return "Scene";
         default:
             return "None";
         }
@@ -36,6 +40,8 @@ namespace Engine
             return AssetType::Texture;
         if (name == "Audio")
             return AssetType::Audio;
+        if (name == "Scene")
+            return AssetType::Scene;
         return AssetType::None;
     }
 }

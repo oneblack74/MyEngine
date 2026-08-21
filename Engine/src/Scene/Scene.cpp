@@ -8,11 +8,19 @@ namespace Engine
 {
     namespace
     {
+        // Aligne le component de destination sur celui de la source : copié s'il est
+        // présent, retiré s'il ne l'est pas. Ce dernier cas ne sert qu'au rafraîchissement
+        // d'une instance, où un component supprimé dans la scène source doit aussi
+        // disparaître de ses instances ; ailleurs la destination est neuve, donc vide.
         template <typename T>
         void CopyComponentIfPresent(Entity source, Entity destination)
         {
             if (!source.HasComponent<T>())
+            {
+                if (destination.HasComponent<T>())
+                    destination.RemoveComponent<T>();
                 return;
+            }
 
             if (destination.HasComponent<T>())
                 destination.GetComponent<T>() = source.GetComponent<T>();
@@ -326,6 +334,7 @@ namespace Engine
         CopyComponentIfPresent<CircleColliderComponent>(source, destination);
         CopyComponentIfPresent<AudioComponent>(source, destination);
         CopyComponentIfPresent<CameraComponent>(source, destination);
+        CopyComponentIfPresent<SceneInstanceComponent>(source, destination);
     }
 
     std::shared_ptr<Scene> Scene::Copy()

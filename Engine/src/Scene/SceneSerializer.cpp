@@ -98,6 +98,12 @@ namespace Engine
                 entityJson["AudioComponent"]["PlayOnStart"] = ac.PlayOnStart;
             }
 
+            if (entity.HasComponent<SceneInstanceComponent>())
+            {
+                auto &si = entity.GetComponent<SceneInstanceComponent>();
+                entityJson["SceneInstanceComponent"]["Source"] = (uint64_t)si.Source;
+            }
+
             if (entity.HasComponent<CameraComponent>())
             {
                 auto &cc = entity.GetComponent<CameraComponent>();
@@ -205,6 +211,12 @@ namespace Engine
                 ac.Volume = entityJson["AudioComponent"]["Volume"].get<float>();
                 ac.Loop = entityJson["AudioComponent"]["Loop"].get<bool>();
                 ac.PlayOnStart = entityJson["AudioComponent"]["PlayOnStart"].get<bool>();
+            }
+
+            if (entityJson.contains("SceneInstanceComponent"))
+            {
+                auto &si = entity.AddComponent<SceneInstanceComponent>();
+                si.Source = entityJson["SceneInstanceComponent"]["Source"].get<uint64_t>();
             }
 
             if (entityJson.contains("CameraComponent"))

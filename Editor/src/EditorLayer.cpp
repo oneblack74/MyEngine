@@ -10,6 +10,7 @@
 #include <Scene/Components.h>
 #include <Scene/RenderSystem.h>
 #include <Scene/SceneManager.h>
+#include <Scene/SceneSerializer.h>
 #include <filesystem>
 #include <imgui.h>
 #include <imgui_internal.h> // DockBuilder* : API "interne" ImGui, mais c'est le seul moyen de définir un layout par défaut
@@ -179,6 +180,14 @@ void EditorLayer::OnUpdate(Engine::Timestep ts)
     {
         m_AssetReloadTimer = 0.0f;
         Engine::AssetManager::ReloadModifiedAssets();
+
+        // Une scène source modifiée se répercute sur ses instances. Uniquement en
+        // édition : pendant le Play, c'est une copie jetable qui est à l'écran.
+        if (m_SceneState == SceneState::Edit)
+        {
+            for (Engine::AssetHandle source : Engine::AssetManager::TakeModifiedScenes())
+                RefreshSceneInstances(source);
+        }
     }
 
     // Redimensionne le Framebuffer si le panel Viewport a changé de taille
@@ -738,11 +747,80 @@ void EditorLayer::InstantiateScene(const SceneHierarchyPanel::SceneInstanceDrop 
         parent = m_EditorScene->GetRootEntity();
 
     auto command = std::make_unique<InstantiateSceneCommand>(
-        *this, scenePath, parent ? parent.GetUUID() : Engine::UUID(0));
+        *this, Engine::AssetManager::Import(drop.AssetPath),
+        parent ? parent.GetUUID() : Engine::UUID(0));
     if (!command->IsValid())
         return;
 
     m_CommandHistory.Execute(std::move(command));
+}
+
+void EditorLayer::RefreshSceneInstances(Engine::AssetHandle source)
+{
+    const std::filesystem::path scenePath =
+        Engine::AssetManager::GetAssetRoot() / Engine::AssetManager::GetPath(source);
+
+    auto loaded = std::make_shared<Engine::Scene>();
+    if (!Engine::SceneSerializer(loaded).Deserialize(scenePath.string()))
+        return;
+
+    Engine::Entity sourceRoot = loaded->GetRootEntity();
+    if (!sourceRoot)
+        return;
+
+    // Les instances sont relevées avant d'en toucher une seule : le rafraîchissement
+    // détruit et recrée des entités, ce qui invaliderait un parcours en cours.
+    std::vector<Engine::UUID> instances;
+    for (auto entityHandle : m_EditorScene->GetAllEntitiesWith<Engine::SceneInstanceComponent>())
+    {
+        Engine::Entity entity{entityHandle, m_EditorScene.get()};
+        if (entity.GetComponent<Engine::SceneInstanceComponent>().Source == source)
+            instances.push_back(entity.GetUUID());
+    }
+
+    if (instances.empty())
+        return;
+
+    // La sélection peut porter sur une entité qui va disparaître : elle est retrouvée
+    // par UUID après coup, ou abandonnée si elle n'existe plus.
+    Engine::Entity selected = m_SceneHierarchyPanel.GetSelectedEntity();
+    const Engine::UUID selectedID = selected ? selected.GetUUID() : Engine::UUID(0);
+
+    for (Engine::UUID uuid : instances)
+    {
+        Engine::Entity instance = m_EditorScene->FindEntityByUUID(uuid);
+        if (!instance)
+            continue;
+
+        // Ce que le niveau possède et que la source ne doit pas écraser : où l'instance
+        // est posée, comment elle s'appelle, et où elle se range dans la hiérarchie.
+        // Tout le reste est refait à l'identique de la source.
+        const Engine::TransformComponent placement = instance.GetComponent<Engine::TransformComponent>();
+        const std::string name = instance.GetName();
+        const Engine::UUID parent = instance.GetComponent<Engine::ParentComponent>().Parent;
+
+        for (Engine::Entity child : m_EditorScene->GetChildren(instance))
+            m_EditorScene->DestroyEntity(child);
+
+        Engine::Scene::CopyComponents(sourceRoot, instance);
+        instance.GetComponent<Engine::TransformComponent>() = placement;
+        instance.GetComponent<Engine::TagComponent>().Tag = name;
+        instance.GetComponent<Engine::ParentComponent>().Parent = parent;
+
+        // La racine de la source n'a pas de SceneInstanceComponent : la copie vient de
+        // retirer celui de l'instance, il faut le reposer.
+        if (!instance.HasComponent<Engine::SceneInstanceComponent>())
+            instance.AddComponent<Engine::SceneInstanceComponent>();
+        instance.GetComponent<Engine::SceneInstanceComponent>().Source = source;
+
+        for (Engine::Entity child : loaded->GetChildren(sourceRoot))
+            m_EditorScene->InstantiateBranch(child, instance);
+    }
+
+    m_SceneHierarchyPanel.SetSelectedEntity(
+        (uint64_t)selectedID != 0 ? m_EditorScene->FindEntityByUUID(selectedID) : Engine::Entity{});
+
+    LOG_INFO("Refreshed {0} instance(s) of {1}", instances.size(), Engine::AssetManager::GetPath(source));
 }
 
 void EditorLayer::SetupDefaultDockLayout()
