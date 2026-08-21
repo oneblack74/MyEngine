@@ -43,6 +43,9 @@ namespace Engine
                 auto &sc = entity.GetComponent<SpriteRendererComponent>();
                 entityJson["SpriteRendererComponent"]["Color"] = {sc.Color.r, sc.Color.g, sc.Color.b, sc.Color.a};
                 entityJson["SpriteRendererComponent"]["TilingFactor"] = sc.TilingFactor;
+                // La texture est enfin sauvegardée : c'est une référence d'asset stable,
+                // là où le shared_ptr d'avant ne pouvait pas être écrit dans un fichier.
+                entityJson["SpriteRendererComponent"]["Texture"] = (uint64_t)sc.Texture;
                 // La texture n'est pas sérialisée : il n'y a pas encore de système d'assets
                 // (chemin -> handle stable) pour la référencer de façon fiable. Prévu en Phase 7.
             }
@@ -79,7 +82,7 @@ namespace Engine
             if (entity.HasComponent<AudioComponent>())
             {
                 auto &ac = entity.GetComponent<AudioComponent>();
-                entityJson["AudioComponent"]["Path"] = ac.Path;
+                entityJson["AudioComponent"]["Sound"] = (uint64_t)ac.Sound;
                 entityJson["AudioComponent"]["Volume"] = ac.Volume;
                 entityJson["AudioComponent"]["Loop"] = ac.Loop;
                 entityJson["AudioComponent"]["PlayOnStart"] = ac.PlayOnStart;
@@ -145,6 +148,9 @@ namespace Engine
                 auto color = entityJson["SpriteRendererComponent"]["Color"];
                 sc.Color = {color[0], color[1], color[2], color[3]};
                 sc.TilingFactor = entityJson["SpriteRendererComponent"]["TilingFactor"].get<float>();
+                // Absente des scènes enregistrées avant l'arrivée du système d'assets.
+                if (entityJson["SpriteRendererComponent"].contains("Texture"))
+                    sc.Texture = entityJson["SpriteRendererComponent"]["Texture"].get<uint64_t>();
             }
 
             if (entityJson.contains("RigidBodyComponent"))
@@ -180,7 +186,7 @@ namespace Engine
             if (entityJson.contains("AudioComponent"))
             {
                 auto &ac = entity.AddComponent<AudioComponent>();
-                ac.Path = entityJson["AudioComponent"]["Path"].get<std::string>();
+                ac.Sound = entityJson["AudioComponent"]["Sound"].get<uint64_t>();
                 ac.Volume = entityJson["AudioComponent"]["Volume"].get<float>();
                 ac.Loop = entityJson["AudioComponent"]["Loop"].get<bool>();
                 ac.PlayOnStart = entityJson["AudioComponent"]["PlayOnStart"].get<bool>();

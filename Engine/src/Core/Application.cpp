@@ -1,4 +1,5 @@
 #include "Core/Application.h"
+#include "Assets/AssetManager.h"
 #include "Audio/AudioEngine.h"
 #include "Core/Log.h"
 #include <GLFW/glfw3.h>
@@ -18,10 +19,12 @@ namespace Engine
                                   { OnEvent(e); });
 
         AudioEngine::Init();
+        AssetManager::Init("assets");
     }
 
     Application::~Application()
     {
+        AssetManager::Shutdown();
         AudioEngine::Shutdown();
     }
 

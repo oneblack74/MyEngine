@@ -1,4 +1,5 @@
 #include "Scene/AudioSystem.h"
+#include "Assets/AssetManager.h"
 #include "Scene/Components.h"
 #include "Scene/Entity.h"
 
@@ -10,12 +11,14 @@ namespace Engine
         for (auto entityHandle : view)
         {
             auto &audio = view.get<AudioComponent>(entityHandle);
-            if (audio.Path.empty())
+            if (!AssetManager::IsValid(audio.Sound))
                 continue;
 
             // Un son neuf par exécution, même si la scène a été copiée avec le sien :
             // deux scènes ne doivent pas partager la même instance de lecture.
-            audio.Source = AudioSource::LoadFromFile(audio.Path);
+            audio.Source = AssetManager::LoadSound(audio.Sound);
+            if (!audio.Source)
+                continue;
             audio.Source->SetVolume(audio.Volume);
             audio.Source->SetLooping(audio.Loop);
 

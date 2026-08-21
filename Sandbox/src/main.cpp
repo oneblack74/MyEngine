@@ -1,3 +1,4 @@
+#include "Assets/AssetManager.h"
 #include "Core/Application.h"
 #include "Core/Layer.h"
 #include "Core/Log.h"
@@ -26,7 +27,7 @@ public:
 
         Engine::Renderer2D::Init();
 
-        m_Texture = std::make_shared<Engine::Texture2D>("assets/textures/axololt.jpg");
+        m_TextureHandle = Engine::AssetManager::Import("assets/textures/axololt.jpg");
         m_Camera = std::make_shared<Engine::OrthographicCamera>(-1.6f, 1.6f, -0.9f, 0.9f);
 
         m_Scene = Engine::SceneManager::NewScene();
@@ -49,7 +50,7 @@ public:
         axoTransform.Position = {0.4f, 0.2f, 0.0f};
         axoTransform.Scale = {0.6f, 0.6f, 1.0f};
         auto &axoSprite = axolotl.AddComponent<Engine::SpriteRendererComponent>();
-        axoSprite.Texture = m_Texture;
+        axoSprite.Texture = m_TextureHandle;
 
         // Vérification manuelle : chaque entité doit avoir un UUID distinct
         GAME_LOG_INFO("Scène", "{0} UUID: {1}", redSquare.GetName(), (uint64_t)redSquare.GetUUID());
@@ -113,7 +114,7 @@ public:
 
 private:
     std::shared_ptr<Engine::OrthographicCamera> m_Camera;
-    std::shared_ptr<Engine::Texture2D> m_Texture;
+    Engine::AssetHandle m_TextureHandle{Engine::k_InvalidAssetHandle};
     std::shared_ptr<Engine::Scene> m_Scene;
 };
 

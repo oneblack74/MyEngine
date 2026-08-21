@@ -1,5 +1,6 @@
 #include "Scene/RenderSystem.h"
 #include "Scene/Components.h"
+#include "Assets/AssetManager.h"
 #include "Renderer/Renderer2D.h"
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -14,8 +15,11 @@ namespace Engine
         {
             auto [transform, sprite] = view.get<TransformComponent, SpriteRendererComponent>(entityHandle);
 
-            if (sprite.Texture)
-                Renderer2D::DrawQuad(transform.GetTransform(), sprite.Texture, sprite.TilingFactor, sprite.Color);
+            // Résolu à chaque frame plutôt que gardé dans le component : un asset
+            // rechargé à chaud est ainsi pris en compte sans rien réassigner.
+            std::shared_ptr<Texture2D> texture = AssetManager::GetTexture(sprite.Texture);
+            if (texture)
+                Renderer2D::DrawQuad(transform.GetTransform(), texture, sprite.TilingFactor, sprite.Color);
             else
                 Renderer2D::DrawQuad(transform.GetTransform(), sprite.Color);
         }

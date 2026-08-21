@@ -1,4 +1,5 @@
 #pragma once
+#include "Assets/AssetTypes.h"
 #include "Core/UUID.h"
 #include "Renderer/Texture.h"
 #include "Audio/AudioSource.h"
@@ -49,7 +50,11 @@ namespace Engine
     struct SpriteRendererComponent
     {
         glm::vec4 Color = {1.0f, 1.0f, 1.0f, 1.0f};
-        std::shared_ptr<Texture2D> Texture;
+
+        // Référence d'asset et non la texture elle-même : c'est ce qui permet de la
+        // sérialiser avec la scène, et de voir un rechargement à chaud sans rien faire.
+        AssetHandle Texture{k_InvalidAssetHandle};
+
         float TilingFactor = 1.0f;
 
         SpriteRendererComponent() = default;
@@ -111,9 +116,7 @@ namespace Engine
 
     struct AudioComponent
     {
-        // Chemin du fichier son, relatif au dossier de travail (pas encore d'asset
-        // system : c'est la même limite que SpriteRendererComponent::Texture).
-        std::string Path;
+        AssetHandle Sound{k_InvalidAssetHandle};
 
         float Volume = 1.0f;
         bool Loop = false;
