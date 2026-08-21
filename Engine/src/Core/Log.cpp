@@ -21,8 +21,13 @@ namespace Engine
         s_Logger->set_level(spdlog::level::trace);
     }
 
-    const std::deque<std::string> &Log::GetConsoleMessages()
+    const std::deque<LogMessage> &Log::GetConsoleMessages()
     {
         return ImGuiConsoleSink::GetMessages();
+    }
+
+    uint64_t Log::GetConsoleMessageCounter()
+    {
+        return ImGuiConsoleSink::GetReceivedCount();
     }
 }

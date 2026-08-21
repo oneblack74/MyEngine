@@ -1,4 +1,5 @@
 #pragma once
+#include "Core/LogMessage.h"
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <deque>
@@ -14,7 +15,11 @@ namespace Engine
         static std::shared_ptr<spdlog::logger> &GetLogger() { return s_Logger; }
 
         // Derniers messages loggés, pour ConsolePanel (Editor)
-        static const std::deque<std::string> &GetConsoleMessages();
+        static const std::deque<LogMessage> &GetConsoleMessages();
+
+        // Compteur monotone de messages reçus : permet de savoir que le tampon a changé
+        // même quand il est plein et que sa taille ne bouge plus.
+        static uint64_t GetConsoleMessageCounter();
 
     private:
         static std::shared_ptr<spdlog::logger> s_Logger;
