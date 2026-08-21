@@ -5,6 +5,7 @@
 #include "EditorLayer.h"
 #include <Scene/Components.h>
 #include <box2d/box2d.h>
+#include <glm/glm.hpp>
 #include <imgui.h>
 #include <imgui_te_engine.h>
 #include <imgui_te_context.h>
@@ -48,6 +49,17 @@ namespace
     }
 
     bool NearlyEqual(float a, float b) { return std::fabs(a - b) < 0.0001f; }
+
+    int CountEntities(EditorLayer &editor)
+    {
+        int count = 0;
+        for (auto entityHandle : editor.GetEditorScene().GetAllEntitiesWith<Engine::IDComponent>())
+        {
+            (void)entityHandle;
+            ++count;
+        }
+        return count;
+    }
 }
 
 void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
@@ -193,6 +205,82 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         Engine::Entity editorSquare = SelectEntity(ctx, editor, "Square");
         IM_CHECK(editorSquare);
         IM_CHECK(NearlyEqual(editorSquare.GetComponent<Engine::TransformComponent>().Position.y, startY));
+    };
+
+    // --- Raccourcis d'édition ------------------------------------------------
+
+    t = IM_REGISTER_TEST(engine, "edit", "duplicate_then_undo");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        const int before = CountEntities(editor);
+        Engine::Entity square = SelectEntity(ctx, editor, "Square");
+        IM_CHECK(square);
+
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_D);
+        IM_CHECK_EQ(CountEntities(editor), before + 1);
+        // La duplication sélectionne la copie, qui porte le même nom mais un autre UUID.
+        Engine::Entity duplicate = editor.GetSelectedEntityForTests();
+        IM_CHECK(duplicate);
+        IM_CHECK_STR_EQ(duplicate.GetName().c_str(), "Square");
+        IM_CHECK(duplicate.GetUUID() != square.GetUUID());
+
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+        IM_CHECK_EQ(CountEntities(editor), before);
+
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Y);
+        IM_CHECK_EQ(CountEntities(editor), before + 1);
+
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+        IM_CHECK_EQ(CountEntities(editor), before);
+    };
+
+    // Annuler une suppression doit rendre l'entité intacte : même identité et mêmes
+    // valeurs de components, sinon toute référence à celle-ci pointe dans le vide.
+    t = IM_REGISTER_TEST(engine, "edit", "delete_then_undo_restores_entity");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        const int before = CountEntities(editor);
+        Engine::Entity circle = SelectEntity(ctx, editor, "Circle");
+        IM_CHECK(circle);
+
+        const Engine::UUID uuid = circle.GetUUID();
+        const float radius = circle.GetComponent<Engine::CircleColliderComponent>().Radius;
+        const glm::vec3 position = circle.GetComponent<Engine::TransformComponent>().Position;
+
+        ctx->KeyPress(ImGuiKey_Delete);
+        IM_CHECK_EQ(CountEntities(editor), before - 1);
+        IM_CHECK(!editor.GetEditorScene().FindEntityByUUID(uuid));
+
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+        IM_CHECK_EQ(CountEntities(editor), before);
+
+        Engine::Entity restored = editor.GetEditorScene().FindEntityByUUID(uuid);
+        IM_CHECK(restored);
+        IM_CHECK(restored.HasComponent<Engine::CircleColliderComponent>());
+        IM_CHECK(NearlyEqual(restored.GetComponent<Engine::CircleColliderComponent>().Radius, radius));
+        IM_CHECK(NearlyEqual(restored.GetComponent<Engine::TransformComponent>().Position.x, position.x));
+        IM_CHECK(NearlyEqual(restored.GetComponent<Engine::TransformComponent>().Position.y, position.y));
+    };
+
+    t = IM_REGISTER_TEST(engine, "edit", "copy_paste_then_undo");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        const int before = CountEntities(editor);
+        Engine::Entity ground = SelectEntity(ctx, editor, "Ground");
+        IM_CHECK(ground);
+        const glm::vec3 position = ground.GetComponent<Engine::TransformComponent>().Position;
+
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_C);
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_V);
+        IM_CHECK_EQ(CountEntities(editor), before + 1);
+
+        Engine::Entity pasted = editor.GetSelectedEntityForTests();
+        IM_CHECK(pasted);
+        IM_CHECK_STR_EQ(pasted.GetName().c_str(), "Ground");
+        IM_CHECK(NearlyEqual(pasted.GetComponent<Engine::TransformComponent>().Position.y, position.y));
+
+        ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
+        IM_CHECK_EQ(CountEntities(editor), before);
     };
 
     // --- Captures -----------------------------------------------------------

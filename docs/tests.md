@@ -19,8 +19,10 @@ Ou directement, ce qui donne le log détaillé de chaque action jouée :
 cd build && ./Editor/Editor --tests-headless
 ```
 
-Le code de sortie vaut 0 si tout passe, 1 sinon. Un filtre restreint la suite :
-`--filter "inspector/*"`.
+Le code de sortie vaut 0 si tout passe, 1 sinon. `--filter` restreint la suite : le
+motif est une **sous-chaîne** du nom ou de la catégorie du test, pas un glob — `--filter
+inspector` joue toute la catégorie, `--filter reset` tous les tests dont le nom contient
+« reset ». `^` ancre au début, `$` à la fin, `-` exclut, `,` sépare plusieurs motifs.
 
 Pour **voir** les tests se jouer, l'éditeur s'ouvre normalement avec la fenêtre du
 Test Engine, d'où on lance les tests un par un :

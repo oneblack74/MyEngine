@@ -18,7 +18,8 @@ struct EditorTestOptions
     bool RunTests = false;
     bool ShowTestUI = false;
 
-    // Restreint les tests joués, au format "catégorie/nom" (ex. "inspector/*").
+    // Restreint les tests joués : sous-chaîne du nom ou de la catégorie (pas de glob).
+    // "^" ancre au début, "$" à la fin, "-" exclut, "," sépare plusieurs motifs.
     std::string TestFilter;
 
     // Nombre de frames rendues avant la capture ou le lancement des tests. Il en faut plus d'une : la mise en

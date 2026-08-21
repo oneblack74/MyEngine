@@ -1,5 +1,7 @@
 #pragma once
 #include "Panels/ViewportPanel.h"
+#include "Commands/CommandHistory.h"
+#include "Commands/EditorContext.h"
 #include "Testing/EditorTestEngine.h"
 #include "Panels/GamePanel.h"
 #include "Panels/SceneHierarchyPanel.h"
@@ -19,7 +21,7 @@ enum class SceneState
     Play = 1
 };
 
-class EditorLayer : public Engine::Layer
+class EditorLayer : public Engine::Layer, public EditorContext
 {
 public:
     explicit EditorLayer(const EditorTestOptions &testOptions = {});
@@ -27,6 +29,12 @@ public:
     void OnAttach() override;
     void OnDetach() override;
     void OnUpdate(Engine::Timestep ts) override;
+
+    // EditorContext — ce que les commandes d'annulation voient de l'éditeur.
+    Engine::Scene &GetEditorScene() override { return *m_EditorScene; }
+    void SelectEntity(Engine::Entity entity) override { m_SceneHierarchyPanel.SetSelectedEntity(entity); }
+
+    CommandHistory &GetCommandHistoryForTests() { return m_CommandHistory; }
 
     // Code de sortie du processus après une exécution de tests (0 si tout va bien).
     int GetTestExitCode() const { return m_TestEngine.ExitCode(); }
@@ -39,6 +47,14 @@ public:
 private:
     void RenderImGui();
     void RunTestModeStep();
+    void HandleShortcuts();
+    void RenderEditMenu();
+
+    // Actions du menu Édition, chacune passant par une commande annulable.
+    void CopySelectedEntity();
+    void PasteEntity();
+    void DuplicateSelectedEntity();
+    void DeleteSelectedEntity();
     void SetupDefaultDockLayout();
 
     void OnScenePlay();
@@ -60,6 +76,13 @@ private:
     bool m_ScenePaused = false;
 
     Engine::PhysicsSystem m_PhysicsSystem;
+
+    CommandHistory m_CommandHistory;
+
+    // Presse-papiers : une scène détachée qui ne sert qu'à garder en vie une copie de
+    // l'entité copiée, y compris après sa suppression.
+    std::shared_ptr<Engine::Scene> m_Clipboard;
+    Engine::Entity m_ClipboardEntity;
 
     ViewportPanel m_ViewportPanel;
     GamePanel m_GamePanel;

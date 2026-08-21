@@ -17,7 +17,8 @@ namespace
                      "  --tests                ouvre l'éditeur avec la fenêtre du Test Engine\n"
                      "  --tests-headless       joue toute la suite de tests sans fenêtre, puis quitte\n"
                      "                         (code de sortie 0 si tout passe, 1 sinon)\n"
-                     "  --filter <motif>       restreint les tests joués (ex. \"inspector/*\")\n"
+                     "  --filter <motif>       restreint les tests joués : sous-chaîne du nom ou de la\n"
+                     "                         catégorie, ex. \"inspector\" ou \"reset\"\n"
                      "  --help                 affiche cette aide\n";
     }
 

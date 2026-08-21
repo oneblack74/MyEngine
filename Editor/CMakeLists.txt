@@ -7,6 +7,8 @@ add_executable(Editor
     src/Panels/InspectorPanel.cpp
     src/Panels/ContentBrowserPanel.cpp
     src/Panels/ConsolePanel.cpp
+    src/Commands/CommandHistory.cpp
+    src/Commands/SceneCommands.cpp
     src/Testing/EditorTestEngine.cpp
     src/Testing/EditorTests.cpp
 )

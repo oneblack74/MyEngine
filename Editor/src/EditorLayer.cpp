@@ -1,4 +1,5 @@
 #include "EditorLayer.h"
+#include "Commands/SceneCommands.h"
 #include <Core/Log.h>
 #include <Core/Application.h>
 #include <Utils/ImageCapture.h>
@@ -214,6 +215,8 @@ void EditorLayer::RunTestModeStep()
 
 void EditorLayer::RenderImGui()
 {
+    HandleShortcuts();
+
     // Dockspace plein écran — recette standard de la démo ImGui (docking branch)
     ImGuiWindowFlags windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
 
@@ -259,6 +262,7 @@ void EditorLayer::RenderImGui()
             ImGui::MenuItem("Quitter (bientôt)", nullptr, false, false);
             ImGui::EndMenu();
         }
+        RenderEditMenu();
         if (ImGui::BeginMenu("Fenêtre"))
         {
             if (ImGui::MenuItem("Réinitialiser la disposition"))
@@ -311,6 +315,109 @@ void EditorLayer::RenderImGui()
     // Fenêtres du Test Engine (liste des tests, log) : hors dockspace, et seulement
     // en mode interactif.
     m_TestEngine.RenderUI();
+}
+
+void EditorLayer::HandleShortcuts()
+{
+    // Rien pendant le Play : la scène runtime est une copie jetée au Stop, y annuler
+    // une action n'aurait aucun effet durable.
+    if (m_SceneState != SceneState::Edit)
+        return;
+
+    // ImGui::Shortcut plutôt que Engine::Input : le routage évite de déclencher un
+    // raccourci pendant qu'on tape dans un champ de texte, et le backend GLFW d'ImGui
+    // traduit les touches selon la disposition clavier (donc Ctrl+Z tombe bien sur le
+    // Z d'un AZERTY, contrairement aux raccourcis de gizmo qui lisent la touche physique).
+    const ImGuiInputFlags route = ImGuiInputFlags_RouteGlobal;
+
+    if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Z, route))
+        m_CommandHistory.Undo();
+    if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_Y, route) ||
+        ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Z, route))
+        m_CommandHistory.Redo();
+
+    if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_C, route))
+        CopySelectedEntity();
+    if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_V, route))
+        PasteEntity();
+    if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_D, route))
+        DuplicateSelectedEntity();
+
+    // Suppr n'a pas de modificateur : sans cette garde, il effacerait l'entité
+    // sélectionnée pendant qu'on renomme une entité dans l'Inspecteur.
+    if (!ImGui::GetIO().WantTextInput && ImGui::Shortcut(ImGuiKey_Delete, route))
+        DeleteSelectedEntity();
+}
+
+void EditorLayer::CopySelectedEntity()
+{
+    Engine::Entity selected = m_SceneHierarchyPanel.GetSelectedEntity();
+    if (!selected)
+        return;
+
+    // Copie hors scène : l'entité d'origine peut être supprimée avant le collage.
+    m_Clipboard = std::make_shared<Engine::Scene>();
+    m_ClipboardEntity = m_Clipboard->CreateEntity(selected.GetName());
+    Engine::Scene::CopyComponents(selected, m_ClipboardEntity);
+}
+
+void EditorLayer::PasteEntity()
+{
+    if (!m_ClipboardEntity)
+        return;
+
+    m_CommandHistory.Execute(std::make_unique<CreateEntityFromCommand>(*this, m_ClipboardEntity, "coller"));
+}
+
+void EditorLayer::DuplicateSelectedEntity()
+{
+    Engine::Entity selected = m_SceneHierarchyPanel.GetSelectedEntity();
+    if (!selected)
+        return;
+
+    m_CommandHistory.Execute(std::make_unique<CreateEntityFromCommand>(*this, selected, "dupliquer"));
+}
+
+void EditorLayer::DeleteSelectedEntity()
+{
+    Engine::Entity selected = m_SceneHierarchyPanel.GetSelectedEntity();
+    if (!selected)
+        return;
+
+    m_CommandHistory.Execute(std::make_unique<DeleteEntityCommand>(*this, selected));
+}
+
+void EditorLayer::RenderEditMenu()
+{
+    if (!ImGui::BeginMenu("Édition"))
+        return;
+
+    const bool editing = m_SceneState == SceneState::Edit;
+    const bool hasSelection = editing && (bool)m_SceneHierarchyPanel.GetSelectedEntity();
+
+    // Le nom de la commande apparaît dans l'entrée de menu, façon "Annuler : coller Square".
+    const std::string undoName = m_CommandHistory.PeekUndoName();
+    const std::string redoName = m_CommandHistory.PeekRedoName();
+    const std::string undoLabel = undoName.empty() ? "Annuler" : "Annuler : " + undoName;
+    const std::string redoLabel = redoName.empty() ? "Rétablir" : "Rétablir : " + redoName;
+
+    if (ImGui::MenuItem(undoLabel.c_str(), "Ctrl+Z", false, editing && m_CommandHistory.CanUndo()))
+        m_CommandHistory.Undo();
+    if (ImGui::MenuItem(redoLabel.c_str(), "Ctrl+Y", false, editing && m_CommandHistory.CanRedo()))
+        m_CommandHistory.Redo();
+
+    ImGui::Separator();
+
+    if (ImGui::MenuItem("Copier", "Ctrl+C", false, hasSelection))
+        CopySelectedEntity();
+    if (ImGui::MenuItem("Coller", "Ctrl+V", false, editing && (bool)m_ClipboardEntity))
+        PasteEntity();
+    if (ImGui::MenuItem("Dupliquer", "Ctrl+D", false, hasSelection))
+        DuplicateSelectedEntity();
+    if (ImGui::MenuItem("Supprimer", "Suppr", false, hasSelection))
+        DeleteSelectedEntity();
+
+    ImGui::EndMenu();
 }
 
 void EditorLayer::SetupDefaultDockLayout()
