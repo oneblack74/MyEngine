@@ -321,6 +321,40 @@ namespace Engine
         return copy;
     }
 
+    const std::vector<std::string> &Scene::GetRemovableComponentNames()
+    {
+        // L'ordre est celui de l'Inspecteur. IDComponent, TagComponent,
+        // TransformComponent et ParentComponent n'y sont pas : ils font partie de ce
+        // qu'est une entité.
+        static const std::vector<std::string> names = {
+            "SpriteRendererComponent", "RigidBodyComponent", "BoxColliderComponent",
+            "CircleColliderComponent", "AudioComponent", "CameraComponent"};
+        return names;
+    }
+
+    bool Scene::RemoveComponentByName(Entity entity, const std::string &componentName)
+    {
+        if (!entity)
+            return false;
+
+        auto tryRemove = [&](auto tag, const char *name) -> bool
+        {
+            using T = decltype(tag);
+            if (componentName != name || !entity.HasComponent<T>())
+                return false;
+
+            entity.RemoveComponent<T>();
+            return true;
+        };
+
+        return tryRemove(SpriteRendererComponent{}, "SpriteRendererComponent") ||
+               tryRemove(RigidBodyComponent{}, "RigidBodyComponent") ||
+               tryRemove(BoxColliderComponent{}, "BoxColliderComponent") ||
+               tryRemove(CircleColliderComponent{}, "CircleColliderComponent") ||
+               tryRemove(AudioComponent{}, "AudioComponent") ||
+               tryRemove(CameraComponent{}, "CameraComponent");
+    }
+
     void Scene::CopyComponents(Entity source, Entity destination)
     {
         destination.GetComponent<TagComponent>().Tag = source.GetComponent<TagComponent>().Tag;

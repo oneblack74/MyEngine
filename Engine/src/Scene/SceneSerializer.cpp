@@ -114,6 +114,7 @@ namespace Engine
         {
             auto &member = entity.GetComponent<SceneInstanceMemberComponent>();
             entityJson["SceneInstanceMemberComponent"]["SourceEntity"] = (uint64_t)member.SourceEntity;
+            entityJson["SceneInstanceMemberComponent"]["RemovedComponents"] = member.RemovedComponents;
         }
 
         if (entity.HasComponent<CameraComponent>())
@@ -207,6 +208,11 @@ namespace Engine
         {
             auto &member = Ensure<SceneInstanceMemberComponent>(entity);
             member.SourceEntity = entityJson["SceneInstanceMemberComponent"]["SourceEntity"].get<uint64_t>();
+            if (entityJson["SceneInstanceMemberComponent"].contains("RemovedComponents"))
+            {
+                member.RemovedComponents = entityJson["SceneInstanceMemberComponent"]["RemovedComponents"]
+                                               .get<std::vector<std::string>>();
+            }
         }
 
         if (entityJson.contains("CameraComponent"))

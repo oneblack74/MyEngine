@@ -9,6 +9,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace Engine
 {
@@ -58,6 +59,11 @@ namespace Engine
     struct SceneInstanceMemberComponent
     {
         UUID SourceEntity{0};
+
+        // Components retirés sur l'instance, par leur nom de sérialisation. Sans cette
+        // liste, la fusion les ferait revenir : elle ne sait comparer que des valeurs,
+        // et un component absent ressemble à un component que la source vient d'ajouter.
+        std::vector<std::string> RemovedComponents;
 
         SceneInstanceMemberComponent() = default;
         SceneInstanceMemberComponent(const SceneInstanceMemberComponent &) = default;

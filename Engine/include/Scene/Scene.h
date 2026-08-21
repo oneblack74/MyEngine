@@ -47,6 +47,15 @@ namespace Engine
         // destination, pas une donnée à recopier.
         static void CopyComponents(Entity source, Entity destination);
 
+        // Retire un component désigné par son nom de sérialisation
+        // ("SpriteRendererComponent"). Renvoie false si le nom est inconnu ou si le
+        // component est structurel (identité, nom, transform, parent) : ceux-là font
+        // partie de ce qu'est une entité, les retirer n'a pas de sens.
+        static bool RemoveComponentByName(Entity entity, const std::string &componentName);
+
+        // Les components qu'une entité peut perdre, dans leur nom de sérialisation.
+        static const std::vector<std::string> &GetRemovableComponentNames();
+
         // Copie profonde de toutes les entités/components (préserve les UUID et les
         // références de texture) — utilisé pour créer la scène de "jeu" au moment du Play,
         // sans jamais toucher à la scène d'édition originale.
