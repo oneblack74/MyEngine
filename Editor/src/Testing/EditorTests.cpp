@@ -3,6 +3,7 @@
 #ifdef MYENGINE_EDITOR_TESTS
 
 #include "EditorLayer.h"
+#include <Core/Log.h>
 #include <Scene/Components.h>
 #include <box2d/box2d.h>
 #include <glm/glm.hpp>
@@ -320,6 +321,48 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
 
         ctx->KeyPress(ImGuiMod_Ctrl | ImGuiKey_Z);
         IM_CHECK(NearlyEqual(square.GetComponent<Engine::TransformComponent>().Scale.x, startScale.x));
+    };
+
+    // --- Console --------------------------------------------------------------
+
+    t = IM_REGISTER_TEST(engine, "console", "severity_filters_and_collapse");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        // Deux avertissements strictement identiques : c'est ce que le regroupement
+        // doit fusionner en une seule ligne.
+        LOG_WARN("Avertissement de test de la console");
+        LOG_WARN("Avertissement de test de la console");
+        LOG_ERROR("Erreur de test de la console");
+        ctx->Yield(3);
+
+        ConsolePanel &console = editor.GetConsolePanelForTests();
+        const size_t withEverything = console.GetVisibleLineCountForTests();
+        IM_CHECK_GT(withEverything, (size_t)0);
+
+        // Les comptes sont relatifs : les tests précédents ont déjà rempli la console.
+        ctx->SetRef("Console");
+        ctx->ItemClick("###Warning");
+        ctx->Yield(2);
+        IM_CHECK_LE(console.GetVisibleLineCountForTests(), withEverything - 2);
+
+        ctx->ItemClick("###Warning");
+        ctx->Yield(2);
+        IM_CHECK_EQ(console.GetVisibleLineCountForTests(), withEverything);
+
+        ctx->ItemClick("Grouper");
+        ctx->Yield(2);
+        IM_CHECK(console.IsCollapsedForTests());
+        // Au minimum, le doublon d'avertissement a fusionné.
+        IM_CHECK_LT(console.GetVisibleLineCountForTests(), withEverything);
+
+        const char *outputFile = "output/captures/console.png";
+        ctx->CaptureReset();
+        ImStrncpy(ctx->CaptureArgs->InOutputFile, outputFile, IM_ARRAYSIZE(ctx->CaptureArgs->InOutputFile));
+        IM_CHECK(ctx->CaptureAddWindow("//Console"));
+        IM_CHECK(ctx->CaptureScreenshot());
+
+        ctx->ItemClick("Grouper");
+        IM_CHECK(!console.IsCollapsedForTests());
     };
 
     // --- Captures -----------------------------------------------------------
