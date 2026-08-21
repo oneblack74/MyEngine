@@ -1,14 +1,91 @@
 #include "EditorLayer.h"
+#include "Testing/EditorTestOptions.h"
 #include <Core/Application.h>
 #include <Core/Log.h>
+#include <cstring>
+#include <iostream>
 
-int main()
+namespace
 {
+    void PrintUsage()
+    {
+        std::cout << "Usage : Editor [options]\n"
+                     "  (sans option)          lance l'éditeur normalement\n"
+                     "  --headless             fenêtre cachée : rend hors écran, sans rien afficher\n"
+                     "  --screenshot <chemin>  capture le rendu dans ce PNG puis quitte\n"
+                     "  --frames <n>           frames rendues avant la capture (défaut : 10)\n"
+                     "  --help                 affiche cette aide\n";
+    }
+
+    // Renvoie false si les arguments sont invalides (le message a déjà été affiché).
+    bool ParseArgs(int argc, char **argv, EditorTestOptions &options, bool &shouldExit)
+    {
+        for (int i = 1; i < argc; ++i)
+        {
+            const char *arg = argv[i];
+
+            if (std::strcmp(arg, "--help") == 0)
+            {
+                PrintUsage();
+                shouldExit = true;
+                return true;
+            }
+            else if (std::strcmp(arg, "--headless") == 0)
+            {
+                options.Headless = true;
+            }
+            else if (std::strcmp(arg, "--screenshot") == 0)
+            {
+                if (i + 1 >= argc)
+                {
+                    std::cerr << "--screenshot attend un chemin de fichier\n";
+                    return false;
+                }
+                options.ScreenshotPath = argv[++i];
+            }
+            else if (std::strcmp(arg, "--frames") == 0)
+            {
+                if (i + 1 >= argc)
+                {
+                    std::cerr << "--frames attend un nombre\n";
+                    return false;
+                }
+                options.WarmupFrames = std::atoi(argv[++i]);
+                if (options.WarmupFrames < 1)
+                {
+                    std::cerr << "--frames attend un nombre >= 1\n";
+                    return false;
+                }
+            }
+            else
+            {
+                std::cerr << "Argument inconnu : " << arg << "\n";
+                PrintUsage();
+                return false;
+            }
+        }
+
+        return true;
+    }
+}
+
+int main(int argc, char **argv)
+{
+    EditorTestOptions options;
+    bool shouldExit = false;
+    if (!ParseArgs(argc, argv, options, shouldExit))
+        return 2;
+    if (shouldExit)
+        return 0;
+
     Engine::Log::Init();
     LOG_INFO("Editor starting...");
 
-    Engine::Application app;
-    app.PushLayer(new EditorLayer());
+    Engine::WindowProps props;
+    props.Visible = !options.Headless;
+
+    Engine::Application app(props);
+    app.PushLayer(new EditorLayer(options));
     app.Run();
 
     return 0;

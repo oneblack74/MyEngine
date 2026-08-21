@@ -1,6 +1,7 @@
 #include "EditorLayer.h"
 #include <Core/Log.h>
 #include <Core/Application.h>
+#include <Utils/ImageCapture.h>
 #include <Renderer/Renderer.h>
 #include <Renderer/Renderer2D.h>
 #include <Scene/Entity.h>
@@ -14,7 +15,8 @@
 #include <ImGuizmo.h>
 #include <GLFW/glfw3.h>
 
-EditorLayer::EditorLayer() : Layer("EditorLayer") {}
+EditorLayer::EditorLayer(const EditorTestOptions &testOptions)
+    : Layer("EditorLayer"), m_TestOptions(testOptions) {}
 
 void EditorLayer::OnAttach()
 {
@@ -171,6 +173,33 @@ void EditorLayer::OnUpdate(Engine::Timestep ts)
         ImGui::RenderPlatformWindowsDefault();
         glfwMakeContextCurrent(backupContext);
     }
+
+    RunTestModeStep();
+}
+
+void EditorLayer::RunTestModeStep()
+{
+    if (m_TestOptions.ScreenshotPath.empty())
+        return;
+
+    // La capture doit avoir lieu ici, à la fin de la frame et avant le swap fait par
+    // Window::OnUpdate : une fois le swap passé, GL_BACK ne contient plus ce qu'on
+    // vient de dessiner.
+    if (++m_FrameCount < m_TestOptions.WarmupFrames)
+        return;
+
+    // Taille du framebuffer et pas celle de la fenêtre : les deux diffèrent sur un
+    // écran à mise à l'échelle (HiDPI), et glReadPixels raisonne en pixels réels.
+    GLFWwindow *window = Engine::Application::Get().GetWindow().GetNativeWindow();
+    int width = 0, height = 0;
+    glfwGetFramebufferSize(window, &width, &height);
+
+    const bool ok = Engine::ImageCapture::CaptureBackBuffer(m_TestOptions.ScreenshotPath,
+                                                            (uint32_t)width, (uint32_t)height);
+    if (!ok)
+        LOG_ERROR("Mode test : la capture a échoué");
+
+    Engine::Application::Get().Close();
 }
 
 void EditorLayer::RenderImGui()

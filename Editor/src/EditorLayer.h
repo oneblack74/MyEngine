@@ -1,5 +1,6 @@
 #pragma once
 #include "Panels/ViewportPanel.h"
+#include "Testing/EditorTestOptions.h"
 #include "Panels/GamePanel.h"
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/InspectorPanel.h"
@@ -21,7 +22,7 @@ enum class SceneState
 class EditorLayer : public Engine::Layer
 {
 public:
-    EditorLayer();
+    explicit EditorLayer(const EditorTestOptions &testOptions = {});
 
     void OnAttach() override;
     void OnDetach() override;
@@ -29,6 +30,7 @@ public:
 
 private:
     void RenderImGui();
+    void RunTestModeStep();
     void SetupDefaultDockLayout();
 
     void OnScenePlay();
@@ -60,4 +62,8 @@ private:
 
     bool m_ResetDockLayoutRequested = false;
     bool m_LoadLastSavedLayoutRequested = false;
+
+    // Mode test : inactif tant qu'aucun argument de ligne de commande ne l'active.
+    EditorTestOptions m_TestOptions;
+    int m_FrameCount = 0;
 };
