@@ -1,4 +1,5 @@
 #include "Panels/InspectorPanel.h"
+#include <Assets/AssetManager.h>
 #include <Scene/Components.h>
 #include <imgui.h>
 #include <cstring>
@@ -131,6 +132,19 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
 
         if (open)
         {
+            // La texture s'édite par son chemin : le Content Browser ne sait pas encore
+            // glisser-déposer un asset, l'import se fait donc à la saisie.
+            char texturePath[512];
+            memset(texturePath, 0, sizeof(texturePath));
+            strncpy(texturePath, Engine::AssetManager::GetPath(sprite.Texture).c_str(), sizeof(texturePath) - 1);
+            if (ImGui::InputText("Texture", texturePath, sizeof(texturePath)))
+            {
+                const std::string path(texturePath);
+                sprite.Texture = path.empty() ? Engine::AssetHandle(Engine::k_InvalidAssetHandle)
+                                              : Engine::AssetManager::Import(path);
+            }
+            TrackEdit<Engine::SpriteRendererComponent>(entity, "changer la texture de");
+
             ImGui::ColorEdit4("Couleur", &sprite.Color.x);
             TrackEdit<Engine::SpriteRendererComponent>(entity, "changer la couleur de");
             ImGui::DragFloat("Tiling", &sprite.TilingFactor, 0.05f, 0.0f, 100.0f, "%.3f", k_ClampedDrag);
@@ -258,7 +272,7 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
         {
             const Engine::AudioComponent before = audio;
             const Engine::AudioComponent defaults;
-            audio.Path = defaults.Path;
+            audio.Sound = defaults.Sound;
             audio.Volume = defaults.Volume;
             audio.Loop = defaults.Loop;
             audio.PlayOnStart = defaults.PlayOnStart;
@@ -270,11 +284,13 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
         {
             char pathBuffer[512];
             memset(pathBuffer, 0, sizeof(pathBuffer));
-            strncpy(pathBuffer, audio.Path.c_str(), sizeof(pathBuffer) - 1);
+            strncpy(pathBuffer, Engine::AssetManager::GetPath(audio.Sound).c_str(), sizeof(pathBuffer) - 1);
             if (ImGui::InputText("Fichier", pathBuffer, sizeof(pathBuffer)))
             {
-                audio.Path = std::string(pathBuffer);
-                // Le son déjà chargé ne correspond plus au chemin affiché.
+                const std::string path(pathBuffer);
+                audio.Sound = path.empty() ? Engine::AssetHandle(Engine::k_InvalidAssetHandle)
+                                           : Engine::AssetManager::Import(path);
+                // Le son déjà chargé ne correspond plus à la référence affichée.
                 audio.Source.reset();
             }
             TrackEdit<Engine::AudioComponent>(entity, "changer le son de");
@@ -297,10 +313,10 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
                 {
                     audio.Source->Stop();
                 }
-                else if (!audio.Path.empty())
+                else if (Engine::AssetManager::IsValid(audio.Sound))
                 {
                     if (!audio.Source)
-                        audio.Source = Engine::AudioSource::LoadFromFile(audio.Path);
+                        audio.Source = Engine::AssetManager::LoadSound(audio.Sound);
                     audio.Source->SetVolume(audio.Volume);
                     audio.Source->SetLooping(audio.Loop);
                     audio.Source->Play();

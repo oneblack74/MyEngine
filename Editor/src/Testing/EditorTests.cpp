@@ -4,7 +4,9 @@
 
 #include "EditorLayer.h"
 #include <Core/Log.h>
+#include <Assets/AssetManager.h>
 #include <Scene/Components.h>
+#include <Scene/SceneSerializer.h>
 #include <box2d/box2d.h>
 #include <glm/glm.hpp>
 #include <imgui.h>
@@ -496,6 +498,85 @@ void RegisterEditorTests(ImGuiTestEngine *engine, EditorLayer &editor)
         ctx->ItemClick("Audio/Arrêter");
         ctx->Yield(2);
         IM_CHECK(!audio.Source->IsPlaying());
+    };
+
+    // --- Assets ---------------------------------------------------------------
+
+    // La texture d'un sprite ne survivait pas à une sauvegarde : c'était un shared_ptr,
+    // impossible à écrire dans un fichier. C'est maintenant une référence d'asset.
+    t = IM_REGISTER_TEST(engine, "assets", "texture_reference_survives_save_load");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        Engine::Entity square = SelectEntity(ctx, editor, "Square");
+        IM_CHECK(square);
+
+        auto &sprite = square.GetComponent<Engine::SpriteRendererComponent>();
+        const Engine::AssetHandle previous = sprite.Texture;
+
+        const Engine::AssetHandle texture = Engine::AssetManager::Import("assets/textures/axololt.jpg");
+        IM_CHECK((uint64_t)texture != Engine::k_InvalidAssetHandle);
+        IM_CHECK(Engine::AssetManager::GetType(texture) == Engine::AssetType::Texture);
+        sprite.Texture = texture;
+
+        const std::string file = "output/scene_roundtrip.json";
+        const Engine::UUID squareId = square.GetUUID();
+        {
+            std::error_code ec;
+            std::filesystem::create_directories("output", ec);
+            auto scene = std::make_shared<Engine::Scene>();
+            Engine::Scene::CopyComponents(square, scene->CreateEntityWithUUID(squareId, square.GetName()));
+            Engine::SceneSerializer(scene).Serialize(file);
+        }
+
+        auto reloaded = std::make_shared<Engine::Scene>();
+        IM_CHECK(Engine::SceneSerializer(reloaded).Deserialize(file));
+
+        Engine::Entity restored = reloaded->FindEntityByUUID(squareId);
+        IM_CHECK(restored);
+        IM_CHECK(restored.HasComponent<Engine::SpriteRendererComponent>());
+        IM_CHECK_EQ((uint64_t)restored.GetComponent<Engine::SpriteRendererComponent>().Texture,
+                    (uint64_t)texture);
+
+        sprite.Texture = previous;
+    };
+
+    // Le rechargement à chaud repose sur la date de modification du fichier.
+    //
+    // Deux précautions liées au fait que le corps d'un test tourne dans la coroutine du
+    // Test Engine, donc sur un autre thread que celui qui possède le contexte OpenGL :
+    // le rechargement est déclenché par la boucle de l'éditeur et non appelé ici, et le
+    // test n'garde aucune référence sur la texture — la relâcher détruirait une ressource
+    // GPU depuis le mauvais thread. D'où l'observation par un simple compteur.
+    t = IM_REGISTER_TEST(engine, "assets", "hot_reload_reloads_modified_texture");
+    t->TestFunc = [&editor](ImGuiTestContext *ctx)
+    {
+        Engine::Entity square = SelectEntity(ctx, editor, "Square");
+        IM_CHECK(square);
+        auto &sprite = square.GetComponent<Engine::SpriteRendererComponent>();
+        const Engine::AssetHandle previous = sprite.Texture;
+
+        // Assigner la texture suffit à la faire charger : RenderSystem la résout à la
+        // frame suivante, sur le thread de rendu.
+        sprite.Texture = Engine::AssetManager::Import("assets/textures/axololt.jpg");
+        ctx->Yield(3);
+
+        const uint64_t reloadsBefore = Engine::AssetManager::GetReloadCount();
+
+        // Rien à modifier dans l'image : seule sa date compte pour la détection.
+        std::filesystem::last_write_time("assets/textures/axololt.jpg",
+                                         std::filesystem::file_time_type::clock::now());
+
+        // L'éditeur ne consulte le disque que quelques fois par seconde, et son minuteur
+        // avance au temps réel : on attend le rechargement au lieu de parier sur un délai.
+        uint64_t reloadsAfter = reloadsBefore;
+        for (int attempt = 0; attempt < 20 && reloadsAfter == reloadsBefore; ++attempt)
+        {
+            ctx->SleepNoSkip(0.1f, 0.02f);
+            reloadsAfter = Engine::AssetManager::GetReloadCount();
+        }
+        IM_CHECK_GT(reloadsAfter, reloadsBefore);
+
+        sprite.Texture = previous;
     };
 
     // --- Captures -----------------------------------------------------------

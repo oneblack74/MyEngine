@@ -103,6 +103,10 @@ private:
     ContentBrowserPanel m_ContentBrowserPanel;
     ConsolePanel m_ConsolePanel;
 
+    // Le disque n'est interrogé que quelques fois par seconde : vérifier la date de
+    // chaque asset à chaque frame ne servirait qu'à marteler le système de fichiers.
+    float m_AssetReloadTimer = 0.0f;
+
     // Contours des colliders superposés au Viewport (menu Affichage).
     bool m_ShowColliderOutlines = false;
 

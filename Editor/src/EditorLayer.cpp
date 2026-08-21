@@ -1,6 +1,7 @@
 #include "EditorLayer.h"
 #include "Commands/SceneCommands.h"
 #include <Core/Log.h>
+#include <Assets/AssetManager.h>
 #include <Core/Application.h>
 #include <Utils/ImageCapture.h>
 #include <Renderer/Renderer.h>
@@ -72,7 +73,7 @@ void EditorLayer::OnAttach()
     // Démo Phase 6 : un son joué au démarrage du Play.
     auto sound = m_EditorScene->CreateEntity("Bip");
     auto &soundAudio = sound.AddComponent<Engine::AudioComponent>();
-    soundAudio.Path = "assets/audio/bip.wav";
+    soundAudio.Sound = Engine::AssetManager::Import("assets/audio/bip.wav");
 
     // Démo Phase 5 : logue chaque début/fin de collision dans la Console pour vérifier
     // que les contact events Box2D remontent bien jusqu'à l'ECS (via Entity, pas juste
@@ -145,6 +146,15 @@ void EditorLayer::OnUpdate(Engine::Timestep ts)
     {
         m_PhysicsSystem.OnUpdate(*m_RuntimeScene, ts);
         Engine::AudioSystem::OnUpdate(*m_RuntimeScene);
+    }
+
+    // Rechargement à chaud : un fichier d'asset modifié pendant que l'éditeur tourne
+    // est repris sans avoir à redémarrer.
+    m_AssetReloadTimer += ts;
+    if (m_AssetReloadTimer >= 0.5f)
+    {
+        m_AssetReloadTimer = 0.0f;
+        Engine::AssetManager::ReloadModifiedAssets();
     }
 
     // Redimensionne le Framebuffer si le panel Viewport a changé de taille
