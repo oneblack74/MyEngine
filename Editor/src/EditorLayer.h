@@ -12,6 +12,7 @@
 #include <Renderer/Framebuffer.h>
 #include <Renderer/OrthographicCamera.h>
 #include <Scene/Scene.h>
+#include <Scene/AudioSystem.h>
 #include <Scene/PhysicsSystem.h>
 #include <memory>
 

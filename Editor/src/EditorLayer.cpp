@@ -69,6 +69,11 @@ void EditorLayer::OnAttach()
     auto mainCamera = m_EditorScene->CreateEntity("Main Camera");
     mainCamera.AddComponent<Engine::CameraComponent>();
 
+    // Démo Phase 6 : un son joué au démarrage du Play.
+    auto sound = m_EditorScene->CreateEntity("Bip");
+    auto &soundAudio = sound.AddComponent<Engine::AudioComponent>();
+    soundAudio.Path = "assets/audio/bip.wav";
+
     // Démo Phase 5 : logue chaque début/fin de collision dans la Console pour vérifier
     // que les contact events Box2D remontent bien jusqu'à l'ECS (via Entity, pas juste
     // des b2ShapeId bruts).
@@ -137,7 +142,10 @@ void EditorLayer::OnUpdate(Engine::Timestep ts)
     // La physique ne tourne que pendant le Play, et se fige en Pause (comme le
     // ferait n'importe quel moteur : Pause gèle la simulation, pas juste le rendu).
     if (m_SceneState == SceneState::Play && !m_ScenePaused)
+    {
         m_PhysicsSystem.OnUpdate(*m_RuntimeScene, ts);
+        Engine::AudioSystem::OnUpdate(*m_RuntimeScene);
+    }
 
     // Redimensionne le Framebuffer si le panel Viewport a changé de taille
     const glm::vec2 &viewportSize = m_ViewportPanel.GetSize();
@@ -517,6 +525,7 @@ void EditorLayer::OnScenePlay()
 
     m_RuntimeScene = m_EditorScene->Copy();
     m_PhysicsSystem.OnRuntimeStart(*m_RuntimeScene);
+    Engine::AudioSystem::OnRuntimeStart(*m_RuntimeScene);
     m_SceneHierarchyPanel.SetContext(m_RuntimeScene);
 
     Engine::Entity newSelection;
@@ -531,6 +540,7 @@ void EditorLayer::OnSceneStop()
     m_ScenePaused = false;
 
     m_PhysicsSystem.OnRuntimeStop();
+    Engine::AudioSystem::OnRuntimeStop(*m_RuntimeScene);
     m_RuntimeScene = nullptr;
     m_SceneHierarchyPanel.SetContext(m_EditorScene);
     // L'entité sélectionnée appartenait potentiellement à la scène runtime qu'on vient de jeter

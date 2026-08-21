@@ -248,6 +248,75 @@ void InspectorPanel::DrawComponents(Engine::Entity entity)
         EndComponentSection(open);
     }
 
+    if (entity.HasComponent<Engine::AudioComponent>())
+    {
+        bool reset = false;
+        const bool open = BeginComponentSection("Audio", reset);
+
+        auto &audio = entity.GetComponent<Engine::AudioComponent>();
+        if (reset)
+        {
+            const Engine::AudioComponent before = audio;
+            const Engine::AudioComponent defaults;
+            audio.Path = defaults.Path;
+            audio.Volume = defaults.Volume;
+            audio.Loop = defaults.Loop;
+            audio.PlayOnStart = defaults.PlayOnStart;
+            // Source préservée, comme les handles Box2D : c'est la lecture en cours.
+            RecordEdit(entity, before, "réinitialiser l'Audio de");
+        }
+
+        if (open)
+        {
+            char pathBuffer[512];
+            memset(pathBuffer, 0, sizeof(pathBuffer));
+            strncpy(pathBuffer, audio.Path.c_str(), sizeof(pathBuffer) - 1);
+            if (ImGui::InputText("Fichier", pathBuffer, sizeof(pathBuffer)))
+            {
+                audio.Path = std::string(pathBuffer);
+                // Le son déjà chargé ne correspond plus au chemin affiché.
+                audio.Source.reset();
+            }
+            TrackEdit<Engine::AudioComponent>(entity, "changer le son de");
+
+            ImGui::DragFloat("Volume", &audio.Volume, 0.01f, 0.0f, 1.0f, "%.2f", k_ClampedDrag);
+            TrackEdit<Engine::AudioComponent>(entity, "changer le volume de");
+
+            ImGui::Checkbox("Boucle", &audio.Loop);
+            TrackEdit<Engine::AudioComponent>(entity, "modifier l'Audio de");
+
+            ImGui::Checkbox("Jouer au démarrage", &audio.PlayOnStart);
+            TrackEdit<Engine::AudioComponent>(entity, "modifier l'Audio de");
+
+            // Écoute depuis l'éditeur, sans passer par le Play : le son est chargé à la
+            // demande au premier clic.
+            const bool playing = audio.Source && audio.Source->IsPlaying();
+            if (ImGui::Button(playing ? "Arrêter" : "Écouter"))
+            {
+                if (playing)
+                {
+                    audio.Source->Stop();
+                }
+                else if (!audio.Path.empty())
+                {
+                    if (!audio.Source)
+                        audio.Source = Engine::AudioSource::LoadFromFile(audio.Path);
+                    audio.Source->SetVolume(audio.Volume);
+                    audio.Source->SetLooping(audio.Loop);
+                    audio.Source->Play();
+                }
+            }
+
+            if (audio.Source && !audio.Source->IsLoaded())
+            {
+                ImGui::SameLine();
+                ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "Fichier introuvable");
+            }
+        }
+
+        EndComponentSection(open);
+    }
+
     if (entity.HasComponent<Engine::CameraComponent>())
     {
         bool reset = false;
