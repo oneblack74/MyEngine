@@ -123,7 +123,9 @@
   - ✅ Racine unique par scène — c'est elle qui devient l'entité instanciée. Une scène neuve naît avec sa racine, un fichier multi-racines est enveloppé au chargement, et la racine n'est pas supprimable depuis l'éditeur
   - ✅ Instancier sans lien : déposer une scène du Content Browser sur une entité de la hiérarchie y recopie sa branche, en enfant de la cible. L'instance reçoit de nouveaux UUID mais garde les transforms locaux de la source ; une scène refuse de s'instancier dans elle-même ; le tout est annulable
   - ✅ Garder le lien : `SceneInstanceComponent` retient l'`AssetHandle` de la source ; modifier le fichier source rafraîchit ses instances. Le niveau garde ce qui lui appartient (placement, nom, place dans la hiérarchie), le reste est refait à l'identique de la source. `.scene` est devenu un `AssetType`, et les dates des scènes sont suivies hors du cache
-  - ⬜ Surcharges par propriété : une instance peut diverger de sa source sur n'importe quelle valeur, pas seulement son placement et son nom — c'est la vraie difficulté, et elle est la même dans les deux modèles
+  - ✅ Surcharges par propriété : une instance peut diverger de sa source sur n'importe quelle valeur, et la divergence survit aux modifications de la source. Fusion à trois côtés sur la forme JSON des entités (celle du `SceneSerializer`, qui nomme déjà chaque propriété) : si l'instance s'écarte de ce qu'avait la source la dernière fois qu'on l'a vue, c'est une surcharge, sinon la nouvelle valeur passe
+  - ⬜ Marquer visuellement les propriétés surchargées dans l'Inspecteur (façon liseré bleu d'Unity), et pouvoir en révoquer une
+  - ⬜ Retirer un component sur une instance : la fusion le fait revenir, faute de retenir les suppressions
 
 ---
 
