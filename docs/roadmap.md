@@ -92,7 +92,7 @@
 - ✅ `CircleColliderComponent`
 - ✅ `PhysicsSystem` — synchronise Transform ↔ Box2D body
 - ✅ Callbacks de collision
-- ⬜ Debug-draw des colliders dans le Viewport (contours Box/Circle, superposés à la scène)
+- ✅ Debug-draw des colliders dans le Viewport (contours Box/Circle, superposés à la scène) — menu "Affichage", primitives `Renderer2D::DrawLine`/`DrawRect`/`DrawCircle` ajoutées au passage
 - ✅ Bug corrigé : éditer RigidBody/BoxCollider/CircleCollider dans l'Inspecteur pendant le Play n'avait aucun effet — `PhysicsSystem` repousse maintenant les valeurs des components vers Box2D à chaque frame (`b2Body_SetType`, `b2Shape_SetPolygon`/`SetCircle`, `SetDensity`/`SetFriction`/`SetRestitution`) avant chaque `Step()`
 
 ---
