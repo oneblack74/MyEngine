@@ -73,7 +73,7 @@
 - ✅ Raccourcis clavier standards de l'éditeur (Undo/Redo `Ctrl+Z`/`Ctrl+Y`, Copier/Coller `Ctrl+C`/`Ctrl+V`, Dupliquer `Ctrl+D`, Supprimer) — historique de commandes annulables (`Editor/src/Commands/`), doublé d'un menu "Édition"
 - ✅ Tests automatisés de l'éditeur — mode sans fenêtre, captures PNG et suite de tests qui pilotent l'UI (Dear ImGui Test Engine), voir [tests.md](tests.md)
 - ✅ Saisie des valeurs de l'Inspecteur directement au clavier (taper un chiffre plutôt que de devoir drag-slider)
-- ✅ Bouton "Réinitialiser aux valeurs par défaut" dans l'Inspecteur (un par section de component)
+- ✅ Bouton "Réinitialiser aux valeurs par défaut" dans l'Inspecteur (un par section de component), et retrait d'un component par clic droit sur son en-tête (annulable)
 - ✅ Sauvegarde de la scène depuis l'éditeur (`Ctrl+S`) — menu Fichier complet (Nouvelle scène `Ctrl+N`, Ouvrir `Ctrl+O`, Enregistrer `Ctrl+S`, Enregistrer sous `Ctrl+Maj+S`, Quitter) ; l'éditeur retient le chemin de la scène ouverte et l'affiche dans le titre de la fenêtre. Sélecteur de fichier dessiné en ImGui (pas de dialogue natif : aucune dépendance système, et pilotable par les tests), scènes rangées dans `assets/scenes` avec l'extension `.scene`
 - ✅ `GamePanel` — vue de jeu séparée du Viewport d'édition, ouvrable dans une fenêtre à part (façon Godot) ; l'Inspecteur reste éditable en direct pendant le Play (façon Unity)
 - ✅ Console — regroupement des messages identiques ("Collapse" façon Unity), avec un compteur sur la ligne
@@ -124,8 +124,8 @@
   - ✅ Instancier sans lien : déposer une scène du Content Browser sur une entité de la hiérarchie y recopie sa branche, en enfant de la cible. L'instance reçoit de nouveaux UUID mais garde les transforms locaux de la source ; une scène refuse de s'instancier dans elle-même ; le tout est annulable
   - ✅ Garder le lien : `SceneInstanceComponent` retient l'`AssetHandle` de la source ; modifier le fichier source rafraîchit ses instances. Le niveau garde ce qui lui appartient (placement, nom, place dans la hiérarchie), le reste est refait à l'identique de la source. `.scene` est devenu un `AssetType`, et les dates des scènes sont suivies hors du cache
   - ✅ Surcharges par propriété : une instance peut diverger de sa source sur n'importe quelle valeur, et la divergence survit aux modifications de la source. Fusion à trois côtés sur la forme JSON des entités (celle du `SceneSerializer`, qui nomme déjà chaque propriété) : si l'instance s'écarte de ce qu'avait la source la dernière fois qu'on l'a vue, c'est une surcharge, sinon la nouvelle valeur passe
-  - ⬜ Marquer visuellement les propriétés surchargées dans l'Inspecteur (façon liseré bleu d'Unity), et pouvoir en révoquer une
-  - ⬜ Retirer un component sur une instance : la fusion le fait revenir, faute de retenir les suppressions
+  - ✅ Marquage des propriétés surchargées dans l'Inspecteur (liseré bleu façon Unity) ; clic droit sur l'en-tête d'un component pour révoquer ses surcharges d'un bloc ou une propriété à la fois
+  - ✅ Retrait d'un component sur une instance : retenu par l'instance, la fusion ne le fait plus revenir
 
 ---
 
