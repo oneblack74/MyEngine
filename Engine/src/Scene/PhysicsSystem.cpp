@@ -248,4 +248,47 @@ namespace Engine
             }
         }
     }
+
+    void PhysicsSystem::SetLinearVelocity(Entity entity, const glm::vec2 &velocity)
+    {
+        if (!entity.HasComponent<RigidBodyComponent>())
+            return;
+
+        b2BodyId body = entity.GetComponent<RigidBodyComponent>().RuntimeBody;
+        if (b2Body_IsValid(body))
+            b2Body_SetLinearVelocity(body, {velocity.x, velocity.y});
+    }
+
+    glm::vec2 PhysicsSystem::GetLinearVelocity(Entity entity)
+    {
+        if (!entity.HasComponent<RigidBodyComponent>())
+            return {0.0f, 0.0f};
+
+        b2BodyId body = entity.GetComponent<RigidBodyComponent>().RuntimeBody;
+        if (!b2Body_IsValid(body))
+            return {0.0f, 0.0f};
+
+        const b2Vec2 velocity = b2Body_GetLinearVelocity(body);
+        return {velocity.x, velocity.y};
+    }
+
+    void PhysicsSystem::ApplyLinearImpulse(Entity entity, const glm::vec2 &impulse)
+    {
+        if (!entity.HasComponent<RigidBodyComponent>())
+            return;
+
+        b2BodyId body = entity.GetComponent<RigidBodyComponent>().RuntimeBody;
+        if (b2Body_IsValid(body))
+            b2Body_ApplyLinearImpulseToCenter(body, {impulse.x, impulse.y}, true);
+    }
+
+    void PhysicsSystem::SetPosition(Entity entity, const glm::vec2 &position)
+    {
+        if (!entity.HasComponent<RigidBodyComponent>())
+            return;
+
+        b2BodyId body = entity.GetComponent<RigidBodyComponent>().RuntimeBody;
+        if (b2Body_IsValid(body))
+            b2Body_SetTransform(body, {position.x, position.y}, b2Body_GetRotation(body));
+    }
 }

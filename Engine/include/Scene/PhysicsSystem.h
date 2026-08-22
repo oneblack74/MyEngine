@@ -20,6 +20,16 @@ namespace Engine
         void OnRuntimeStop();
         void OnUpdate(Scene &scene, float timestep);
 
+        // Contrôle d'un corps depuis le gameplay. Le TransformComponent ne sert à rien
+        // pour ça : c'est Box2D qui l'écrit à chaque pas, une valeur posée dedans serait
+        // écrasée dans la foulée. Sans effet si l'entité n'a pas de corps (pas de
+        // RigidBody, ou appel en dehors d'une partie).
+        void SetLinearVelocity(Entity entity, const glm::vec2 &velocity);
+        glm::vec2 GetLinearVelocity(Entity entity);
+        void ApplyLinearImpulse(Entity entity, const glm::vec2 &impulse);
+        // Téléporte le corps : la position est imposée, pas atteinte par la simulation.
+        void SetPosition(Entity entity, const glm::vec2 &position);
+
         // Box2D v3 ne fait pas de callback C direct : les events de contact sont
         // bufferisés pendant le Step() et lus juste après. OnUpdate() les traduit en
         // Entity et déclenche ces deux hooks — laissés vides par défaut (pas de coût si
