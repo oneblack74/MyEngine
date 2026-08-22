@@ -56,6 +56,19 @@ MyEngine/
 |  |
 |  └── CMakeLists.txt
 |
+├── Runtime/
+|  ├── assets/
+|  |  └── scenes/
+|  |     └── demo.scene
+|  |
+|  ├── src/
+|  |  ├── main.cpp
+|  |  ├── RuntimeLayer.cpp
+|  |  ├── RuntimeLayer.h
+|  |  └── RuntimeOptions.h
+|  |
+|  └── CMakeLists.txt
+|
 ├── SandBox/
 |  ├── assets/
 |  |  └── textures/

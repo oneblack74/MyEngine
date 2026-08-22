@@ -70,6 +70,25 @@ rencontrés :
   d'abord été ignorée en silence faute de `IMGUI_TEST_ENGINE_ENABLE_CAPTURE` ; le test
   vérifie donc maintenant que le fichier existe vraiment.
 
+## Tester le runtime
+
+Le player se pilote de la même façon : `--headless` le fait tourner sans rien afficher,
+`--frames` lui dit au bout de combien de frames quitter, et son code de sortie vaut 1 si
+la scène ne s'est pas chargée ou si la capture n'a pas pu être écrite.
+
+```bash
+cd build && ./Runtime/Runtime --headless --frames 30 scenes/demo.scene
+cd build && ./Runtime/Runtime --headless --screenshot output/captures/runtime_demo.png scenes/demo.scene
+```
+
+Trois tests ctest en découlent (`runtime_demo_scene`, `runtime_demo_screenshot`,
+`runtime_missing_scene`), tous joués sur `Runtime/assets/scenes/demo.scene`. Ils ne
+dépendent pas du Test Engine — il n'y a pas d'UI à piloter — donc ils tournent aussi
+dans un build construit sans lui. Un code de sortie 0 ne prouvant pas qu'une image a
+été dessinée, la variante `--screenshot` traverse tout le chemin de rendu jusqu'à
+l'écriture du PNG ; et la scène manquante est attendue en échec (`WILL_FAIL`), pour que
+l'erreur reste une erreur.
+
 ## Construire sans le Test Engine
 
 [Dear ImGui Test Engine](https://github.com/ocornut/imgui_test_engine) est gratuit pour

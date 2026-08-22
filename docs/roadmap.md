@@ -131,8 +131,8 @@
 
 ## Phase 8 — Runtime & Build
 
-- ⬜ `Runtime/` — exécutable standalone sans éditeur
-- ⬜ Chargement d'une scène sérialisée au démarrage
+- ✅ `Runtime/` — exécutable standalone sans éditeur : une fenêtre, la scène jouée tout de suite (physique et audio démarrés d'office, pas d'état « édition » ni de bouton Play), rendue plein écran par la caméra `Primary` de la scène. Échap quitte
+- ✅ Chargement d'une scène sérialisée au démarrage : `Runtime [scène]`, chemin relatif à la racine des assets (`--assets`, par défaut le dossier `assets/` posé à côté de l'exécutable — aucun chemin compilé en dur, contrairement à l'éditeur). Une scène introuvable arrête le jeu au lieu d'ouvrir une fenêtre vide
 - ⬜ `Games/MyFirstGame/` — premier vrai jeu utilisant le moteur
 - ⬜ Packaging / export du jeu
 
