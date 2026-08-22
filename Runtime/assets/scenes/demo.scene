@@ -1,0 +1,115 @@
+{
+    "Entities": [
+        {
+            "TagComponent": {
+                "Tag": "Demo"
+            },
+            "TransformComponent": {
+                "Position": [0.0, 0.0, 0.0],
+                "Rotation": 0.0,
+                "Scale": [1.0, 1.0, 1.0]
+            },
+            "UUID": 7000000000000000001
+        },
+        {
+            "CameraComponent": {
+                "OrthographicSize": 1.0,
+                "Primary": true
+            },
+            "Parent": 7000000000000000001,
+            "TagComponent": {
+                "Tag": "Main Camera"
+            },
+            "TransformComponent": {
+                "Position": [0.0, 0.0, 0.0],
+                "Rotation": 0.0,
+                "Scale": [1.0, 1.0, 1.0]
+            },
+            "UUID": 7000000000000000002
+        },
+        {
+            "BoxColliderComponent": {
+                "Density": 1.0,
+                "Friction": 0.5,
+                "Offset": [0.0, 0.0],
+                "Restitution": 0.0,
+                "Size": [0.5, 0.5]
+            },
+            "Parent": 7000000000000000001,
+            "RigidBodyComponent": {
+                "FixedRotation": false,
+                "Type": 0
+            },
+            "SpriteRendererComponent": {
+                "Color": [0.45, 0.38, 0.32, 1.0],
+                "Texture": 0,
+                "TilingFactor": 1.0
+            },
+            "TagComponent": {
+                "Tag": "Ground"
+            },
+            "TransformComponent": {
+                "Position": [0.0, -0.8, 0.0],
+                "Rotation": 0.0,
+                "Scale": [3.0, 0.2, 1.0]
+            },
+            "UUID": 7000000000000000003
+        },
+        {
+            "BoxColliderComponent": {
+                "Density": 1.0,
+                "Friction": 0.5,
+                "Offset": [0.0, 0.0],
+                "Restitution": 0.2,
+                "Size": [0.5, 0.5]
+            },
+            "Parent": 7000000000000000001,
+            "RigidBodyComponent": {
+                "FixedRotation": false,
+                "Type": 1
+            },
+            "SpriteRendererComponent": {
+                "Color": [0.9, 0.55, 0.25, 1.0],
+                "Texture": 0,
+                "TilingFactor": 1.0
+            },
+            "TagComponent": {
+                "Tag": "Crate"
+            },
+            "TransformComponent": {
+                "Position": [-0.35, 0.5, 0.0],
+                "Rotation": 12.0,
+                "Scale": [0.3, 0.3, 1.0]
+            },
+            "UUID": 7000000000000000004
+        },
+        {
+            "CircleColliderComponent": {
+                "Density": 1.0,
+                "Friction": 0.5,
+                "Offset": [0.0, 0.0],
+                "Radius": 0.5,
+                "Restitution": 0.4
+            },
+            "Parent": 7000000000000000001,
+            "RigidBodyComponent": {
+                "FixedRotation": true,
+                "Type": 1
+            },
+            "SpriteRendererComponent": {
+                "Color": [0.3, 0.6, 0.9, 1.0],
+                "Texture": 0,
+                "TilingFactor": 1.0
+            },
+            "TagComponent": {
+                "Tag": "Bouncer"
+            },
+            "TransformComponent": {
+                "Position": [0.35, 0.9, 0.0],
+                "Rotation": 0.0,
+                "Scale": [0.3, 0.3, 1.0]
+            },
+            "UUID": 7000000000000000005
+        }
+    ]
+}
