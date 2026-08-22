@@ -133,8 +133,16 @@
 
 - ✅ `Runtime/` — exécutable standalone sans éditeur : une fenêtre, la scène jouée tout de suite (physique et audio démarrés d'office, pas d'état « édition » ni de bouton Play), rendue plein écran par la caméra `Primary` de la scène. Échap quitte
 - ✅ Chargement d'une scène sérialisée au démarrage : `Runtime [scène]`, chemin relatif à la racine des assets (`--assets`, par défaut le dossier `assets/` posé à côté de l'exécutable — aucun chemin compilé en dur, contrairement à l'éditeur). Une scène introuvable arrête le jeu au lieu d'ouvrir une fenêtre vide
-- ⬜ `Games/MyFirstGame/` — premier vrai jeu utilisant le moteur
-- ⬜ Packaging / export du jeu
+- ✅ `Games/MyFirstGame/` — premier vrai jeu utilisant le moteur : « attrape-caisses », des caisses tombent et le panier les rattrape, trois vies. Faute de scripting (Phase 9), un jeu qui a de la logique est un exécutable à lui : il pose son `GameLayer` par-dessus `Engine::SceneRuntime`, là où le `Runtime` générique se contente de jouer une scène telle quelle. Mode `--demo` (le panier se joue tout seul), d'où un test qui vérifie qu'une vraie partie attrape vraiment des caisses
+- ✅ Packaging / export du jeu : `cmake --install build --prefix <dossier> --component game` (ou `runtime`) pose l'exécutable et ses assets côte à côte, prêts à être zippés. Un binaire cherche d'abord les assets posés à côté de lui, et ne retombe sur les sources compilées en dur qu'en développement — testé en rejouant le jeu depuis le dossier exporté
+
+Ce que le premier jeu a demandé au moteur en cours de route :
+
+- ✅ Faire naître et mourir des entités physiques en pleine partie (`PhysicsSystem` créait ses corps une fois pour toutes au démarrage)
+- ✅ Piloter un corps depuis le gameplay (`SetLinearVelocity`, `ApplyLinearImpulse`, `SetPosition`) : écrire dans le `TransformComponent` ne sert à rien, Box2D l'écrase au pas suivant
+- ✅ `Engine::SceneRuntime`, le « jouer une scène » commun au player et à un jeu
+- ⬜ Rendu de texte : il n'y en a pas, le score et les vies se lisent sur des rangées de petits carrés
+- ⬜ `AudioSystem` ne prépare les sons qu'au démarrage : une entité créée en cours de partie n'a pas de son
 
 ---
 

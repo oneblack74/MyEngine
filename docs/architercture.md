@@ -56,6 +56,23 @@ MyEngine/
 |  |
 |  └── CMakeLists.txt
 |
+├── Games/
+|  └── MyFirstGame/
+|     ├── assets/
+|     |  ├── audio/
+|     |  |  └── catch.wav
+|     |  ├── scenes/
+|     |  |  └── catch.scene
+|     |  └── AssetRegistry.json
+|     |
+|     ├── src/
+|     |  ├── main.cpp
+|     |  ├── GameLayer.cpp
+|     |  ├── GameLayer.h
+|     |  └── GameOptions.h
+|     |
+|     └── CMakeLists.txt
+|
 ├── Runtime/
 |  ├── assets/
 |  |  └── scenes/

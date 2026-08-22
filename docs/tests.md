@@ -89,6 +89,27 @@ dans un build construit sans lui. Un code de sortie 0 ne prouvant pas qu'une ima
 l'écriture du PNG ; et la scène manquante est attendue en échec (`WILL_FAIL`), pour que
 l'erreur reste une erreur.
 
+## Tester le jeu et son export
+
+`Games/MyFirstGame` se joue tout seul avec `--demo` (le panier suit la caisse la plus
+basse) et les caisses tombent d'une graine fixe : deux parties lancées dans les mêmes
+conditions sont identiques, ce qui rend le résultat vérifiable.
+
+```bash
+cd build && ./Games/MyFirstGame/MyFirstGame --demo
+cd build && ./Games/MyFirstGame/MyFirstGame --headless --demo --frames 300 --require-catch
+```
+
+`--require-catch` fait sortir le jeu en erreur si aucune caisse n'a été attrapée : le
+test `game_demo_round` vérifie ainsi d'un coup le spawn en cours de partie, la physique,
+les collisions et le score.
+
+Deux tests de plus portent sur l'export : `game_package` refait
+`cmake --install … --component game`, et `game_package_runs` joue le jeu **depuis le
+dossier exporté**, lancé depuis `build/`. Un jeu qui tourne dans l'arborescence de
+développement ne prouve rien sur le paquet livré — celui-ci ne doit trouver ses assets
+qu'à côté de son propre exécutable.
+
 ## Construire sans le Test Engine
 
 [Dear ImGui Test Engine](https://github.com/ocornut/imgui_test_engine) est gratuit pour
