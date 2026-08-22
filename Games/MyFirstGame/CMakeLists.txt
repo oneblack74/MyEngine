@@ -30,3 +30,14 @@ add_test(NAME game_demo_round
 # l'exécutable et ses assets côte à côte, prêts à être zippés.
 install(TARGETS MyFirstGame RUNTIME DESTINATION . COMPONENT game)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/assets/ DESTINATION assets COMPONENT game)
+
+# Un jeu qui se lance ici ne prouve pas qu'il se lancera une fois exporté : ces deux
+# tests refont l'export puis jouent le jeu depuis le dossier produit, avec pour seul
+# repère ses propres assets.
+add_test(NAME game_package
+         COMMAND ${CMAKE_COMMAND} --install ${CMAKE_BINARY_DIR}
+                 --prefix ${CMAKE_BINARY_DIR}/package/MyFirstGame --component game)
+add_test(NAME game_package_runs
+         COMMAND ${CMAKE_BINARY_DIR}/package/MyFirstGame/MyFirstGame --headless --demo --frames 120
+         WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+set_tests_properties(game_package_runs PROPERTIES DEPENDS game_package)
