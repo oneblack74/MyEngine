@@ -18,6 +18,14 @@ namespace Engine
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         }
 
+        // Zone de la cible de rendu réellement dessinée. Un Framebuffer la règle tout
+        // seul quand on le lie ; dessiner directement dans la fenêtre (le runtime, qui
+        // n'a pas de panel où s'insérer) demande de la suivre à la main au resize.
+        static void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
+        {
+            glViewport(x, y, width, height);
+        }
+
         // indexCount = 0 signifie "dessiner tout l'index buffer" (cas standard, non batché)
         static void DrawIndexed(const std::shared_ptr<VertexArray> &vertexArray, uint32_t indexCount = 0)
         {
