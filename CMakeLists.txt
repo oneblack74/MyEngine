@@ -114,9 +114,11 @@ target_link_libraries(imgui PUBLIC glfw glad_gl_core_46)
 # un éditeur qui ne l'embarque pas du tout.
 option(MYENGINE_EDITOR_TESTS "Compiler l'éditeur avec Dear ImGui Test Engine" ON)
 
-if(MYENGINE_EDITOR_TESTS)
-    enable_testing()
+# Au niveau racine, et pas seulement sous MYENGINE_EDITOR_TESTS : les tests du Runtime
+# ne dépendent pas du Test Engine, ils doivent tourner même sans lui.
+enable_testing()
 
+if(MYENGINE_EDITOR_TESTS)
     FetchContent_Declare(
         imgui_test_engine
         GIT_REPOSITORY https://github.com/ocornut/imgui_test_engine.git

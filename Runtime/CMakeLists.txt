@@ -21,3 +21,24 @@ add_custom_command(TARGET Runtime POST_BUILD
     ${CMAKE_CURRENT_SOURCE_DIR}/assets
     $<TARGET_FILE_DIR:Runtime>/../assets
 )
+
+# Le player se pilote sans écran : il joue quelques frames de la scène de démo puis
+# quitte, en signalant par son code de sortie si le chargement a échoué.
+add_test(NAME runtime_demo_scene
+         COMMAND Runtime --headless --frames 30
+                 --assets ${CMAKE_CURRENT_SOURCE_DIR}/assets scenes/demo.scene
+         WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
+# Un code de sortie 0 ne dit pas que quelque chose a été dessiné : cette variante
+# traverse tout le chemin de rendu jusqu'à l'écriture du PNG, qui échoue bruyamment.
+add_test(NAME runtime_demo_screenshot
+         COMMAND Runtime --headless --screenshot output/captures/runtime_demo.png
+                 --assets ${CMAKE_CURRENT_SOURCE_DIR}/assets scenes/demo.scene
+         WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
+# Une scène manquante doit arrêter le jeu, pas ouvrir une fenêtre vide.
+add_test(NAME runtime_missing_scene
+         COMMAND Runtime --headless --frames 1
+                 --assets ${CMAKE_CURRENT_SOURCE_DIR}/assets scenes/does_not_exist.scene
+         WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+set_tests_properties(runtime_missing_scene PROPERTIES WILL_FAIL TRUE)
