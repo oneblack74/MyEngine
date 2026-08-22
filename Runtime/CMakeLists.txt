@@ -42,3 +42,9 @@ add_test(NAME runtime_missing_scene
                  --assets ${CMAKE_CURRENT_SOURCE_DIR}/assets scenes/does_not_exist.scene
          WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 set_tests_properties(runtime_missing_scene PROPERTIES WILL_FAIL TRUE)
+
+# Export : l'exécutable et ses assets, côte à côte, dans un dossier qu'on peut zipper
+# tel quel (`cmake --install build --prefix <dossier> --component runtime`). Le player y
+# retrouve ses assets sans dépendre du dossier de travail ni des sources.
+install(TARGETS Runtime RUNTIME DESTINATION . COMPONENT runtime)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/assets/ DESTINATION assets COMPONENT runtime)

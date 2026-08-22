@@ -25,3 +25,8 @@ target_link_libraries(MyFirstGame
 add_test(NAME game_demo_round
          COMMAND MyFirstGame --headless --demo --frames 300 --require-catch
          WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
+# Export du jeu : `cmake --install build --prefix <dossier> --component game` pose
+# l'exécutable et ses assets côte à côte, prêts à être zippés.
+install(TARGETS MyFirstGame RUNTIME DESTINATION . COMPONENT game)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/assets/ DESTINATION assets COMPONENT game)
