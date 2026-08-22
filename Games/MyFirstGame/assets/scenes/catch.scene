@@ -1,0 +1,82 @@
+{
+    "Entities": [
+        {
+            "TagComponent": {
+                "Tag": "Catch"
+            },
+            "TransformComponent": {
+                "Position": [0.0, 0.0, 0.0],
+                "Rotation": 0.0,
+                "Scale": [1.0, 1.0, 1.0]
+            },
+            "UUID": 7100000000000000001
+        },
+        {
+            "CameraComponent": {
+                "OrthographicSize": 1.0,
+                "Primary": true
+            },
+            "Parent": 7100000000000000001,
+            "TagComponent": {
+                "Tag": "Main Camera"
+            },
+            "TransformComponent": {
+                "Position": [0.0, 0.0, 0.0],
+                "Rotation": 0.0,
+                "Scale": [1.0, 1.0, 1.0]
+            },
+            "UUID": 7100000000000000002
+        },
+        {
+            "AudioComponent": {
+                "Loop": false,
+                "PlayOnStart": false,
+                "Sound": 7100000000000000100,
+                "Volume": 1.0
+            },
+            "BoxColliderComponent": {
+                "Density": 1.0,
+                "Friction": 0.4,
+                "Offset": [0.0, 0.0],
+                "Restitution": 0.0,
+                "Size": [0.5, 0.5]
+            },
+            "Parent": 7100000000000000001,
+            "RigidBodyComponent": {
+                "FixedRotation": true,
+                "Type": 2
+            },
+            "SpriteRendererComponent": {
+                "Color": [0.35, 0.75, 0.45, 1.0],
+                "Texture": 0,
+                "TilingFactor": 1.0
+            },
+            "TagComponent": {
+                "Tag": "Basket"
+            },
+            "TransformComponent": {
+                "Position": [0.0, -0.75, 0.0],
+                "Rotation": 0.0,
+                "Scale": [0.36, 0.1, 1.0]
+            },
+            "UUID": 7100000000000000003
+        },
+        {
+            "Parent": 7100000000000000001,
+            "SpriteRendererComponent": {
+                "Color": [0.22, 0.22, 0.26, 1.0],
+                "Texture": 0,
+                "TilingFactor": 1.0
+            },
+            "TagComponent": {
+                "Tag": "FloorLine"
+            },
+            "TransformComponent": {
+                "Position": [0.0, -0.94, 0.0],
+                "Rotation": 0.0,
+                "Scale": [3.6, 0.06, 1.0]
+            },
+            "UUID": 7100000000000000004
+        }
+    ]
+}
