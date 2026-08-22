@@ -2,6 +2,7 @@
 #include "GameOptions.h"
 #include <Core/Application.h>
 #include <Core/Log.h>
+#include <Utils/Paths.h>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
@@ -20,6 +21,24 @@ namespace
                      "  --demo                 le panier se joue tout seul\n"
                      "  --require-catch        sort en erreur si aucune caisse n'a été attrapée\n"
                      "  --help                 affiche cette aide\n";
+    }
+
+    // Un jeu packagé emporte ses assets à côté de son binaire : ceux-là gagnent, sinon
+    // c'est un build de développement et la définition CMake pointe les sources. Le test
+    // porte sur le dossier de l'exécutable et pas sur le dossier de travail : en
+    // développement, build/assets existe (les autres cibles y recopient les leurs) et
+    // désignerait les assets de quelqu'un d'autre.
+    std::filesystem::path DefaultAssetRoot(const char *argv0)
+    {
+        const std::filesystem::path executableDirectory = Engine::Paths::ExecutableDirectory(argv0);
+        if (!executableDirectory.empty() && std::filesystem::exists(executableDirectory / "assets"))
+            return executableDirectory / "assets";
+
+#ifdef MYENGINE_GAME_ASSET_ROOT
+        return MYENGINE_GAME_ASSET_ROOT;
+#else
+        return "assets";
+#endif
     }
 
     // Renvoie false si les arguments sont invalides (le message a déjà été affiché).
@@ -107,15 +126,7 @@ int main(int argc, char **argv)
     LOG_INFO("MyFirstGame starting...");
 
     if (options.AssetRoot.empty())
-    {
-        // Un jeu packagé emporte ses assets à côté de son exécutable ; en développement,
-        // la définition CMake pointe directement les sources.
-#ifdef MYENGINE_GAME_ASSET_ROOT
-        options.AssetRoot = MYENGINE_GAME_ASSET_ROOT;
-#else
-        options.AssetRoot = "assets";
-#endif
-    }
+        options.AssetRoot = DefaultAssetRoot(argv[0]);
 
     Engine::WindowProps props("MyFirstGame", 1280, 720, !options.Headless);
 

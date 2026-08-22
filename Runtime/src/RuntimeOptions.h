@@ -5,9 +5,10 @@
 // Réglages de lancement du player, remplis depuis la ligne de commande.
 struct RuntimeOptions
 {
-    // Racine des assets du jeu. Par défaut le dossier "assets" posé à côté de
-    // l'exécutable dans un build packagé — pas de chemin en dur compilé, contrairement
-    // à l'éditeur qui travaille sur les sources.
+    // Racine des assets du jeu : le dossier "assets" posé à côté de l'exécutable dans
+    // un build packagé, sinon relatif au dossier de travail (cf. DefaultAssetRoot dans
+    // main.cpp). Aucun chemin en dur compilé, contrairement à l'éditeur qui travaille
+    // sur les sources.
     std::filesystem::path AssetRoot = "assets";
 
     // Scène chargée au démarrage, relative à AssetRoot (un chemin absolu est accepté tel quel).

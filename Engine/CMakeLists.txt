@@ -14,6 +14,7 @@ add_library(Engine STATIC
     src/Renderer/Framebuffer.cpp
     vendor/stb/stb_image.cpp
     src/Utils/ImageCapture.cpp
+    src/Utils/Paths.cpp
     src/Renderer/Texture.cpp
     src/Scene/Scene.cpp
     src/Scene/Entity.cpp

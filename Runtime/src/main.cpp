@@ -2,6 +2,7 @@
 #include "RuntimeOptions.h"
 #include <Core/Application.h>
 #include <Core/Log.h>
+#include <Utils/Paths.h>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
@@ -21,6 +22,19 @@ namespace
                      "  --frames <n>           quitte après n frames (défaut : jusqu'à la fermeture)\n"
                      "  --screenshot <chemin>  capture la dernière frame dans ce PNG (--frames vaut 10 par défaut)\n"
                      "  --help                 affiche cette aide\n";
+    }
+
+    // Un build packagé emporte ses assets à côté de son binaire : s'ils sont là, ce sont
+    // les bons, quel que soit le dossier depuis lequel le jeu a été lancé. Sinon on
+    // retombe sur "assets" relatif au dossier de travail (le cas en développement, où
+    // l'on lance le player depuis build/).
+    std::filesystem::path DefaultAssetRoot(const char *argv0)
+    {
+        const std::filesystem::path executableDirectory = Engine::Paths::ExecutableDirectory(argv0);
+        if (!executableDirectory.empty() && std::filesystem::exists(executableDirectory / "assets"))
+            return executableDirectory / "assets";
+
+        return "assets";
     }
 
     // Renvoie false si les arguments sont invalides (le message a déjà été affiché).
@@ -115,6 +129,8 @@ namespace
 int main(int argc, char **argv)
 {
     RuntimeOptions options;
+    options.AssetRoot = DefaultAssetRoot(argv[0]);
+
     bool shouldExit = false;
     if (!ParseArgs(argc, argv, options, shouldExit))
         return 2;
