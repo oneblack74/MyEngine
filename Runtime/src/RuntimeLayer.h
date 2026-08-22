@@ -1,13 +1,12 @@
 #pragma once
 #include "RuntimeOptions.h"
 #include <Core/Layer.h>
-#include <Scene/PhysicsSystem.h>
-#include <Scene/Scene.h>
-#include <memory>
+#include <Scene/SceneRuntime.h>
 
 // Le jeu tel que le joueur le reçoit : une scène chargée depuis son fichier, jouée
-// immédiatement (pas d'état "édition", pas de bouton Play), rendue plein écran par la
-// caméra de la scène. C'est le pendant sans éditeur de EditorLayer.
+// immédiatement (pas d'état « édition », pas de bouton Play), rendue plein écran par la
+// caméra de la scène. Toute la mécanique est dans Engine::SceneRuntime ; ce layer ne
+// fait que la brancher sur la fenêtre et sur les options de la ligne de commande.
 class RuntimeLayer : public Engine::Layer
 {
 public:
@@ -23,13 +22,9 @@ public:
     int GetExitCode() const { return m_ExitCode; }
 
 private:
-    void RenderFrame();
-
     RuntimeOptions m_Options;
-    std::shared_ptr<Engine::Scene> m_Scene;
-    Engine::PhysicsSystem m_PhysicsSystem;
+    Engine::SceneRuntime m_SceneRuntime;
 
     int m_FrameCount = 0;
-    bool m_WarnedNoCamera = false;
     int m_ExitCode = 0;
 };
