@@ -4,6 +4,7 @@
 #include "Physics/Physics2D.h"
 #include <functional>
 #include <memory>
+#include <unordered_map>
 
 namespace Engine
 {
@@ -27,6 +28,15 @@ namespace Engine
         std::function<void(Entity, Entity)> OnCollisionEnd;
 
     private:
+        // Crée les corps des entités apparues depuis le dernier pas, et détruit ceux
+        // dont l'entité a disparu : un jeu fait naître et mourir des objets en pleine
+        // partie, sans pour autant redémarrer le monde physique.
+        void SyncBodiesWithScene(Scene &scene);
+
         std::unique_ptr<Physics2D> m_Physics;
+
+        // Corps créés, par UUID d'entité. Les corps ne se retrouvent que par là une fois
+        // l'entité supprimée : son RigidBodyComponent est parti avec elle.
+        std::unordered_map<uint64_t, b2BodyId> m_Bodies;
     };
 }

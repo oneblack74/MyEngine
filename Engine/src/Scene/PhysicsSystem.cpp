@@ -28,67 +28,105 @@ namespace Engine
         return Entity{(entt::entity)(uint32_t)(uintptr_t)userData, &scene};
     }
 
+    // Donne un corps Box2D (et ses shapes) à une entité qui n'en a pas encore. Appelée
+    // au démarrage de la partie pour toute la scène, puis à chaque pas pour les entités
+    // créées entre temps.
+    static void CreateRuntimeBody(b2WorldId worldId, Scene &scene, Entity entity)
+    {
+        const entt::entity entityHandle = entity;
+        // Box2D raisonne en coordonnées monde : une entité enfant doit y entrer avec
+        // son transform monde, pas avec sa position relative au parent.
+        const TransformComponent transform = scene.GetWorldTransform(entity);
+        auto &rb = entity.GetComponent<RigidBodyComponent>();
+
+        b2BodyDef bodyDef = b2DefaultBodyDef();
+        bodyDef.type = ToBox2DBodyType(rb.Type);
+        bodyDef.position = {transform.Position.x, transform.Position.y};
+        bodyDef.rotation = b2MakeRot(glm::radians(transform.Rotation));
+        bodyDef.fixedRotation = rb.FixedRotation;
+
+        rb.RuntimeBody = b2CreateBody(worldId, &bodyDef);
+
+        if (entity.HasComponent<BoxColliderComponent>())
+        {
+            auto &bc = entity.GetComponent<BoxColliderComponent>();
+
+            // Le collider suit l'échelle de l'entité au moment du Play (pas de resize
+            // dynamique du collider en cours de jeu pour l'instant).
+            b2Vec2 halfExtents = {bc.Size.x * transform.Scale.x, bc.Size.y * transform.Scale.y};
+            b2Vec2 offset = {bc.Offset.x, bc.Offset.y};
+            b2Polygon box = b2MakeOffsetBox(halfExtents.x, halfExtents.y, offset, b2Rot_identity);
+
+            b2ShapeDef shapeDef = b2DefaultShapeDef();
+            shapeDef.density = bc.Density;
+            shapeDef.material.friction = bc.Friction;
+            shapeDef.material.restitution = bc.Restitution;
+            shapeDef.enableContactEvents = true;
+            shapeDef.userData = EntityToUserData(entityHandle);
+
+            bc.RuntimeShape = b2CreatePolygonShape(rb.RuntimeBody, &shapeDef, &box);
+        }
+
+        if (entity.HasComponent<CircleColliderComponent>())
+        {
+            auto &cc = entity.GetComponent<CircleColliderComponent>();
+
+            // Box2D n'a qu'un seul rayon par cercle : en cas d'échelle non-uniforme
+            // (Scale.x != Scale.y), on prend la moyenne — pas de vrai support d'ellipse.
+            float scale = (transform.Scale.x + transform.Scale.y) * 0.5f;
+            b2Circle circle;
+            circle.center = {cc.Offset.x, cc.Offset.y};
+            circle.radius = cc.Radius * scale;
+
+            b2ShapeDef shapeDef = b2DefaultShapeDef();
+            shapeDef.density = cc.Density;
+            shapeDef.material.friction = cc.Friction;
+            shapeDef.material.restitution = cc.Restitution;
+            shapeDef.enableContactEvents = true;
+            shapeDef.userData = EntityToUserData(entityHandle);
+
+            cc.RuntimeShape = b2CreateCircleShape(rb.RuntimeBody, &shapeDef, &circle);
+        }
+    }
+
     void PhysicsSystem::OnRuntimeStart(Scene &scene)
     {
         m_Physics = std::make_unique<Physics2D>();
+        m_Bodies.clear();
+
+        SyncBodiesWithScene(scene);
+    }
+
+    void PhysicsSystem::SyncBodiesWithScene(Scene &scene)
+    {
+        // Entités disparues d'abord : leur corps continuerait sinon à occuper le monde
+        // et à entrer en collision, invisible mais bien là.
+        for (auto it = m_Bodies.begin(); it != m_Bodies.end();)
+        {
+            Entity entity = scene.FindEntityByUUID(UUID(it->first));
+            if (!entity || !entity.HasComponent<RigidBodyComponent>())
+            {
+                if (b2Body_IsValid(it->second))
+                    b2DestroyBody(it->second);
+                it = m_Bodies.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
 
         auto view = scene.GetAllEntitiesWith<RigidBodyComponent>();
         for (auto entityHandle : view)
         {
             Entity entity{entityHandle, &scene};
-            // Box2D raisonne en coordonnées monde : une entité enfant doit y entrer avec
-            // son transform monde, pas avec sa position relative au parent.
-            const TransformComponent transform = scene.GetWorldTransform(entity);
-            auto &rb = entity.GetComponent<RigidBodyComponent>();
+            // Un RuntimeBody nul (entité neuve) comme un handle périmé (scène rechargée)
+            // sont tous deux invalides pour Box2D : la même question suffit.
+            if (b2Body_IsValid(entity.GetComponent<RigidBodyComponent>().RuntimeBody))
+                continue;
 
-            b2BodyDef bodyDef = b2DefaultBodyDef();
-            bodyDef.type = ToBox2DBodyType(rb.Type);
-            bodyDef.position = {transform.Position.x, transform.Position.y};
-            bodyDef.rotation = b2MakeRot(glm::radians(transform.Rotation));
-            bodyDef.fixedRotation = rb.FixedRotation;
-
-            rb.RuntimeBody = b2CreateBody(m_Physics->GetWorldId(), &bodyDef);
-
-            if (entity.HasComponent<BoxColliderComponent>())
-            {
-                auto &bc = entity.GetComponent<BoxColliderComponent>();
-
-                // Le collider suit l'échelle de l'entité au moment du Play (pas de resize
-                // dynamique du collider en cours de jeu pour l'instant).
-                b2Vec2 halfExtents = {bc.Size.x * transform.Scale.x, bc.Size.y * transform.Scale.y};
-                b2Vec2 offset = {bc.Offset.x, bc.Offset.y};
-                b2Polygon box = b2MakeOffsetBox(halfExtents.x, halfExtents.y, offset, b2Rot_identity);
-
-                b2ShapeDef shapeDef = b2DefaultShapeDef();
-                shapeDef.density = bc.Density;
-                shapeDef.material.friction = bc.Friction;
-                shapeDef.material.restitution = bc.Restitution;
-                shapeDef.enableContactEvents = true;
-                shapeDef.userData = EntityToUserData(entityHandle);
-
-                bc.RuntimeShape = b2CreatePolygonShape(rb.RuntimeBody, &shapeDef, &box);
-            }
-
-            if (entity.HasComponent<CircleColliderComponent>())
-            {
-                auto &cc = entity.GetComponent<CircleColliderComponent>();
-
-                // Box2D n'a qu'un seul rayon par cercle : en cas d'échelle non-uniforme
-                // (Scale.x != Scale.y), on prend la moyenne — pas de vrai support d'ellipse.
-                float scale = (transform.Scale.x + transform.Scale.y) * 0.5f;
-                b2Circle circle;
-                circle.center = {cc.Offset.x, cc.Offset.y};
-                circle.radius = cc.Radius * scale;
-
-                b2ShapeDef shapeDef = b2DefaultShapeDef();
-                shapeDef.density = cc.Density;
-                shapeDef.material.friction = cc.Friction;
-                shapeDef.material.restitution = cc.Restitution;
-                shapeDef.enableContactEvents = true;
-                shapeDef.userData = EntityToUserData(entityHandle);
-
-                cc.RuntimeShape = b2CreateCircleShape(rb.RuntimeBody, &shapeDef, &circle);
-            }
+            CreateRuntimeBody(m_Physics->GetWorldId(), scene, entity);
+            m_Bodies[(uint64_t)entity.GetUUID()] = entity.GetComponent<RigidBodyComponent>().RuntimeBody;
         }
     }
 
@@ -152,10 +190,12 @@ namespace Engine
         // détruire un par un ni de remettre RuntimeBody/RuntimeShape à null explicitement,
         // la scène runtime elle-même est jetée juste après par l'appelant.
         m_Physics.reset();
+        m_Bodies.clear();
     }
 
     void PhysicsSystem::OnUpdate(Scene &scene, float timestep)
     {
+        SyncBodiesWithScene(scene);
         SyncComponentsToBox2D(scene);
 
         m_Physics->Step(timestep);
